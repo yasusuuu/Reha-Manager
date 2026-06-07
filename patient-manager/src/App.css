@@ -1,0 +1,1694 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color: #0f172a;
+  background: #eef3f8;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #eef3f8;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.appShell {
+  width: min(1320px, calc(100% - 20px));
+  margin: 0 auto;
+  padding: 12px 0 40px;
+}
+
+.appHeader,
+.card,
+.tableActions,
+.excelTableCard {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+}
+
+.appHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.appHeader h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.appHeader p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.professionTabs,
+.viewTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.professionTabs button,
+.viewTabs button {
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 16px;
+  background: #fff;
+  color: #334155;
+  font-weight: 800;
+}
+
+.professionTabs button.active,
+.viewTabs button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.viewTabs {
+  margin-bottom: 12px;
+}
+
+.tableActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.tableActions strong {
+  display: block;
+  font-size: 15px;
+}
+
+.tableActions span {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.primaryButton,
+.softButton,
+.deleteButton {
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 14px;
+  font-weight: 800;
+}
+
+.primaryButton {
+  background: #2563eb;
+  color: #fff;
+}
+
+.primaryButton.compact {
+  white-space: nowrap;
+}
+
+.softButton {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.deleteButton {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* =========================
+   管理表
+========================= */
+
+.excelTableCard {
+  padding: 10px;
+}
+
+.tableSectionTabs {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.tableSectionTabs button {
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 16px;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 800;
+}
+
+.tableSectionTabs button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.excelScroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  border-radius: 0;
+  background: #fff;
+}
+
+.assignmentTable {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1080px;
+  width: max-content;
+  font-size: 13px;
+  border: 1.5px solid #475569;
+}
+
+.assignmentTable th,
+.assignmentTable td {
+  border-top: 0;
+  border-left: 0;
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  text-align: center;
+  vertical-align: middle;
+  padding: 2px 4px;
+  height: 36px;
+  max-height: 36px;
+  background: #fff;
+}
+
+.assignmentTable thead th {
+  color: #0f172a;
+  font-weight: 900;
+  height: 42px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  border-top: 0 !important;
+  border-bottom: 1px solid #94a3b8;
+  box-shadow: inset 0 1.5px 0 #475569 !important;
+}
+
+.assignmentTable th.stickyName,
+.assignmentTable td.stickyName {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #fff;
+}
+
+.assignmentTable thead th.stickyName {
+  z-index: 8;
+  background: #f8fafc;
+}
+
+.nameCol {
+  width: 86px;
+  min-width: 86px;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.nameCell strong {
+  font-size: 12px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.nameCell span,
+.typeCol {
+  display: none !important;
+}
+
+.deptHead {
+  width: 54px;
+  min-width: 54px;
+  position: relative;
+}
+
+.numberCell {
+  width: 54px;
+  min-width: 54px;
+  position: relative;
+  z-index: 1;
+}
+
+.numberCell.tActiveCell {
+  z-index: 200;
+}
+
+.numberCell input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 2px;
+  color: #0f172a;
+  appearance: textfield;
+  -webkit-appearance: none;
+}
+
+.numberCell input::-webkit-outer-spin-button,
+.numberCell input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.numberCell.changed input,
+.numberCell.dept-internal.changed input {
+  color: #1d4ed8 !important;
+  font-weight: 900;
+}
+
+.numberCell input:focus,
+.noteInput:focus {
+  outline: none;
+  background: transparent;
+}
+
+.plainNumberLine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.infoButton {
+  border: 0;
+  background: transparent;
+  color: #1d4ed8;
+  font-weight: 900;
+  padding: 0 2px;
+}
+
+.infoButton.headerInfo {
+  margin-left: 2px;
+  margin-right: 0;
+}
+
+.internalOpenButton,
+.internalPopover,
+.internalNumberLine {
+  display: none !important;
+}
+
+/* =========================
+   色分け
+========================= */
+
+.deptHead.outpatient {
+  background: #e2e8f0 !important;
+}
+
+.numberCell.dept-outpatient {
+  background: #fbfdff !important;
+}
+
+.deptHead.ortho,
+.deptHead.neuroSurgery,
+.deptHead.respSurgery {
+  background: #d9edbc !important;
+}
+
+.deptHead.surgery,
+.deptHead.cancer {
+  background: #b5d98a !important;
+}
+
+.numberCell.dept-ortho,
+.numberCell.dept-neuroSurgery,
+.numberCell.dept-respSurgery {
+  background: #f1f8e4 !important;
+}
+
+.numberCell.dept-surgery,
+.numberCell.dept-cancer.cancerAllowed {
+  background: #dff0c0 !important;
+}
+
+.deptHead.neuroInternal,
+.deptHead.internal,
+.deptHead.urology,
+.deptHead.ent {
+  background: #cfe7ff !important;
+}
+
+.numberCell.dept-neuroInternal,
+.numberCell.dept-internal,
+.numberCell.dept-urology,
+.numberCell.dept-ent {
+  background: #eaf5ff !important;
+}
+
+.deptHead.stopped {
+  background: #e7d6fb !important;
+}
+
+.numberCell.dept-stopped {
+  background: #f4ebff !important;
+}
+
+.totalCol {
+  width: 70px;
+  min-width: 70px;
+  background: #fff5d6 !important;
+}
+
+.assignmentTable thead .totalCol {
+  background: #ffe9a8 !important;
+}
+
+.moveCol,
+.noteCol {
+  background: #f8fafc !important;
+}
+
+.assignmentTable thead .moveCol,
+.assignmentTable thead .noteCol {
+  background: #e2e8f0 !important;
+}
+
+.moveCol {
+  min-width: 80px;
+  white-space: nowrap;
+}
+
+.noteCol {
+  min-width: 80px;
+  white-space: nowrap;
+}
+
+.totalNumber {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* =========================
+   罫線
+   box-shadow は隣セルの background に隠れるため使わず、
+   border-right の太さ・種類で直接描画する
+========================= */
+
+.assignmentTable th,
+.assignmentTable td {
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: none !important;
+}
+
+/* 氏名列の左：太線（テーブル左端） */
+.assignmentTable th.nameCol,
+.assignmentTable td.nameCol {
+  border-left: 1.5px solid #475569 !important;
+  border-right: 1.5px solid #475569 !important;
+}
+
+/* 太線グループ：外来右・耳右・中止右・合計右・備考右 */
+.assignmentTable th.sep-outpatient,
+.assignmentTable td.sep-outpatient,
+.assignmentTable th.sep-ent,
+.assignmentTable td.sep-ent,
+.assignmentTable th.sep-stopped,
+.assignmentTable td.sep-stopped,
+.assignmentTable th.totalCol,
+.assignmentTable td.totalCol,
+.assignmentTable .totalCol,
+.assignmentTable .noteCol {
+  border-right: 1.5px solid #475569 !important;
+}
+
+
+
+
+
+
+
+/* 呼外右：細線（脳外と同様） */
+.assignmentTable th.sep-respSurgery,
+.assignmentTable td.sep-respSurgery {
+  border-right: 1px solid #cbd5e1 !important;
+}
+
+/* 外科右：点線 */
+.assignmentTable th.sep-surgery,
+.assignmentTable td.sep-surgery {
+  border-right: 1px dotted #64748b !important;
+}
+
+/* がん右：二重線 */
+.assignmentTable th.sep-cancer,
+.assignmentTable td.sep-cancer {
+  border-right: 3px double #475569 !important;
+}
+
+/* 神内〜泌：細線 */
+.assignmentTable th.sep-neuroInternal,
+.assignmentTable td.sep-neuroInternal,
+.assignmentTable th.sep-internal,
+.assignmentTable td.sep-internal,
+.assignmentTable th.sep-urology,
+.assignmentTable td.sep-urology {
+  border-right: 1px solid #cbd5e1 !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+}
+
+/* =========================
+   T字ハイライト
+========================= */
+
+.activeNameGuide,
+.activeDeptGuide {
+  background: #bfdbfe !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 0 0 2px #2563eb !important;
+  animation: none !important;
+  filter: none !important;
+}
+
+.activeNameGuide strong,
+.activeDeptGuide span {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+.activeNameGuide::after {
+  content: "▶";
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #1d4ed8;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.activeDeptGuide::after {
+  content: "▼";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  color: #1d4ed8;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.assignmentTable .tRowGuide,
+.assignmentTable .tRowAfterCell {
+  background-image: none !important;
+  background-color: #bfdbfe !important;
+}
+
+.assignmentTable .tColGuide {
+  background-image: none !important;
+  background-color: #93c5fd !important;
+}
+
+.assignmentTable .tActiveCell {
+  background-image: none !important;
+  background-color: #60a5fa !important;
+  outline: none !important;
+}
+
+.assignmentTable .totalCol.tRowGuide,
+.assignmentTable .moveCol.tRowGuide,
+.assignmentTable .noteCol.tRowGuide,
+.assignmentTable .totalCol.tRowAfterCell,
+.assignmentTable .moveCol.tRowAfterCell,
+.assignmentTable .noteCol.tRowAfterCell {
+  background-color: #bfdbfe !important;
+}
+
+.assignmentTable .disabledCell.tRowGuide,
+.assignmentTable td.numberCell.disabledCell.tRowGuide {
+  background-color: #a8c7ee !important;
+}
+
+.assignmentTable .disabledCell.tColGuide,
+.assignmentTable td.numberCell.disabledCell.tColGuide {
+  background-color: #7fb5f0 !important;
+}
+
+.assignmentTable .disabledCell.tActiveCell,
+.assignmentTable td.numberCell.disabledCell.tActiveCell {
+  background-color: #60a5fa !important;
+}
+
+/* がん可セルでもハイライトを優先 */
+.assignmentTable .numberCell.dept-cancer.cancerAllowed.tRowGuide {
+  background-color: #bfdbfe !important;
+}
+
+.assignmentTable .numberCell.dept-cancer.cancerAllowed.tColGuide {
+  background-color: #93c5fd !important;
+}
+
+.assignmentTable .numberCell.dept-cancer.cancerAllowed.tActiveCell,
+.assignmentTable .numberCell.dept-cancer.cancerAllowed.tRowGuide.tColGuide {
+  background-color: #60a5fa !important;
+}
+
+/* ハイライト時の太区切り再指定 */
+.assignmentTable .nameCol.tRowGuide,
+.assignmentTable .nameCol.tRowAfterCell {
+  box-shadow: inset -2px 0 0 #475569 !important;
+}
+
+.assignmentTable .sep-outpatient.tRowGuide,
+.assignmentTable .sep-outpatient.tColGuide,
+.assignmentTable .sep-outpatient.tActiveCell {
+  border-right: 1.5px solid #475569 !important;
+  box-shadow: none !important;
+}
+
+.assignmentTable .sep-respSurgery.tRowGuide,
+.assignmentTable .sep-respSurgery.tColGuide,
+.assignmentTable .sep-respSurgery.tActiveCell {
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.assignmentTable .sep-surgery.tRowGuide,
+.assignmentTable .sep-surgery.tColGuide,
+.assignmentTable .sep-surgery.tActiveCell {
+  border-right: 1px dotted #64748b !important;
+  box-shadow: none !important;
+}
+
+.assignmentTable .sep-cancer.tRowGuide,
+.assignmentTable .sep-cancer.tColGuide,
+.assignmentTable .sep-cancer.tActiveCell {
+  border-right: 3px double #475569 !important;
+  box-shadow: none !important;
+}
+
+.assignmentTable .sep-internal.tRowGuide,
+.assignmentTable .sep-internal.tColGuide,
+.assignmentTable .sep-internal.tActiveCell,
+.assignmentTable .sep-urology.tRowGuide,
+.assignmentTable .sep-urology.tColGuide,
+.assignmentTable .sep-urology.tActiveCell {
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.assignmentTable .sep-ent.tRowGuide,
+.assignmentTable .sep-ent.tColGuide,
+.assignmentTable .sep-ent.tActiveCell,
+.assignmentTable .totalCol.tRowGuide,
+.assignmentTable .totalCol.tRowAfterCell,
+.assignmentTable .noteCol.tRowGuide,
+.assignmentTable .noteCol.tRowAfterCell {
+  border-right: 1.5px solid #475569 !important;
+  box-shadow: none !important;
+}
+
+/* =========================
+   編集ボタン・がんリハ不可
+========================= */
+
+.floatingAdjust {
+  position: absolute;
+  left: 50%;
+  bottom: -32px;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: #ffffff;
+  border: 1px solid #93c5fd;
+  border-radius: 9px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+}
+
+.floatingAdjust.horizontalAdjust.onlyButtons {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  min-width: 62px;
+  padding: 4px;
+}
+
+.floatingAdjust.horizontalAdjust.onlyButtons span {
+  display: none !important;
+}
+
+.floatingAdjust button,
+.floatingAdjust.horizontalAdjust.onlyButtons button {
+  border: 0;
+  background: #eaf3ff;
+  color: #1e40af;
+  border-radius: 7px;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  font-weight: 900;
+  font-size: 15px;
+}
+
+/* インライン −数字+ */
+.inlineAdjust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  background: #fff;
+  border-radius: 6px;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+  white-space: nowrap;
+}
+
+.inlineBtn {
+  border: 0;
+  background: #eaf3ff;
+  color: #1e40af;
+  border-radius: 5px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.inlineBtn:active {
+  background: #bfdbfe;
+}
+
+.inlineValue {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  min-width: 18px;
+  text-align: center;
+}
+
+.disabledCell,
+.assignmentTable td.disabledCell,
+.assignmentTable td.numberCell.disabledCell {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+.disabledCell input {
+  color: transparent !important;
+}
+
+.numberCell.dept-cancer.disabledCell {
+  position: relative;
+}
+
+.numberCell.dept-cancer.disabledCell::after {
+  content: "—";
+  color: #0f172a;
+  font-weight: 900;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.noteInput {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 6px;
+}
+
+/* =========================
+   患者移動タグ
+========================= */
+
+.moveTagList {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: auto;
+}
+
+.moveTag {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 900;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: #111827;
+  font-feature-settings: "tnum";
+  letter-spacing: 0.01em;
+  margin: 1px;
+}
+
+.move-recovery {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+}
+
+.move-community {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+}
+
+.move-discharge {
+  background: #fce7f3 !important;
+  border-color: #f9a8d4 !important;
+}
+
+.move-transfer {
+  background: #ede9fe !important;
+  border-color: #c4b5fd !important;
+}
+
+/* =========================
+   密度調整
+========================= */
+
+.dense2 .assignmentTable th,
+.dense2 .assignmentTable td {
+  padding: 3px;
+}
+
+.dense2 .numberCell input {
+  font-size: 14px;
+}
+
+.dense3 .assignmentTable {
+  font-size: 11px;
+}
+
+.dense3 .assignmentTable th,
+.dense3 .assignmentTable td {
+  padding: 2px;
+}
+
+.dense3 .numberCell input {
+  font-size: 13px;
+}
+
+/* =========================
+   カード・フォーム
+========================= */
+
+.card {
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.card h2 {
+  margin: 0 0 14px;
+}
+
+.card h3 {
+  margin: 20px 0 10px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.moveForm,
+.staffForm {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.staffForm,
+.cancerRightForm {
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) minmax(140px, 0.8fr);
+  margin-bottom: 16px;
+}
+
+.moveForm label,
+.staffForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.moveForm label span,
+.staffForm label span {
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.moveForm input,
+.moveForm select,
+.staffForm input,
+.staffForm select,
+.jpDateButton {
+  border: 1px solid #b8c7dc;
+  background: #fff;
+  border-radius: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+}
+
+.moveForm .wide {
+  grid-column: span 2;
+}
+
+.checkSetting .checkBoxLine {
+  min-height: 42px;
+  border: 1px solid #b8c7dc;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.checkSetting input {
+  min-height: auto;
+  width: 18px;
+  height: 18px;
+}
+
+.settingLead {
+  margin: -4px 0 14px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.movementList,
+.historyList,
+.orderList {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.movementItem,
+.historyItem,
+.orderItem {
+  display: grid;
+  grid-template-columns: 150px 1fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+  background: #f8fbff;
+  border: 1px solid #dbe6f3;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.historyItem {
+  grid-template-columns: 80px 1fr 80px 80px 70px 1fr;
+}
+
+.orderItem {
+  grid-template-columns: 1fr 110px auto;
+}
+
+.orderItem div {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.orderItem div button {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: #e7eef8;
+  font-weight: 800;
+}
+
+/* =========================
+   年間集計
+========================= */
+
+.annualGrid,
+.annualCard {
+  display: none;
+}
+
+.annualTableWrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 0;
+  background: #fff;
+  margin-bottom: 18px;
+}
+
+.annualTable {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  border: 1.5px solid #475569;
+  border-top: 1px solid #475569;
+}
+
+.annualTable th,
+.annualTable td {
+  border-top: 0;
+  border-left: 0;
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.annualTable th {
+  background: #e2e8f0;
+  font-weight: 900;
+}
+
+.annualTable td:first-child,
+.annualTable th:first-child {
+  text-align: left;
+  min-width: 120px;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 2;
+  border-left: 1.5px solid #475569 !important;
+  border-right: 1.5px solid #475569 !important;
+  box-shadow: none !important;
+}
+
+.annualWideTable th:nth-child(2),
+.annualWideTable td:nth-child(2) {
+  background: #f1f5f9 !important;
+  box-shadow: inset -2px 0 0 #64748b !important;
+}
+
+.annualWideTable th:nth-child(n+3):nth-child(-n+7),
+.annualWideTable td:nth-child(n+3):nth-child(-n+7) {
+  background: #f1f8e4 !important;
+}
+
+.annualWideTable th:nth-child(5),
+.annualWideTable td:nth-child(5) {
+  border-right: 1px dotted #64748b !important;
+}
+
+.annualWideTable th:nth-child(6),
+.annualWideTable td:nth-child(6) {
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.annualWideTable th:nth-child(7),
+.annualWideTable td:nth-child(7) {
+  box-shadow: inset -2px 0 0 #475569 !important;
+}
+
+.annualWideTable th:nth-child(n+8):nth-child(-n+11),
+.annualWideTable td:nth-child(n+8):nth-child(-n+11) {
+  background: #eaf5ff !important;
+}
+
+.annualWideTable th:nth-child(9),
+.annualWideTable td:nth-child(9),
+.annualWideTable th:nth-child(10),
+.annualWideTable td:nth-child(10) {
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.annualWideTable th:nth-child(11),
+.annualWideTable td:nth-child(11) {
+  box-shadow: inset -2px 0 0 #475569 !important;
+}
+
+.annualWideTable th:nth-child(12),
+.annualWideTable td:nth-child(12) {
+  background: #f4ebff !important;
+  box-shadow: inset -2px 0 0 #64748b !important;
+}
+
+.annualWideTable th:nth-child(13),
+.annualWideTable td:nth-child(13),
+.annualTotalCell {
+  background: #fff5d6 !important;
+  font-weight: 900;
+  box-shadow: inset -2px 0 0 #475569 !important;
+}
+
+.annualWideTable th:nth-child(n+14),
+.annualWideTable td:nth-child(n+14) {
+  background: #f8fafc !important;
+}
+
+.plus {
+  color: #1d4ed8;
+  font-weight: 900;
+}
+
+.minus {
+  color: #b91c1c;
+  font-weight: 900;
+}
+
+.emptyText {
+  color: #64748b;
+  text-align: center;
+}
+
+/* =========================
+   Date picker
+========================= */
+
+.jpDateWrap {
+  position: relative;
+  width: 100%;
+}
+
+.jpDateButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.jpCalendar {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1000;
+  width: 292px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.jpCalHeader,
+.jpWeek,
+.jpDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.jpCalHeader {
+  grid-template-columns: 1fr 1.5fr 1fr;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.jpCalHeader strong {
+  text-align: center;
+}
+
+.jpCalHeader button,
+.todayButton {
+  border: 0;
+  background: #eef4ff;
+  color: #1e40af;
+  border-radius: 9px;
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.jpWeek {
+  margin-bottom: 5px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #475569;
+}
+
+.jpDays button,
+.jpDays span {
+  width: 34px;
+  height: 32px;
+}
+
+.jpDays button {
+  border: 0;
+  border-radius: 9px;
+  background: #fff;
+  font-weight: 800;
+}
+
+.jpDays button.sun {
+  color: #b91c1c;
+}
+
+.jpDays button.sat {
+  color: #1d4ed8;
+}
+
+.jpDays button.selected {
+  background: #2563eb;
+  color: #fff;
+}
+
+.todayButton {
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* =========================
+   全画面
+========================= */
+
+.tableFullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #eef3f8;
+  padding: 6px;
+  overflow: hidden;
+}
+
+.fullscreenHeader {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.fullscreenHeader strong {
+  display: block;
+  font-size: 15px;
+}
+
+.fullscreenHeader span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.fullscreenHeader button {
+  border: 0;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 800;
+}
+
+.fullscreenTableWrap {
+  height: calc(100vh - 54px);
+  overflow: hidden;
+}
+
+.fullscreenTableWrap .excelTableCard {
+  height: 100%;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.fullscreenTableWrap .excelScroll {
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.fullscreenTableWrap .assignmentTable th,
+.fullscreenTableWrap .assignmentTable td {
+  padding: 2px;
+  height: 24px;
+}
+
+.fullscreenTableWrap .assignmentTable thead th {
+  height: 30px;
+}
+
+.fullscreenTableWrap .nameCell strong {
+  font-size: 11px;
+}
+
+.fullscreenTableWrap .numberCell input {
+  font-size: 12px;
+}
+
+.fullscreenTableWrap .noteInput {
+  padding: 2px;
+  font-size: 11px;
+}
+
+.fullscreenTableWrap .moveTag {
+  font-size: 10px;
+  padding: 2px 5px;
+}
+
+.fullscreenTableWrap .moveCol {
+  width: 170px;
+  min-width: 170px;
+}
+
+@media (max-width: 900px) {
+  .appHeader,
+  .tableActions,
+  .cardHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .moveForm,
+  .staffForm,
+  .cancerRightForm {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .movementItem,
+  .historyItem,
+  .orderItem {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .appShell {
+    width: min(100% - 10px, 1320px);
+  }
+
+  .appHeader,
+  .card,
+  .tableActions,
+  .excelTableCard {
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+  .moveForm,
+  .staffForm,
+  .cancerRightForm {
+    grid-template-columns: 1fr;
+  }
+
+  .moveForm .wide {
+    grid-column: span 1;
+  }
+
+  .jpCalendar {
+    width: min(292px, calc(100vw - 42px));
+  }
+}
+
+/* 最終行のborder-bottomを0にして外枠に任せる */
+.assignmentTable tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.annualTable tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+/* =========================
+   備考ポップアップ
+========================= */
+
+.notePreview {
+  font-size: 12px;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  padding: 2px 4px;
+}
+
+.notePlaceholder {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.notePopupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notePopupBox {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.2);
+  padding: 20px;
+  min-width: 280px;
+  max-width: 420px;
+  width: 90vw;
+}
+
+.notePopupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.notePopupName {
+  font-weight: 900;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.notePopupLabel {
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.notePopupContent {
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.7;
+  min-height: 48px;
+  white-space: pre-wrap;
+  margin-bottom: 16px;
+}
+
+.notePopupTextarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.notePopupActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.notePopupBtn {
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notePopupBtn.edit {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.notePopupBtn.save {
+  background: #22c55e;
+  color: #fff;
+}
+
+.notePopupBtn.cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* =========================
+   患者移動カード（担当者ごと）
+========================= */
+
+.movementCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.movementCardHeader {
+  background: #f1f5f9;
+  font-weight: 900;
+  font-size: 13px;
+  padding: 6px 12px;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.movementItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+.movementItem:last-child {
+  border-bottom: 0;
+}
+
+.movementItemActions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.editButton {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 移動編集フォーム（ポップアップ内） */
+.moveEditForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.moveEditForm label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.moveEditForm label span {
+  min-width: 48px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.moveEditForm select,
+.moveEditForm input {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+/* =========================
+   年度セレクタ
+========================= */
+
+.fiscalSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.fiscalBtn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 7px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #475569;
+}
+
+.fiscalBtn.active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+/* =========================
+   管理表下部カレンダー
+========================= */
+
+.calendarSection {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  max-width: 320px;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.calendarTitle {
+  font-weight: 900;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.calNavBtn {
+  border: 0;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #475569;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calDayLabel {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  padding: 2px 0;
+}
+
+.calDayLabel.sun { color: #ef4444; }
+.calDayLabel.sat { color: #3b82f6; }
+
+.calDay {
+  text-align: center;
+  font-size: 12px;
+  padding: 4px 2px;
+  border-radius: 6px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.calDay.sun { color: #ef4444; }
+.calDay.sat { color: #3b82f6; }
+
+.calDay.today {
+  background: #dbeafe;
+  font-weight: 900;
+  color: #1d4ed8;
+}
+
+.calMoveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f59e0b;
+  display: block;
+}
+
+/* カレンダータブ（大きめ表示） */
+.calendarLarge {
+  gap: 4px;
+}
+
+.calDayLarge {
+  min-height: 56px;
+  align-items: flex-start;
+  padding: 4px;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  gap: 2px;
+}
+
+.calDayNum {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.calMoveTag {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  border: 1px solid rgba(15,23,42,0.1);
+}

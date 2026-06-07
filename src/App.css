@@ -1,0 +1,2744 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color: #0f172a;
+  background: #eef3f8;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #eef3f8;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.appShell {
+  width: min(1180px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 14px 0 40px;
+}
+
+.appHeader,
+.card,
+.calendarCard,
+.summaryCard,
+.announcementBoard {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.appHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+}
+
+.appHeader h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.appHeader p {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+}
+
+.appTitleTabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.appTitleTabs button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.appTitleTabs button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.loginSelect {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.moduleTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.moduleTabs button {
+  border: 0;
+  border-radius: 11px;
+  padding: 11px 16px;
+  background: #fff;
+  color: #334155;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.moduleTabs button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.loginSelect select,
+.formGrid input,
+.formGrid select,
+.monthNav input,
+.monthNav select,
+.staffEditRow input,
+.staffEditRow select,
+.announcementFormGrid input,
+.announcementFormGrid select,
+.announcementFormGrid textarea,
+.saturdayForm input {
+  border: 1px solid #b8c7dc;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 42px;
+}
+
+.card {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.cardTitleRow,
+.toolbar,
+.modalHeader,
+.announcementHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card h2,
+.summaryCard h2,
+.modalHeader h2,
+.announcementHeader h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.formGrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.formGrid label span,
+.announcementFormGrid label span,
+.saturdayForm label span,
+.saturdayStaffSelect > span {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+.formGrid .wide {
+  grid-column: span 2;
+}
+
+.checkRow {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.checkRow span {
+  text-align: left !important;
+  font-size: 14px !important;
+}
+
+.previewBox {
+  margin-top: 14px;
+  background: #eaf3ff;
+  color: #1455d9;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.primaryButton,
+.softButton,
+.plainButton,
+.viewButtons button,
+.scopeButtons button,
+.monthNav button {
+  border: 0;
+  border-radius: 11px;
+  padding: 11px 16px;
+  font-weight: 700;
+}
+
+.primaryButton {
+  width: 100%;
+  margin-top: 12px;
+  background: #2563eb;
+  color: #fff;
+}
+
+.softButton,
+.monthNav button {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.toolbar {
+  margin: 12px 0;
+}
+
+.viewButtons,
+.scopeButtons,
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.viewButtons button,
+.scopeButtons button {
+  background: #fff;
+  color: #334155;
+}
+
+.viewButtons .active,
+.scopeButtons .active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.scopeButtons {
+  background: #e9f0f8;
+  border-radius: 14px;
+  padding: 4px;
+}
+
+.scopeButtons button {
+  background: transparent;
+}
+
+.monthNav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.monthNav input {
+  width: 100px;
+  text-align: center;
+}
+
+.monthNav select {
+  width: 92px;
+}
+
+.calendarCard,
+.summaryCard,
+.announcementBoard {
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.weekHeader,
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.weekHeader {
+  margin-bottom: 8px;
+  color: #475569;
+  font-size: 13px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.calendarCell {
+  min-height: 118px;
+  border: 1px solid #d3e1f1;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendarCell.empty {
+  border-color: transparent;
+  background: transparent;
+  pointer-events: none;
+}
+
+.calendarCell.sunday {
+  background: #fff0f0;
+}
+
+.calendarCell.saturdayCell {
+  background: #edf6ff;
+}
+
+.calendarCell.selected {
+  outline: 3px solid #2563eb;
+}
+
+.dayNumber {
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.dayCounts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: auto;
+}
+
+.dayCounts span {
+  display: inline-flex;
+  width: fit-content;
+  background: #dbeafe;
+  color: #174ea6;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.saturdayWorkPill {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 18px;
+}
+
+.dayModal,
+.staffModal,
+.announcementModal {
+  width: min(620px, 100%);
+  max-height: min(760px, 90vh);
+  overflow: auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+}
+
+.staffModal {
+  width: min(800px, 100%);
+}
+
+.closeButton {
+  border: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #eef2f7;
+  font-size: 22px;
+}
+
+.modalSubLabel {
+  display: inline-block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.detailList {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.detailItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 14px;
+  padding: 12px;
+  background: #e8f1ff;
+}
+
+.detailItem p {
+  margin: 6px 0 0;
+}
+
+.detailItem small {
+  display: block;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.detailItem.child {
+  background: #fce7f3;
+}
+
+.detailItem.summer {
+  background: #ffedd5;
+}
+
+.detailItem.training {
+  background: #dcfce7;
+}
+
+.detailItem.business,
+.detailItem.special {
+  background: #e2e8f0;
+}
+
+.saturdayWorkDetail {
+  background: #fef3c7;
+}
+
+.detailActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.deleteButton {
+  border: 0;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.deleteButton.small {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.softMiniButton {
+  border: 0;
+  background: #e7eef8;
+  color: #0f172a;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 700;
+}
+
+.emptyText,
+.notice {
+  color: #64748b;
+  text-align: center;
+}
+
+.emptyText.left {
+  text-align: left;
+}
+
+.staffEditList {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.staffEditRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.7fr 0.9fr auto;
+  gap: 8px;
+}
+
+.staffEditRow button {
+  border: 0;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.summaryCard h2 {
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+table {
+  min-width: 980px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #d9e4f0;
+  padding: 10px;
+  text-align: center;
+}
+
+th {
+  background: #e6edf7;
+}
+
+.announcementHeader {
+  margin-bottom: 12px;
+}
+
+.announcementHeader p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.announcementList {
+  display: grid;
+  gap: 9px;
+}
+
+.announcementItem {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #dbe6f3;
+  background: #f8fbff;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.announcementItem.important {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.announcementDate {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #1e3a8a;
+}
+
+.announcementDate span,
+.announcementBody small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.announcementBody strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.announcementBody p {
+  margin: 0 0 4px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.announcementFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.announcementFormGrid label,
+.saturdayForm label,
+.saturdayStaffSelect {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.announcementFormGrid textarea {
+  resize: vertical;
+  min-height: 76px;
+}
+
+.announcementFormGrid .wide {
+  grid-column: span 2;
+}
+
+.saturdayForm {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.staffCheckGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.staffCheckItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #d9e4f0;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.staffCheckItem input {
+  min-height: auto;
+}
+
+@media (max-width: 850px) {
+  .appHeader,
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .monthNav {
+    justify-content: center;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formGrid .wide {
+    grid-column: span 2;
+  }
+
+  .calendarCell {
+    min-height: 86px;
+    padding: 8px;
+  }
+
+  .dayNumber {
+    font-size: 15px;
+  }
+
+  .dayCounts span {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+
+  .staffEditRow,
+  .announcementItem {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .appShell {
+    width: min(100% - 12px, 1180px);
+  }
+
+  .card,
+  .calendarCard,
+  .summaryCard,
+  .announcementBoard,
+  .appHeader {
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .formGrid,
+  .announcementFormGrid,
+  .staffCheckGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formGrid .wide,
+  .announcementFormGrid .wide {
+    grid-column: span 1;
+  }
+
+  .weekHeader,
+  .calendarGrid {
+    gap: 5px;
+  }
+
+  .calendarCell {
+    min-height: 72px;
+    border-radius: 11px;
+    padding: 6px;
+  }
+
+  .dayCounts {
+    gap: 3px;
+  }
+
+  .dayCounts span {
+    font-size: 10px;
+  }
+
+  .actionButtons button {
+    flex: 1;
+  }
+}
+
+
+/* Compact bulletin board: keep each notice close to one horizontal row */
+.compactBoard {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.compactHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.compactHeader h2 {
+  font-size: 17px;
+  margin: 0;
+}
+
+.compactHeader p {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
+.compactHeader .softButton {
+  padding: 8px 11px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.compactEmpty {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.compactList {
+  display: grid;
+  gap: 6px;
+}
+
+.compactItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 10px;
+  min-height: 34px;
+}
+
+.announcementTitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.compactDelete {
+  padding: 5px 8px !important;
+  font-size: 11px !important;
+  border-radius: 9px !important;
+}
+
+.compactAddButton {
+  padding: 7px 10px !important;
+  font-size: 12px;
+}
+
+@media (max-width: 850px) {
+  .compactItem {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .compactBoard {
+    padding: 10px;
+  }
+
+  .compactHeader {
+    align-items: center;
+  }
+
+  .compactItem {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .announcementTitle {
+    font-size: 12px;
+  }
+}
+
+.calendarCell.holidayCell {
+  background: #fff0f0;
+  border-color: #fecaca;
+}
+.detailItem.holidayDetail {
+  background: #fee2e2;
+}
+
+/* Saturday rotating group settings */
+.saturdaySettingsModal {
+  width: min(980px, 100%);
+}
+
+.groupSettings,
+.saturdayOverrideBox {
+  margin-top: 16px;
+  border: 1px solid #dbe6f3;
+  border-radius: 16px;
+  padding: 14px;
+  background: #f8fbff;
+}
+
+.groupSettings h3,
+.saturdayOverrideBox h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.settingHelp {
+  margin: 0 0 12px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.groupGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.groupBox {
+  background: #fff;
+  border: 1px solid #d9e4f0;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.groupBox h4 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: #1e3a8a;
+}
+
+.compactChecks {
+  grid-template-columns: 1fr;
+}
+
+.overrideActions {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@media (max-width: 850px) {
+  .groupGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.dayHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 22px;
+}
+
+.saturdayMini {
+  color: #1e40af;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.jpDateInputWrap {
+  position: relative;
+  width: 100%;
+}
+
+.jpDateInput {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #b8c7dc;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.jpDatePlaceholder {
+  color: #94a3b8;
+}
+
+.jpCalendarPopup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1200;
+  width: 292px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.jpCalendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.jpCalendarHeader button,
+.jpCalendarFooter button {
+  border: 0;
+  background: #eef4ff;
+  color: #1e40af;
+  border-radius: 9px;
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.jpWeekGrid,
+.jpDateGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.jpWeekGrid {
+  margin-bottom: 5px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.jpDateCell,
+.jpDateEmpty {
+  width: 34px;
+  height: 32px;
+}
+
+.jpDateCell {
+  border: 0;
+  border-radius: 9px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.jpDateCell:hover {
+  background: #eaf3ff;
+}
+
+.jpDateCell.sun {
+  color: #b91c1c;
+}
+
+.jpDateCell.sat {
+  color: #1d4ed8;
+}
+
+.jpDateCell.selected {
+  background: #2563eb;
+  color: #fff;
+}
+
+.jpCalendarFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.rotationSettingRow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, 0.6fr);
+  gap: 12px;
+}
+
+.rotationSettingRow label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rotationSettingRow label span {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+.rotationSettingRow select {
+  border: 1px solid #b8c7dc;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 42px;
+}
+
+@media (max-width: 560px) {
+  .jpCalendarPopup {
+    width: min(292px, calc(100vw - 42px));
+  }
+
+  .rotationSettingRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* PATIENT_FULL_INTEGRATION_START */
+.patientModule * {
+  box-sizing: border-box;
+}
+
+.patientModule {
+  color: #0f172a;
+  background: #eef3f8;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.patientModule {
+  margin: 0;
+  background: #eef3f8;
+}
+
+.patientModule button,
+.patientModule input,
+.patientModule select {
+  font: inherit;
+}
+
+.patientModule button {
+  cursor: pointer;
+}
+
+.patientModule.appShell {
+  width: min(1320px, calc(100% - 20px));
+  margin: 0 auto;
+  padding: 12px 0 40px;
+}
+
+.patientModule .appHeader,
+.patientModule .card,
+.patientModule .tableActions,
+.patientModule .excelTableCard {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+}
+
+.patientModule .appHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+
+.patientModule .headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.patientModule .appHeader h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.patientModule .appHeader p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.patientModule .professionTabs,
+.patientModule .viewTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.patientModule .professionTabs button,
+.patientModule .viewTabs button {
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 16px;
+  background: #fff;
+  color: #334155;
+  font-weight: 800;
+}
+
+.patientModule .professionTabs button.active,
+.patientModule .viewTabs button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.patientModule .viewTabs {
+  margin-bottom: 12px;
+}
+
+.patientModule .tableActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.patientModule .tableActions strong {
+  display: block;
+  font-size: 15px;
+}
+
+.patientModule .tableActions span {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.patientModule .primaryButton,
+.patientModule .softButton,
+.patientModule .deleteButton {
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 14px;
+  font-weight: 800;
+}
+
+.patientModule .primaryButton {
+  background: #2563eb;
+  color: #fff;
+}
+
+.patientModule .primaryButton.compact {
+  white-space: nowrap;
+}
+
+.patientModule .softButton {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.patientModule .deleteButton {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* =========================
+   管理表
+========================= */
+
+.patientModule .excelTableCard {
+  padding: 10px;
+}
+
+.patientModule .tableSectionTabs {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.patientModule .tableSectionTabs button {
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 16px;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 800;
+}
+
+.patientModule .tableSectionTabs button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.patientModule .excelScroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  border-radius: 0;
+  background: #fff;
+}
+
+.patientModule .assignmentTable {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1080px;
+  width: max-content;
+  font-size: 13px;
+  border: 1.5px solid #475569;
+}
+
+.patientModule .assignmentTable th,
+.patientModule .assignmentTable td {
+  border-top: 0;
+  border-left: 0;
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  text-align: center;
+  vertical-align: middle;
+  padding: 2px 4px;
+  height: 36px;
+  max-height: 36px;
+  background: #fff;
+}
+
+.patientModule .assignmentTable thead th {
+  color: #0f172a;
+  font-weight: 900;
+  height: 42px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  border-top: 0 !important;
+  border-bottom: 1px solid #94a3b8;
+  box-shadow: inset 0 1.5px 0 #475569 !important;
+}
+
+.patientModule .assignmentTable th.stickyName,
+.patientModule .assignmentTable td.stickyName {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #fff;
+}
+
+.patientModule .assignmentTable thead th.stickyName {
+  z-index: 8;
+  background: #f8fafc;
+}
+
+.patientModule .nameCol {
+  width: 86px;
+  min-width: 86px;
+}
+
+.patientModule .nameCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.patientModule .nameCell strong {
+  font-size: 12px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.patientModule .nameCell span,
+.patientModule .typeCol {
+  display: none !important;
+}
+
+.patientModule .deptHead {
+  width: 54px;
+  min-width: 54px;
+  position: relative;
+}
+
+.patientModule .numberCell {
+  width: 54px;
+  min-width: 54px;
+  position: relative;
+  z-index: 1;
+}
+
+.patientModule .numberCell.tActiveCell {
+  z-index: 200;
+}
+
+.patientModule .numberCell input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 2px;
+  color: #0f172a;
+  appearance: textfield;
+  -webkit-appearance: none;
+}
+
+.patientModule .numberCell input::-webkit-outer-spin-button,
+.patientModule .numberCell input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.patientModule .numberCell.changed input,
+.patientModule .numberCell.dept-internal.changed input {
+  color: #1d4ed8 !important;
+  font-weight: 900;
+}
+
+.patientModule .numberCell input:focus,
+.patientModule .noteInput:focus {
+  outline: none;
+  background: transparent;
+}
+
+.patientModule .plainNumberLine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.patientModule .infoButton {
+  border: 0;
+  background: transparent;
+  color: #1d4ed8;
+  font-weight: 900;
+  padding: 0 2px;
+}
+
+.patientModule .infoButton.headerInfo {
+  margin-left: 2px;
+  margin-right: 0;
+}
+
+.patientModule .internalOpenButton,
+.patientModule .internalPopover,
+.patientModule .internalNumberLine {
+  display: none !important;
+}
+
+/* =========================
+   色分け
+========================= */
+
+.patientModule .deptHead.outpatient {
+  background: #e2e8f0 !important;
+}
+
+.patientModule .numberCell.dept-outpatient {
+  background: #fbfdff !important;
+}
+
+.patientModule .deptHead.ortho,
+.patientModule .deptHead.neuroSurgery,
+.patientModule .deptHead.respSurgery {
+  background: #d9edbc !important;
+}
+
+.patientModule .deptHead.surgery,
+.patientModule .deptHead.cancer {
+  background: #b5d98a !important;
+}
+
+.patientModule .numberCell.dept-ortho,
+.patientModule .numberCell.dept-neuroSurgery,
+.patientModule .numberCell.dept-respSurgery {
+  background: #f1f8e4 !important;
+}
+
+.patientModule .numberCell.dept-surgery,
+.patientModule .numberCell.dept-cancer.cancerAllowed {
+  background: #dff0c0 !important;
+}
+
+.patientModule .deptHead.neuroInternal,
+.patientModule .deptHead.internal,
+.patientModule .deptHead.urology,
+.patientModule .deptHead.ent {
+  background: #cfe7ff !important;
+}
+
+.patientModule .numberCell.dept-neuroInternal,
+.patientModule .numberCell.dept-internal,
+.patientModule .numberCell.dept-urology,
+.patientModule .numberCell.dept-ent {
+  background: #eaf5ff !important;
+}
+
+.patientModule .deptHead.stopped {
+  background: #e7d6fb !important;
+}
+
+.patientModule .numberCell.dept-stopped {
+  background: #f4ebff !important;
+}
+
+.patientModule .totalCol {
+  width: 70px;
+  min-width: 70px;
+  background: #fff5d6 !important;
+}
+
+.patientModule .assignmentTable thead .totalCol {
+  background: #ffe9a8 !important;
+}
+
+.patientModule .moveCol,
+.patientModule .noteCol {
+  background: #f8fafc !important;
+}
+
+.patientModule .assignmentTable thead .moveCol,
+.patientModule .assignmentTable thead .noteCol {
+  background: #e2e8f0 !important;
+}
+
+.patientModule .moveCol {
+  min-width: 80px;
+  white-space: nowrap;
+}
+
+.patientModule .noteCol {
+  min-width: 80px;
+  white-space: nowrap;
+}
+
+.patientModule .totalNumber {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* =========================
+   罫線
+   box-shadow は隣セルの background に隠れるため使わず、
+   border-right の太さ・種類で直接描画する
+========================= */
+
+.patientModule .assignmentTable th,
+.patientModule .assignmentTable td {
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: none !important;
+}
+
+/* 氏名列の左：太線（テーブル左端） */
+.patientModule .assignmentTable th.nameCol,
+.patientModule .assignmentTable td.nameCol {
+  border-left: 1.5px solid #475569 !important;
+  border-right: 1.5px solid #475569 !important;
+}
+
+/* 太線グループ：外来右・耳右・中止右・合計右・備考右 */
+.patientModule .assignmentTable th.sep-outpatient,
+.patientModule .assignmentTable td.sep-outpatient,
+.patientModule .assignmentTable th.sep-ent,
+.patientModule .assignmentTable td.sep-ent,
+.patientModule .assignmentTable th.sep-stopped,
+.patientModule .assignmentTable td.sep-stopped,
+.patientModule .assignmentTable th.totalCol,
+.patientModule .assignmentTable td.totalCol,
+.patientModule .assignmentTable .totalCol,
+.patientModule .assignmentTable .noteCol {
+  border-right: 1.5px solid #475569 !important;
+}
+
+
+
+
+
+
+
+/* 呼外右：細線（脳外と同様） */
+.patientModule .assignmentTable th.sep-respSurgery,
+.patientModule .assignmentTable td.sep-respSurgery {
+  border-right: 1px solid #cbd5e1 !important;
+}
+
+/* 外科右：点線 */
+.patientModule .assignmentTable th.sep-surgery,
+.patientModule .assignmentTable td.sep-surgery {
+  border-right: 1px dotted #64748b !important;
+}
+
+/* がん右：二重線 */
+.patientModule .assignmentTable th.sep-cancer,
+.patientModule .assignmentTable td.sep-cancer {
+  border-right: 3px double #475569 !important;
+}
+
+/* 神内〜泌：細線 */
+.patientModule .assignmentTable th.sep-neuroInternal,
+.patientModule .assignmentTable td.sep-neuroInternal,
+.patientModule .assignmentTable th.sep-internal,
+.patientModule .assignmentTable td.sep-internal,
+.patientModule .assignmentTable th.sep-urology,
+.patientModule .assignmentTable td.sep-urology {
+  border-right: 1px solid #cbd5e1 !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================
+   T字ハイライト
+========================= */
+
+.patientModule .activeNameGuide,
+.patientModule .activeDeptGuide {
+  background: #bfdbfe !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 0 0 2px #2563eb !important;
+  animation: none !important;
+  filter: none !important;
+}
+
+.patientModule .activeNameGuide strong,
+.patientModule .activeDeptGuide span {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+.patientModule .activeNameGuide::after {
+  content: "▶";
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #1d4ed8;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.patientModule .activeDeptGuide::after {
+  content: "▼";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  color: #1d4ed8;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.patientModule .assignmentTable .tRowGuide,
+.patientModule .assignmentTable .tRowAfterCell {
+  background-image: none !important;
+  background-color: #bfdbfe !important;
+}
+
+.patientModule .assignmentTable .tColGuide {
+  background-image: none !important;
+  background-color: #93c5fd !important;
+}
+
+.patientModule .assignmentTable .tActiveCell {
+  background-image: none !important;
+  background-color: #60a5fa !important;
+  outline: none !important;
+}
+
+.patientModule .assignmentTable .totalCol.tRowGuide,
+.patientModule .assignmentTable .moveCol.tRowGuide,
+.patientModule .assignmentTable .noteCol.tRowGuide,
+.patientModule .assignmentTable .totalCol.tRowAfterCell,
+.patientModule .assignmentTable .moveCol.tRowAfterCell,
+.patientModule .assignmentTable .noteCol.tRowAfterCell {
+  background-color: #bfdbfe !important;
+}
+
+.patientModule .assignmentTable .disabledCell.tRowGuide,
+.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide {
+  background-color: #a8c7ee !important;
+}
+
+.patientModule .assignmentTable .disabledCell.tColGuide,
+.patientModule .assignmentTable td.numberCell.disabledCell.tColGuide {
+  background-color: #7fb5f0 !important;
+}
+
+.patientModule .assignmentTable .disabledCell.tActiveCell,
+.patientModule .assignmentTable td.numberCell.disabledCell.tActiveCell {
+  background-color: #60a5fa !important;
+}
+
+/* がん可セルでもハイライトを優先 */
+.patientModule .assignmentTable .numberCell.dept-cancer.cancerAllowed.tRowGuide {
+  background-color: #bfdbfe !important;
+}
+
+.patientModule .assignmentTable .numberCell.dept-cancer.cancerAllowed.tColGuide {
+  background-color: #93c5fd !important;
+}
+
+.patientModule .assignmentTable .numberCell.dept-cancer.cancerAllowed.tActiveCell,
+.patientModule .assignmentTable .numberCell.dept-cancer.cancerAllowed.tRowGuide.tColGuide {
+  background-color: #60a5fa !important;
+}
+
+/* ハイライト時の太区切り再指定 */
+.patientModule .assignmentTable .nameCol.tRowGuide,
+.patientModule .assignmentTable .nameCol.tRowAfterCell {
+  box-shadow: inset -2px 0 0 #475569 !important;
+}
+
+.patientModule .assignmentTable .sep-outpatient.tRowGuide,
+.patientModule .assignmentTable .sep-outpatient.tColGuide,
+.patientModule .assignmentTable .sep-outpatient.tActiveCell {
+  border-right: 1.5px solid #475569 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .assignmentTable .sep-respSurgery.tRowGuide,
+.patientModule .assignmentTable .sep-respSurgery.tColGuide,
+.patientModule .assignmentTable .sep-respSurgery.tActiveCell {
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .assignmentTable .sep-surgery.tRowGuide,
+.patientModule .assignmentTable .sep-surgery.tColGuide,
+.patientModule .assignmentTable .sep-surgery.tActiveCell {
+  border-right: 1px dotted #64748b !important;
+  box-shadow: none !important;
+}
+
+.patientModule .assignmentTable .sep-cancer.tRowGuide,
+.patientModule .assignmentTable .sep-cancer.tColGuide,
+.patientModule .assignmentTable .sep-cancer.tActiveCell {
+  border-right: 3px double #475569 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .assignmentTable .sep-internal.tRowGuide,
+.patientModule .assignmentTable .sep-internal.tColGuide,
+.patientModule .assignmentTable .sep-internal.tActiveCell,
+.patientModule .assignmentTable .sep-urology.tRowGuide,
+.patientModule .assignmentTable .sep-urology.tColGuide,
+.patientModule .assignmentTable .sep-urology.tActiveCell {
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .assignmentTable .sep-ent.tRowGuide,
+.patientModule .assignmentTable .sep-ent.tColGuide,
+.patientModule .assignmentTable .sep-ent.tActiveCell,
+.patientModule .assignmentTable .totalCol.tRowGuide,
+.patientModule .assignmentTable .totalCol.tRowAfterCell,
+.patientModule .assignmentTable .noteCol.tRowGuide,
+.patientModule .assignmentTable .noteCol.tRowAfterCell {
+  border-right: 1.5px solid #475569 !important;
+  box-shadow: none !important;
+}
+
+/* =========================
+   編集ボタン・がんリハ不可
+========================= */
+
+.patientModule .floatingAdjust {
+  position: absolute;
+  left: 50%;
+  bottom: -32px;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: #ffffff;
+  border: 1px solid #93c5fd;
+  border-radius: 9px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+}
+
+.patientModule .floatingAdjust.horizontalAdjust.onlyButtons {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  min-width: 62px;
+  padding: 4px;
+}
+
+.patientModule .floatingAdjust.horizontalAdjust.onlyButtons span {
+  display: none !important;
+}
+
+.patientModule .floatingAdjust button,
+.patientModule .floatingAdjust.horizontalAdjust.onlyButtons button {
+  border: 0;
+  background: #eaf3ff;
+  color: #1e40af;
+  border-radius: 7px;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  font-weight: 900;
+  font-size: 15px;
+}
+
+/* インライン −数字+ */
+.patientModule .inlineAdjust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  background: #fff;
+  border-radius: 6px;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+  white-space: nowrap;
+}
+
+.patientModule .inlineBtn {
+  border: 0;
+  background: #eaf3ff;
+  color: #1e40af;
+  border-radius: 5px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.patientModule .inlineBtn:active {
+  background: #bfdbfe;
+}
+
+.patientModule .inlineValue {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  min-width: 18px;
+  text-align: center;
+}
+
+.patientModule .disabledCell,
+.patientModule .assignmentTable td.disabledCell,
+.patientModule .assignmentTable td.numberCell.disabledCell {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+.patientModule .disabledCell input {
+  color: transparent !important;
+}
+
+.patientModule .numberCell.dept-cancer.disabledCell {
+  position: relative;
+}
+
+.patientModule .numberCell.dept-cancer.disabledCell::after {
+  content: "—";
+  color: #0f172a;
+  font-weight: 900;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.patientModule .noteInput {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 6px;
+}
+
+/* =========================
+   患者移動タグ
+========================= */
+
+.patientModule .moveTagList {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: auto;
+}
+
+.patientModule .moveTag {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 900;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: #111827;
+  font-feature-settings: "tnum";
+  letter-spacing: 0.01em;
+  margin: 1px;
+}
+
+.patientModule .move-recovery {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+}
+
+.patientModule .move-community {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+}
+
+.patientModule .move-discharge {
+  background: #fce7f3 !important;
+  border-color: #f9a8d4 !important;
+}
+
+.patientModule .move-transfer {
+  background: #ede9fe !important;
+  border-color: #c4b5fd !important;
+}
+
+/* =========================
+   密度調整
+========================= */
+
+.patientModule .dense2 .assignmentTable th,
+.patientModule .dense2 .assignmentTable td {
+  padding: 3px;
+}
+
+.patientModule .dense2 .numberCell input {
+  font-size: 14px;
+}
+
+.patientModule .dense3 .assignmentTable {
+  font-size: 11px;
+}
+
+.patientModule .dense3 .assignmentTable th,
+.patientModule .dense3 .assignmentTable td {
+  padding: 2px;
+}
+
+.patientModule .dense3 .numberCell input {
+  font-size: 13px;
+}
+
+/* =========================
+   カード・フォーム
+========================= */
+
+.patientModule .card {
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.patientModule .card h2 {
+  margin: 0 0 14px;
+}
+
+.patientModule .card h3 {
+  margin: 20px 0 10px;
+}
+
+.patientModule .cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.patientModule .moveForm,
+.patientModule .staffForm {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.patientModule .staffForm,
+.patientModule .cancerRightForm {
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) minmax(140px, 0.8fr);
+  margin-bottom: 16px;
+}
+
+.patientModule .moveForm label,
+.patientModule .staffForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.patientModule .moveForm label span,
+.patientModule .staffForm label span {
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.patientModule .moveForm input,
+.patientModule .moveForm select,
+.patientModule .staffForm input,
+.patientModule .staffForm select,
+.patientModule .jpDateButton {
+  border: 1px solid #b8c7dc;
+  background: #fff;
+  border-radius: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+}
+
+.patientModule .moveForm .wide {
+  grid-column: span 2;
+}
+
+.patientModule .checkSetting .checkBoxLine {
+  min-height: 42px;
+  border: 1px solid #b8c7dc;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.patientModule .checkSetting input {
+  min-height: auto;
+  width: 18px;
+  height: 18px;
+}
+
+.patientModule .settingLead {
+  margin: -4px 0 14px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.patientModule .movementList,
+.patientModule .historyList,
+.patientModule .orderList {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.patientModule .movementItem,
+.patientModule .historyItem,
+.patientModule .orderItem {
+  display: grid;
+  grid-template-columns: 150px 1fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+  background: #f8fbff;
+  border: 1px solid #dbe6f3;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.patientModule .historyItem {
+  grid-template-columns: 80px 1fr 80px 80px 70px 1fr;
+}
+
+.patientModule .orderItem {
+  grid-template-columns: 1fr 110px auto;
+}
+
+.patientModule .orderItem div {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.patientModule .orderItem div button {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: #e7eef8;
+  font-weight: 800;
+}
+
+/* =========================
+   年間集計
+========================= */
+
+.patientModule .annualGrid,
+.patientModule .annualCard {
+  display: none;
+}
+
+.patientModule .annualTableWrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 0;
+  background: #fff;
+  margin-bottom: 18px;
+}
+
+.patientModule .annualTable {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  border: 1.5px solid #475569;
+  border-top: 1px solid #475569;
+}
+
+.patientModule .annualTable th,
+.patientModule .annualTable td {
+  border-top: 0;
+  border-left: 0;
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.patientModule .annualTable th {
+  background: #e2e8f0;
+  font-weight: 900;
+}
+
+.patientModule .annualTable td:first-child,
+.patientModule .annualTable th:first-child {
+  text-align: left;
+  min-width: 120px;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 2;
+  border-left: 1.5px solid #475569 !important;
+  border-right: 1.5px solid #475569 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .annualWideTable th:nth-child(2),
+.patientModule .annualWideTable td:nth-child(2) {
+  background: #f1f5f9 !important;
+  box-shadow: inset -2px 0 0 #64748b !important;
+}
+
+.patientModule .annualWideTable th:nth-child(n+3):nth-child(-n+7),
+.patientModule .annualWideTable td:nth-child(n+3):nth-child(-n+7) {
+  background: #f1f8e4 !important;
+}
+
+.patientModule .annualWideTable th:nth-child(5),
+.patientModule .annualWideTable td:nth-child(5) {
+  border-right: 1px dotted #64748b !important;
+}
+
+.patientModule .annualWideTable th:nth-child(6),
+.patientModule .annualWideTable td:nth-child(6) {
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .annualWideTable th:nth-child(7),
+.patientModule .annualWideTable td:nth-child(7) {
+  box-shadow: inset -2px 0 0 #475569 !important;
+}
+
+.patientModule .annualWideTable th:nth-child(n+8):nth-child(-n+11),
+.patientModule .annualWideTable td:nth-child(n+8):nth-child(-n+11) {
+  background: #eaf5ff !important;
+}
+
+.patientModule .annualWideTable th:nth-child(9),
+.patientModule .annualWideTable td:nth-child(9),
+.patientModule .annualWideTable th:nth-child(10),
+.patientModule .annualWideTable td:nth-child(10) {
+  border-right: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .annualWideTable th:nth-child(11),
+.patientModule .annualWideTable td:nth-child(11) {
+  box-shadow: inset -2px 0 0 #475569 !important;
+}
+
+.patientModule .annualWideTable th:nth-child(12),
+.patientModule .annualWideTable td:nth-child(12) {
+  background: #f4ebff !important;
+  box-shadow: inset -2px 0 0 #64748b !important;
+}
+
+.patientModule .annualWideTable th:nth-child(13),
+.patientModule .annualWideTable td:nth-child(13),
+.patientModule .annualTotalCell {
+  background: #fff5d6 !important;
+  font-weight: 900;
+  box-shadow: inset -2px 0 0 #475569 !important;
+}
+
+.patientModule .annualWideTable th:nth-child(n+14),
+.patientModule .annualWideTable td:nth-child(n+14) {
+  background: #f8fafc !important;
+}
+
+.patientModule .plus {
+  color: #1d4ed8;
+  font-weight: 900;
+}
+
+.patientModule .minus {
+  color: #b91c1c;
+  font-weight: 900;
+}
+
+.patientModule .emptyText {
+  color: #64748b;
+  text-align: center;
+}
+
+/* =========================
+   Date picker
+========================= */
+
+.patientModule .jpDateWrap {
+  position: relative;
+  width: 100%;
+}
+
+.patientModule .jpDateButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.patientModule .jpCalendar {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1000;
+  width: 292px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.patientModule .jpCalHeader,
+.patientModule .jpWeek,
+.patientModule .jpDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.patientModule .jpCalHeader {
+  grid-template-columns: 1fr 1.5fr 1fr;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.patientModule .jpCalHeader strong {
+  text-align: center;
+}
+
+.patientModule .jpCalHeader button,
+.patientModule .todayButton {
+  border: 0;
+  background: #eef4ff;
+  color: #1e40af;
+  border-radius: 9px;
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.patientModule .jpWeek {
+  margin-bottom: 5px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #475569;
+}
+
+.patientModule .jpDays button,
+.patientModule .jpDays span {
+  width: 34px;
+  height: 32px;
+}
+
+.patientModule .jpDays button {
+  border: 0;
+  border-radius: 9px;
+  background: #fff;
+  font-weight: 800;
+}
+
+.patientModule .jpDays button.sun {
+  color: #b91c1c;
+}
+
+.patientModule .jpDays button.sat {
+  color: #1d4ed8;
+}
+
+.patientModule .jpDays button.selected {
+  background: #2563eb;
+  color: #fff;
+}
+
+.patientModule .todayButton {
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* =========================
+   全画面
+========================= */
+
+.patientModule .tableFullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #eef3f8;
+  padding: 6px;
+  overflow: hidden;
+}
+
+.patientModule .fullscreenHeader {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.patientModule .fullscreenHeader strong {
+  display: block;
+  font-size: 15px;
+}
+
+.patientModule .fullscreenHeader span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.patientModule .fullscreenHeader button {
+  border: 0;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 800;
+}
+
+.patientModule .fullscreenTableWrap {
+  height: calc(100vh - 54px);
+  overflow: hidden;
+}
+
+.patientModule .fullscreenTableWrap .excelTableCard {
+  height: 100%;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.patientModule .fullscreenTableWrap .excelScroll {
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.patientModule .fullscreenTableWrap .assignmentTable th,
+.patientModule .fullscreenTableWrap .assignmentTable td {
+  padding: 2px;
+  height: 24px;
+}
+
+.patientModule .fullscreenTableWrap .assignmentTable thead th {
+  height: 30px;
+}
+
+.patientModule .fullscreenTableWrap .nameCell strong {
+  font-size: 11px;
+}
+
+.patientModule .fullscreenTableWrap .numberCell input {
+  font-size: 12px;
+}
+
+.patientModule .fullscreenTableWrap .noteInput {
+  padding: 2px;
+  font-size: 11px;
+}
+
+.patientModule .fullscreenTableWrap .moveTag {
+  font-size: 10px;
+  padding: 2px 5px;
+}
+
+.patientModule .fullscreenTableWrap .moveCol {
+  width: 170px;
+  min-width: 170px;
+}
+
+@media (max-width: 900px) {
+.patientModule .appHeader,
+.patientModule .tableActions,
+.patientModule .cardHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+.patientModule .moveForm,
+.patientModule .staffForm,
+.patientModule .cancerRightForm {
+    grid-template-columns: 1fr 1fr;
+  }
+
+.patientModule .movementItem,
+.patientModule .historyItem,
+.patientModule .orderItem {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+.patientModule.appShell {
+    width: min(100% - 10px, 1320px);
+  }
+
+.patientModule .appHeader,
+.patientModule .card,
+.patientModule .tableActions,
+.patientModule .excelTableCard {
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+.patientModule .moveForm,
+.patientModule .staffForm,
+.patientModule .cancerRightForm {
+    grid-template-columns: 1fr;
+  }
+
+.patientModule .moveForm .wide {
+    grid-column: span 1;
+  }
+
+.patientModule .jpCalendar {
+    width: min(292px, calc(100vw - 42px));
+  }
+}
+
+/* 最終行のborder-bottomを0にして外枠に任せる */
+.patientModule .assignmentTable tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.patientModule .annualTable tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+/* =========================
+   備考ポップアップ
+========================= */
+
+.patientModule .notePreview {
+  font-size: 12px;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  padding: 2px 4px;
+}
+
+.patientModule .notePlaceholder {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.patientModule .notePopupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.patientModule .notePopupBox {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.2);
+  padding: 20px;
+  min-width: 280px;
+  max-width: 420px;
+  width: 90vw;
+}
+
+.patientModule .notePopupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.patientModule .notePopupName {
+  font-weight: 900;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.patientModule .notePopupLabel {
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.patientModule .notePopupContent {
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.7;
+  min-height: 48px;
+  white-space: pre-wrap;
+  margin-bottom: 16px;
+}
+
+.patientModule .notePopupTextarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.patientModule .notePopupActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.patientModule .notePopupBtn {
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.patientModule .notePopupBtn.edit {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.patientModule .notePopupBtn.save {
+  background: #22c55e;
+  color: #fff;
+}
+
+.patientModule .notePopupBtn.cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* =========================
+   患者移動カード（担当者ごと）
+========================= */
+
+.patientModule .movementCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.patientModule .movementCardHeader {
+  background: #f1f5f9;
+  font-weight: 900;
+  font-size: 13px;
+  padding: 6px 12px;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.patientModule .movementItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+.patientModule .movementItem:last-child {
+  border-bottom: 0;
+}
+
+.patientModule .movementItemActions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.patientModule .editButton {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 移動編集フォーム（ポップアップ内） */
+.patientModule .moveEditForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.patientModule .moveEditForm label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.patientModule .moveEditForm label span {
+  min-width: 48px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.patientModule .moveEditForm select,
+.patientModule .moveEditForm input {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+/* =========================
+   年度セレクタ
+========================= */
+
+.patientModule .fiscalSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.patientModule .fiscalBtn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 7px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #475569;
+}
+
+.patientModule .fiscalBtn.active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+/* =========================
+   管理表下部カレンダー
+========================= */
+
+.patientModule .calendarSection {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  max-width: 320px;
+}
+
+.patientModule .calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.patientModule .calendarTitle {
+  font-weight: 900;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.patientModule .calNavBtn {
+  border: 0;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #475569;
+}
+
+.patientModule .calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.patientModule .calDayLabel {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  padding: 2px 0;
+}
+
+.patientModule .calDayLabel.sun { color: #ef4444; }
+.patientModule .calDayLabel.sat { color: #3b82f6; }
+
+.patientModule .calDay {
+  text-align: center;
+  font-size: 12px;
+  padding: 4px 2px;
+  border-radius: 6px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.patientModule .calDay.sun { color: #ef4444; }
+.patientModule .calDay.sat { color: #3b82f6; }
+
+.patientModule .calDay.today {
+  background: #dbeafe;
+  font-weight: 900;
+  color: #1d4ed8;
+}
+
+.patientModule .calMoveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f59e0b;
+  display: block;
+}
+
+/* カレンダータブ（大きめ表示） */
+.patientModule .calendarLarge {
+  gap: 4px;
+}
+
+.patientModule .calDayLarge {
+  min-height: 56px;
+  align-items: flex-start;
+  padding: 4px;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  gap: 2px;
+}
+
+.patientModule .calDayNum {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.patientModule .calMoveTag {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  border: 1px solid rgba(15,23,42,0.1);
+}
