@@ -229,6 +229,7 @@ button {
 
 .viewButtons,
 .scopeButtons,
+.calendarModeBar,
 .actionButtons {
   display: flex;
   gap: 8px;
@@ -236,15 +237,53 @@ button {
 }
 
 .viewButtons button,
-.scopeButtons button {
+.scopeButtons button,
+.calendarModeBar button {
   background: #fff;
   color: #334155;
 }
 
 .viewButtons .active,
-.scopeButtons .active {
+.scopeButtons .active,
+.calendarModeBar .active {
   background: #2563eb;
   color: #fff;
+}
+
+.calendarModeBar {
+  background: #e8eef5;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  padding: 5px;
+}
+
+.summaryModeBox {
+  background: #eef2f7;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  padding: 5px;
+}
+
+.calendarModeBar button {
+  border: 1px solid transparent;
+  border-radius: 11px;
+  padding: 11px 16px;
+  font-weight: 800;
+}
+
+.summaryModeBox button {
+  border: 1px solid transparent;
+  border-radius: 11px;
+  padding: 11px 16px;
+  background: transparent;
+  color: #334155;
+  font-weight: 800;
+}
+
+.summaryModeBox button.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
 }
 
 .scopeButtons {
@@ -261,6 +300,23 @@ button {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.calendarMonthNav {
+  justify-content: center;
+  margin-bottom: 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.calendarMonthLabel {
+  min-width: 120px;
+  text-align: center;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 900;
 }
 
 .monthNav input {
@@ -352,6 +408,40 @@ button {
   color: #92400e !important;
 }
 
+.holidayWorkTags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.announcementTags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.holidayWorkTags span {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.announcementTags span {
+  background: #ecfdf5;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .modalBackdrop {
   position: fixed;
   inset: 0;
@@ -440,6 +530,80 @@ button {
 
 .saturdayWorkDetail {
   background: #fef3c7;
+  align-items: flex-start;
+  display: block;
+  min-height: 176px;
+  padding: 14px;
+}
+
+.saturdayWorkBody {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.saturdayWorkTitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.saturdayWorkTitleText {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.saturdayJobColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.saturdayJobColumn {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #f3d58d;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-height: 86px;
+  overflow: hidden;
+}
+
+.saturdayJobColumn h4 {
+  margin: 0 0 6px;
+  color: #92400e;
+  font-size: 14px;
+}
+
+.saturdayJobColumn p {
+  margin: 6px 0 0;
+  line-height: 1.35;
+  font-size: 15px;
+}
+
+.saturdayChanged {
+  color: #0f766e;
+  font-weight: 900;
+  font-size: 14px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saturdayChanged span {
+  color: #b45309;
+  padding: 0 4px;
+}
+
+.saturdayEmpty {
+  color: #94a3b8;
+  font-size: 13px;
 }
 
 .detailActions {
@@ -447,6 +611,8 @@ button {
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .deleteButton {
@@ -467,8 +633,17 @@ button {
   background: #e7eef8;
   color: #0f172a;
   border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800;
+  min-width: 118px;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.deleteButton.compactAction {
+  min-height: 44px;
   padding: 10px 12px;
-  font-weight: 700;
+  white-space: nowrap;
 }
 
 .emptyText,
@@ -612,6 +787,10 @@ th {
   margin-top: 14px;
 }
 
+.saturdayChangeForm {
+  margin-top: 10px;
+}
+
 .staffCheckGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -630,6 +809,246 @@ th {
 
 .staffCheckItem input {
   min-height: auto;
+}
+
+.saturdayPuzzle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.saturdayDatePuzzle {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.2fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.saturdayPuzzleZone {
+  min-height: 240px;
+  border: 1px dashed #b8c7dc;
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.saturdayPuzzleZone.on {
+  background: #effaf7;
+  border-color: #8dd8c7;
+}
+
+.saturdayPuzzleZone h4,
+.saturdayAttendeePanel h4,
+.saturdayCandidatePanel h4 {
+  margin: 0 0 10px;
+  color: #334155;
+  font-size: 14px;
+  text-align: center;
+}
+
+.saturdayPanelTitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.saturdayPanelTitle h4 {
+  margin: 0;
+}
+
+.saturdayAttendeePanel,
+.saturdayCandidatePanel {
+  min-height: 260px;
+  border: 1px solid #d7e2ee;
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.saturdayAttendeePanel {
+  background: #effaf7;
+  border-color: #8dd8c7;
+}
+
+.saturdaySelectedDate {
+  display: block;
+  margin: -4px 0 10px;
+  color: #0f766e;
+  text-align: center;
+  font-size: 15px;
+}
+
+.saturdayTapHint {
+  margin: -4px 0 12px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.saturdayPuzzleList {
+  display: grid;
+  gap: 8px;
+}
+
+.saturdaySwapBoard {
+  display: grid;
+  gap: 12px;
+}
+
+.saturdaySwapLabel {
+  display: block;
+  margin: 0 0 7px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.saturdayPuzzleCard {
+  border: 1px solid #d7e2ee;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+}
+
+.saturdayPuzzleCard.selected {
+  border-color: #0f766e;
+  background: #ffffff;
+}
+
+.saturdayPuzzleCard.swapTarget {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+.saturdayPuzzleCard strong {
+  font-size: 14px;
+}
+
+.saturdayPuzzleCard span {
+  border-radius: 999px;
+  background: #e8eef5;
+  color: #334155;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.saturdayPuzzleCard.selected span {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.saturdayPuzzleCard.candidate {
+  border-color: #c7d2fe;
+  background: #f8faff;
+}
+
+.saturdayPuzzleCard.candidate span {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.saturdayPuzzleCard.tapReady {
+  border-color: #f59e0b;
+  background: #fff7ed;
+}
+
+.saturdayPuzzleEmpty {
+  margin: 0;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #94a3b8;
+  padding: 18px 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.saturdayCandidateList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.saturdayCandidateSplit {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.95fr) minmax(180px, 1.05fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.saturdayCandidateStaff {
+  border: 1px solid #d7e2ee;
+  border-radius: 14px;
+  background: #fff;
+  padding: 10px;
+  min-height: 220px;
+}
+
+.candidateBackButton {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: #eef2f7;
+  color: #334155;
+  padding: 0;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.saturdayCandidateDate {
+  border: 1px solid #d7e2ee;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  padding: 10px;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.saturdayCandidateDate.selected {
+  border-color: #0f766e;
+  background: #ecfdf5;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12);
+}
+
+.saturdayCandidateDate strong {
+  font-size: 14px;
+}
+
+.saturdayCandidateDate small {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.saturdayCandidatePeople {
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 @media (max-width: 850px) {
@@ -671,6 +1090,16 @@ th {
   }
 }
 
+@media (max-width: 520px) {
+  .saturdayJobColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .saturdayChanged {
+    white-space: normal;
+  }
+}
+
 @media (max-width: 560px) {
   .appShell {
     width: min(100% - 12px, 1180px);
@@ -688,6 +1117,26 @@ th {
   .formGrid,
   .announcementFormGrid,
   .staffCheckGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .saturdayPuzzle {
+    grid-template-columns: 1fr;
+  }
+
+  .saturdayWorkDetail {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .detailActions {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .saturdayDatePuzzle,
+  .saturdayCandidateList,
+  .saturdayCandidateSplit {
     grid-template-columns: 1fr;
   }
 
@@ -825,6 +1274,168 @@ th {
   background: #fee2e2;
 }
 
+.detailItem.holiday {
+  background: #fff1f2;
+  border: 1px solid #fecaca;
+}
+
+.detailItem.announcementDetail {
+  background: #ecfdf5;
+  border: 1px solid #99f6e4;
+}
+
+.detailItem.announcementDetail.important {
+  background: #fff1f2;
+  border-color: #fecaca;
+}
+
+@media (max-width: 560px) {
+  body {
+    font-size: 14px;
+  }
+
+  .appShell {
+    width: min(100% - 10px, 1180px);
+    padding-top: 8px;
+  }
+
+  .appHeader {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .appTitleTabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .appTitleTabs button {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: clamp(14px, 4.2vw, 17px);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .loginSelect {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .loginSelect select {
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
+  }
+
+  .card {
+    margin-bottom: 10px;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .viewButtons {
+    display: contents;
+  }
+
+  .scopeButtons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .viewButtons button:first-child {
+    grid-column: 1;
+    min-width: 86px;
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .viewButtons button:nth-child(2) {
+    grid-column: 3;
+    min-width: 58px;
+    min-height: 36px;
+    padding: 7px 9px;
+    font-size: 13px;
+    border-radius: 10px;
+    background: #f8fafc;
+  }
+
+  .scopeButtons {
+    grid-column: 2;
+    padding: 3px;
+  }
+
+  .scopeButtons button,
+  .monthNav button {
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .monthNav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .calendarMonthNav {
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+
+  .monthNav input,
+  .monthNav select {
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .calendarCard {
+    padding: 10px 6px;
+  }
+
+  .weekHeader,
+  .calendarGrid {
+    gap: 4px;
+  }
+
+  .calendarCell {
+    min-height: 66px;
+    padding: 5px;
+    border-radius: 10px;
+  }
+
+  .dayCounts,
+  .holidayWorkTags {
+    gap: 3px;
+    margin-top: 4px;
+  }
+
+  .dayCounts span,
+  .holidayWorkTags span {
+    font-size: 10px;
+    padding: 3px 5px;
+  }
+}
+
 /* Saturday rotating group settings */
 .saturdaySettingsModal {
   width: min(980px, 100%);
@@ -837,6 +1448,43 @@ th {
   border-radius: 16px;
   padding: 14px;
   background: #f8fbff;
+}
+
+.groupSettingsToggle {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid #cfddec;
+  border-radius: 14px;
+  background: #eef6f5;
+  color: #0f172a;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.groupSettingsToggle strong {
+  display: block;
+  font-size: 16px;
+}
+
+.groupSettingsToggle small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.groupSettingsToggle b {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 13px;
 }
 
 .groupSettings h3,
@@ -885,6 +1533,10 @@ th {
   .groupGrid {
     grid-template-columns: 1fr;
   }
+
+  .saturdayJobColumns {
+    grid-template-columns: 1fr;
+  }
 }
 
 
@@ -897,6 +1549,15 @@ th {
 
 .saturdayMini {
   color: #1e40af;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.announcementMini {
+  color: #0f766e;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -1206,10 +1867,11 @@ th {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 10px;
+  width: fit-content;
 }
 
 .patientModule .tableSectionTabs button {
-  border: 0;
+  border: 1px solid #d8e2ee;
   border-radius: 11px;
   padding: 10px 16px;
   background: #f1f5f9;
@@ -1220,6 +1882,24 @@ th {
 .patientModule .tableSectionTabs button.active {
   background: #2563eb;
   color: #fff;
+}
+
+.patientModule .adjustHistoryButton,
+.patientModule .tableSectionTabs .adjustHistoryButton {
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.patientModule .adjustHistoryButton.active,
+.patientModule .tableSectionTabs .adjustHistoryButton.active {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
 }
 
 .patientModule .excelScroll {
@@ -1269,12 +1949,12 @@ th {
 .patientModule .assignmentTable td.stickyName {
   position: sticky;
   left: 0;
-  z-index: 5;
+  z-index: 320;
   background: #fff;
 }
 
 .patientModule .assignmentTable thead th.stickyName {
-  z-index: 8;
+  z-index: 340;
   background: #f8fafc;
 }
 
@@ -1286,14 +1966,18 @@ th {
 .patientModule .nameCell {
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  gap: 5px;
+  text-align: left;
 }
 
 .patientModule .nameCell strong {
+  min-width: 0;
   font-size: 12px;
   line-height: 1.1;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .patientModule .nameCell span,
@@ -1315,7 +1999,7 @@ th {
 }
 
 .patientModule .numberCell.tActiveCell {
-  z-index: 200;
+  z-index: 20;
 }
 
 .patientModule .numberCell input {
@@ -2002,7 +2686,13 @@ th {
 }
 
 .patientModule .historyItem {
-  grid-template-columns: 80px 1fr 80px 80px 70px 1fr;
+  grid-template-columns: 80px 1fr 80px 80px 70px 150px 1fr;
+}
+
+.patientModule .historyUpdater {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .patientModule .orderItem {
@@ -2069,7 +2759,9 @@ th {
 .patientModule .annualTable td:first-child,
 .patientModule .annualTable th:first-child {
   text-align: left;
-  min-width: 120px;
+  width: 74px;
+  min-width: 74px;
+  max-width: 74px;
   position: sticky;
   left: 0;
   background: #fff;
@@ -2077,6 +2769,9 @@ th {
   border-left: 1.5px solid #475569 !important;
   border-right: 1.5px solid #475569 !important;
   box-shadow: none !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .patientModule .annualWideTable th:nth-child(2),
@@ -2715,6 +3410,28 @@ th {
   gap: 4px;
 }
 
+.patientModule .patientCalendarSection {
+  margin-top: 14px;
+}
+
+.patientModule .calendarTwoMonths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.patientModule .calendarMonthPanel {
+  min-width: 0;
+}
+
+.patientModule .calendarMonthPanel h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+}
+
 .patientModule .calDayLarge {
   min-height: 56px;
   align-items: flex-start;
@@ -2741,4 +3458,2062 @@ th {
   text-overflow: ellipsis;
   width: 100%;
   border: 1px solid rgba(15,23,42,0.1);
+}
+
+@media (max-width: 900px) {
+  .patientModule .calendarTwoMonths {
+    grid-template-columns: 1fr;
+  }
+}
+
+.patientModule .compactCalendarHeader {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.patientModule .simpleCalendar .calendarGrid {
+  gap: 3px;
+}
+
+.patientModule .simpleCalendar .calDayLabel {
+  border-radius: 5px;
+  padding: 4px 0;
+}
+
+.patientModule .simpleCalendar .calDayLabel.sun {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.patientModule .simpleCalendar .calDayLabel.sat {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.patientModule .simpleCalendar .calDayLarge {
+  min-height: 34px;
+  justify-content: center;
+  align-items: center;
+  padding: 3px;
+  border-color: #e2e8f0;
+  background: #fff;
+}
+
+.patientModule .simpleCalendar .calDay.sun {
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.patientModule .simpleCalendar .calDay.sat {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.patientModule .simpleCalendar .calDay.today {
+  background: #2563eb;
+  color: #fff;
+}
+
+.leaveEntryCard {
+  border-color: #d8e4ef;
+  background: #fbfdff;
+}
+
+.leaveEntryCard.open {
+  background: #fff;
+}
+
+.leaveEntryHeader {
+  display: block;
+}
+
+.leaveEntryTitleButton {
+  width: 100%;
+  border: 1px solid #d7e2ee;
+  border-radius: 12px;
+  background: #f7fafc;
+  color: #0f172a;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.leaveEntryTitle {
+  display: block;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.leaveEntryHint {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.leaveEntryStatus {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.leaveEntryActions {
+  justify-content: flex-end;
+  margin: 12px 0 14px;
+}
+
+.appTitleTabs,
+.moduleTabs,
+.scopeButtons,
+.patientModule .professionTabs,
+.patientModule .viewTabs,
+.patientModule .tableSectionTabs {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+.appTitleTabs button,
+.moduleTabs button,
+.viewButtons button,
+.scopeButtons button,
+.patientModule .professionTabs button,
+.patientModule .viewTabs button,
+.patientModule .tableSectionTabs button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #334155;
+  box-shadow: none;
+}
+
+.appTitleTabs button.active,
+.moduleTabs button.active {
+  background: #0f766e;
+  color: #fff;
+  border-color: #0f766e;
+}
+
+.viewButtons .active,
+.patientModule .professionTabs button.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.scopeButtons .active,
+.patientModule .viewTabs button.active,
+.patientModule .tableSectionTabs button.active {
+  background: #0f766e;
+  color: #fff;
+  border-color: #0f766e;
+}
+
+.patientModule .tableSectionTabs button {
+  border: 1px solid #d8e2ee;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #f8fafc;
+  border: 1px solid #dbe4ef;
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.patientModule .simpleCalendar .calDayLabel.sun,
+.patientModule .simpleCalendar .calDayLabel.sat {
+  background: transparent;
+}
+
+.patientModule .simpleCalendar .calDayLabel.sun {
+  color: #b91c1c;
+}
+
+.patientModule .simpleCalendar .calDayLabel.sat {
+  color: #1d4ed8;
+}
+
+.patientModule .simpleCalendar .calDay.sun {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.patientModule .simpleCalendar .calDay.sat {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.saturdayInfoMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+@media (max-width: 560px) {
+  .saturdaySettingsModal {
+    width: 100%;
+    max-width: none;
+  }
+
+  .saturdayDatePuzzle {
+    display: grid;
+    grid-template-columns: minmax(118px, 0.92fr) minmax(160px, 1.08fr) !important;
+    gap: 8px;
+    align-items: start;
+  }
+
+  .saturdayAttendeePanel,
+  .saturdayCandidatePanel {
+    min-height: 0;
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .saturdayAttendeePanel h4,
+  .saturdayCandidatePanel h4 {
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+
+  .saturdaySelectedDate {
+    margin: -2px 0 6px;
+    font-size: 12px;
+  }
+
+  .saturdayInfoMark {
+    width: 17px;
+    height: 17px;
+    font-size: 11px;
+  }
+
+  .saturdaySwapLabel {
+    margin-bottom: 5px;
+    font-size: 10px;
+  }
+
+  .saturdayPuzzleList {
+    gap: 5px;
+  }
+
+  .saturdayPuzzleCard {
+    min-height: 34px;
+    padding: 6px 6px;
+    gap: 4px;
+    border-radius: 9px;
+  }
+
+  .saturdayPuzzleCard strong {
+    min-width: 0;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .saturdayPuzzleCard span {
+    padding: 1px 4px;
+    font-size: 9px;
+    line-height: 1.1;
+  }
+
+  .saturdayCandidateSplit {
+    display: block;
+  }
+
+  .saturdayCandidateList {
+    max-height: 320px;
+    gap: 5px;
+  }
+
+  .saturdayCandidateDate {
+    padding: 6px;
+    gap: 3px;
+    border-radius: 9px;
+  }
+
+  .saturdayCandidateDate strong {
+    font-size: 11px;
+  }
+
+  .saturdayCandidateDate small,
+  .saturdayCandidatePeople {
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .saturdayCandidateStaff {
+    display: none;
+    min-height: 120px;
+    padding: 6px;
+    border-radius: 10px;
+  }
+
+  .saturdayCandidateDate.selected ~ .saturdayCandidateDate {
+    display: none;
+  }
+
+  .saturdayCandidateList:has(.saturdayCandidateDate.selected) {
+    display: none;
+  }
+
+  .saturdayCandidateList:has(.saturdayCandidateDate.selected) + .saturdayCandidateStaff {
+    display: block;
+  }
+
+  .candidateBackButton {
+    width: 28px;
+    height: 28px;
+    min-height: 0;
+    padding: 0;
+    margin-bottom: 6px;
+    font-size: 16px;
+  }
+}
+
+.loginSelect,
+.loginSelect label,
+.loginSelect span {
+  color: #0f172a;
+}
+
+.loginSelect select {
+  color: #0f172a;
+  -webkit-text-fill-color: #0f172a;
+  background: #ffffff;
+}
+
+.loginSelect select option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.loginRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.patientLoginRow {
+  width: min(100%, 780px);
+}
+
+.patientLoginRow .loginSelect {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.patientLoginRow .loginSelect select {
+  width: 100%;
+  min-width: 0;
+}
+
+.announcementBoard,
+.announcementHeader h2 {
+  color: #0f172a;
+}
+
+.announcementBoard {
+  border-left: 4px solid #2f7f76;
+  background: linear-gradient(90deg, rgba(47, 127, 118, 0.06), rgba(255, 255, 255, 0.96) 34%);
+}
+
+.announcementHeader h2 {
+  margin: 0;
+  font-weight: 900;
+}
+
+.announcementList.compactList {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.announcementItem.compactItem {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  min-height: 0;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #334155;
+  text-align: left;
+}
+
+.announcementBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 38px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.announcementBadge.normal {
+  color: #1e40af;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+}
+
+.announcementBadge.important {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+.announcementTitle {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.saturdayChangeTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.saturdayChangeTitleRow h3 {
+  margin: 0;
+}
+
+.announcementModal {
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.announcementModal .modalHeader h2,
+.announcementModal label,
+.announcementModal label span,
+.announcementFormGrid label span {
+  color: #0f172a;
+}
+
+.announcementFormGrid input,
+.announcementFormGrid select,
+.announcementFormGrid textarea,
+.announcementFormGrid .jpDateInput {
+  color: #0f172a;
+  -webkit-text-fill-color: #0f172a;
+  background: #ffffff;
+  border-color: #b8c7dc;
+}
+
+.announcementFormGrid input::placeholder,
+.announcementFormGrid textarea::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+.announcementFormGrid select option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.announcementModal .previewBox {
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 1px solid #99f6e4;
+}
+
+.patientModule,
+.patientModule .card,
+.patientModule .appHeader,
+.patientModule .tableActions,
+.patientModule .excelTableCard,
+.patientModule .notePopupBox {
+  color: #0f172a;
+}
+
+.patientModule h1,
+.patientModule h2,
+.patientModule h3,
+.patientModule h4,
+.patientModule .cardHeader h2,
+.patientModule .tableActions strong,
+.patientModule .movementCardHeader,
+.patientModule .orderItem strong,
+.patientModule .historyItem strong,
+.patientModule .nameCell strong {
+  color: #0f172a;
+}
+
+.patientModule .moveForm label span,
+.patientModule .staffForm label span,
+.patientModule .moveEditForm label span,
+.patientModule .tableActions span,
+.patientModule .cardHeader span,
+.patientModule .emptyText,
+.patientModule .notePlaceholder,
+.patientModule .notePopupLabel {
+  color: #475569;
+}
+
+.patientModule .moveForm input,
+.patientModule .moveForm select,
+.patientModule .staffForm input,
+.patientModule .staffForm select,
+.patientModule .moveEditForm input,
+.patientModule .moveEditForm select,
+.patientModule .notePopupTextarea,
+.patientModule .jpDateButton {
+  color: #0f172a;
+  -webkit-text-fill-color: #0f172a;
+  background: #ffffff;
+}
+
+.patientModule .moveForm input::placeholder,
+.patientModule .staffForm input::placeholder,
+.patientModule .notePopupTextarea::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+.patientModule .moveForm select option,
+.patientModule .staffForm select option,
+.patientModule .moveEditForm select option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.patientModule .autoStaffBox {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #b8c7dc;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.patientModule .autoStaffBox span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.patientModule .autoStaffBox strong {
+  color: #0f172a;
+  font-size: 15px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.patientMiniProfessionTabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  padding: 3px;
+  border: 1px solid #d8e2ee;
+  border-radius: 12px;
+  background: #e8eef5;
+}
+
+.patientMiniProfessionTabs button {
+  min-width: 34px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 6px 8px;
+  background: transparent;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.patientMiniProfessionTabs button.active {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+  box-shadow: 0 3px 8px rgba(15, 118, 110, 0.18);
+}
+
+.patientModule .tabExpandBtn.iconOnly {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
+  border-radius: 7px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.patientModule .tableSectionTabs .adjustHistoryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.appHeader {
+  align-items: stretch;
+  background: linear-gradient(135deg, #0f3f46 0%, #17695f 100%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 14px 34px rgba(15, 63, 70, 0.22);
+}
+
+.appTitleTabs {
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.appTitleTabs button {
+  min-height: 46px;
+  border: 1px solid transparent;
+  color: #e6fffb;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.appTitleTabs button.active {
+  background: #ffffff;
+  color: #0f766e;
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
+.loginRow {
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.loginSelect span {
+  color: #ecfeff;
+  font-weight: 900;
+}
+
+.loginSelect select {
+  border-color: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+
+.patientMiniProfessionTabs {
+  border-color: rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.patientMiniProfessionTabs button {
+  color: #e6fffb;
+}
+
+.patientMiniProfessionTabs button.active {
+  background: #ffffff;
+  color: #0f766e;
+  border-color: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
+}
+
+.patientModule .viewTabs {
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #cddbea;
+  border-left: 5px solid #0f766e;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.patientModule .viewTabGroup {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.patientModule .viewTabGroup button {
+  min-height: 42px;
+  padding: 10px 18px;
+  border: 1px solid #d8e2ee;
+  background: #f8fafc;
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.patientModule .viewTabGroup button.active {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+  box-shadow: 0 6px 14px rgba(15, 118, 110, 0.2);
+}
+
+.patientModule .viewTabs .settingsTabButton {
+  background: #f8fafc;
+  border: 1px solid #d8e2ee;
+}
+
+.patientModule .patientCalendarSection {
+  position: relative;
+  padding-top: 12px;
+}
+
+.patientModule .compactCalendarHeader {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  right: 10px;
+  z-index: 2;
+  margin-bottom: 0;
+  justify-content: space-between;
+  gap: 0;
+}
+
+.patientModule .calNavBtn.iconOnly {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 8px;
+  color: #1e40af;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.patientModule .calendarMonthPanel h3 {
+  padding: 0 40px;
+}
+
+@media (max-width: 560px) {
+  .loginRow.patientLoginRow {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .loginRow.patientLoginRow .loginSelect {
+    width: auto;
+    min-width: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .loginRow.patientLoginRow .loginSelect select {
+    min-width: 0;
+    font-size: 13px;
+    padding-left: 10px;
+    padding-right: 8px;
+  }
+
+  .patientMiniProfessionTabs button {
+    min-width: 32px;
+    padding: 6px 7px;
+    font-size: 11px;
+  }
+
+  .patientModule .compactCalendarHeader {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .patientModule .calendarMonthPanel h3 {
+    padding: 0 38px;
+  }
+}
+
+@media (max-width: 560px) {
+  .appTitleTabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .appTitleTabs button {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: clamp(14px, 4.2vw, 17px);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .calendarModeBar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr 0.85fr;
+    gap: 4px;
+    padding: 4px;
+    background: #e8eef5;
+    border: 1px solid #d8e2ee;
+    border-radius: 14px;
+  }
+
+  .summaryModeBox {
+    display: grid;
+    padding: 4px;
+    background: #eef2f7;
+    border: 1px solid #d8e2ee;
+    border-radius: 14px;
+  }
+
+  .calendarModeBar button,
+  .summaryModeBox button {
+    min-height: 38px;
+    padding: 7px 4px;
+    font-size: 12px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .calendarModeBar button:nth-child(2),
+  .calendarModeBar button:nth-child(3) {
+    background: #f8fafc;
+    color: #0f766e;
+  }
+
+  .calendarModeBar button:nth-child(2).active,
+  .calendarModeBar button:nth-child(3).active {
+    background: #0f766e;
+    color: #fff;
+    border-color: #0f766e;
+  }
+
+  .monthNav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .calendarMonthNav {
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+
+  .calendarMonthLabel {
+    min-width: 0;
+    font-size: 15px;
+  }
+
+  .modalBackdrop {
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: max(10px, env(safe-area-inset-top)) 8px 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dayModal,
+  .staffModal,
+  .announcementModal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+    margin: 0;
+    padding: 14px;
+    border-radius: 14px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .announcementFormGrid,
+  .saturdayForm {
+    grid-template-columns: 1fr;
+  }
+
+  .announcementFormGrid .wide {
+    grid-column: span 1;
+  }
+
+  .modalHeader {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+    padding-bottom: 8px;
+  }
+
+  .weekHeader,
+  .calendarGrid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+    align-items: stretch;
+  }
+
+  .weekHeader > div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .calendarCell {
+    min-width: 0;
+    min-height: 62px;
+    padding: 4px 3px;
+    gap: 3px;
+    border-radius: 9px;
+    overflow: hidden;
+  }
+
+  .dayHeader {
+    gap: 3px;
+    min-height: 18px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+
+  .dayNumber {
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .saturdayMini,
+  .announcementMini {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+
+  .dayCounts,
+  .holidayWorkTags {
+    gap: 2px;
+    margin-top: 1px;
+  }
+
+  .dayCounts span,
+  .holidayWorkTags span {
+    max-width: 100%;
+    padding: 1px 3px;
+    font-size: 9px;
+    line-height: 1.15;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+}
+
+.patientModule .historyItem,
+.patientModule .orderItem {
+  min-width: 0;
+}
+
+.patientModule .historyItem > *,
+.patientModule .orderItem > * {
+  min-width: 0;
+}
+
+.patientModule .historyItem span,
+.patientModule .historyItem strong,
+.patientModule .historyItem small,
+.patientModule .orderItem span,
+.patientModule .orderItem strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patientModule .orderItem div button {
+  color: #0f172a;
+  -webkit-text-fill-color: #0f172a;
+  background: #e7eef8;
+}
+
+.patientModule .orderItem div button:hover {
+  background: #dbeafe;
+}
+
+.patientModule .settingsInnerTabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  margin: 12px 0 14px;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  background: #e8eef5;
+}
+
+.patientModule .settingsInnerTabs button {
+  border: 1px solid transparent;
+  border-radius: 11px;
+  padding: 9px 14px;
+  background: transparent;
+  color: #334155;
+  font-weight: 900;
+}
+
+.patientModule .settingsInnerTabs button.active {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+}
+
+.patientModule .settingsLayout {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.34fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 14px;
+}
+
+.patientModule .settingsMenuList {
+  overflow: hidden;
+  border: 1px solid #d8e2ee;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.patientModule .settingsMenuList button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #edf2f7;
+  border-radius: 0;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: left;
+  box-shadow: none;
+}
+
+.patientModule .settingsMenuList button:last-child {
+  border-bottom: 0;
+}
+
+.patientModule .settingsMenuList button.active {
+  background: #eaf7f5;
+  color: #0f172a;
+}
+
+.patientModule .settingsMenuIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: #f1f5f9;
+  color: #0f766e;
+  font-weight: 900;
+}
+
+.patientModule .settingsMenuList button.active .settingsMenuIcon {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.patientModule .settingsMenuText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.patientModule .settingsMenuText strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patientModule .settingsMenuText small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patientModule .settingsMenuArrow {
+  color: #64748b;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: right;
+}
+
+.patientModule .settingsContentPanel {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #d8e2ee;
+  border-radius: 16px;
+  background: #fbfdff;
+}
+
+.patientModule .todayAdjustHistoryCard {
+  margin-top: 10px;
+}
+
+.patientModule .compactHistoryHeader {
+  margin-bottom: 8px;
+}
+
+.patientModule .compactHistoryHeader h2 {
+  font-size: 16px;
+}
+
+.patientModule .todayAdjustHistoryList {
+  margin-top: 6px;
+}
+
+.patientModule .todayAdjustHistoryItem {
+  grid-template-columns: 56px minmax(70px, 1fr) 42px 42px 42px minmax(90px, 1fr);
+  font-size: 12px;
+  padding: 7px 9px;
+}
+
+.patientModule .settingsSummaryHeader {
+  margin: 8px 0 12px;
+}
+
+.patientModule .settingsSummaryHeader h3 {
+  margin: 0;
+}
+
+.patientModule .staffRegisterForm {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-width: 760px;
+}
+
+.patientModule .staffFormPair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.patientModule .cancerPermissionToggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  min-height: 42px;
+  padding: 4px;
+  border: 1px solid #b8c7dc;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.patientModule .cancerPermissionToggle button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 900;
+}
+
+.patientModule .cancerPermissionToggle button.active {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+}
+
+.patientModule .staffRegisterForm > .primaryButton {
+  justify-self: start;
+  min-width: 140px;
+}
+
+.patientModule .orderItem {
+  font-size: 14px;
+}
+
+.patientModule .orderItem strong {
+  font-size: 15px;
+}
+
+.patientModule .orderItem span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #475569;
+}
+
+.patientModule .viewTabs .settingsTabButton {
+  flex: 0 0 auto;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1;
+}
+
+.patientModule .viewTabs .settingsTabButton img {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.patientModule .viewTabs .settingsTabButton.active,
+.patientModule .viewTabs .settingsTabButton:hover {
+  background: #dbeafe;
+  border-color: transparent;
+}
+
+.patientModule .viewTabs .settingsTabButton.active img {
+  opacity: 0.85;
+}
+
+.patientModule .viewTabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin-bottom: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.patientModule .viewTabGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  background: #e8eef5;
+}
+
+.patientModule .viewTabGroup button {
+  border: 1px solid transparent;
+  border-radius: 11px;
+  padding: 10px 16px;
+  background: transparent;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.patientModule .viewTabGroup button.active {
+  background: #0f766e;
+  color: #fff;
+  border-color: #0f766e;
+}
+
+@media (max-width: 560px) {
+  .patientModule .viewTabs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .patientModule .viewTabGroup {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .patientModule .viewTabGroup button {
+    min-width: 0;
+    padding: 9px 5px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .patientModule .viewTabs .settingsTabButton {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    padding: 5px;
+    align-self: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .patientModule .historyItem {
+    display: grid !important;
+    grid-template-columns: 56px minmax(42px, 0.72fr) 42px 38px 34px minmax(68px, 1fr) minmax(0, 0.8fr) !important;
+    gap: 4px;
+    padding: 7px 8px;
+    align-items: center;
+    font-size: 11px;
+  }
+
+  .patientModule .historyUpdater {
+    font-size: 10px;
+  }
+
+  .patientModule .orderItem {
+    display: grid !important;
+    grid-template-columns: minmax(76px, 1fr) minmax(54px, 0.7fr) auto !important;
+    gap: 6px;
+    padding: 7px 8px;
+    align-items: center;
+  }
+
+  .patientModule .orderItem div {
+    gap: 4px;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+
+  .patientModule .orderItem div button {
+    min-width: 26px;
+    height: 26px;
+    padding: 0 7px;
+    border-radius: 7px;
+    font-size: 12px;
+    line-height: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .patientModule .historyList,
+  .patientModule .orderList {
+    gap: 5px;
+    margin-top: 10px;
+  }
+
+  .patientModule .historyItem {
+    grid-template-columns: 46px minmax(36px, 0.66fr) 34px 32px 30px minmax(58px, 1fr) minmax(0, 0.68fr) !important;
+    gap: 3px;
+    padding: 6px;
+    font-size: 10px;
+  }
+
+  .patientModule .historyUpdater {
+    font-size: 9px;
+  }
+
+  .patientModule .orderItem {
+    grid-template-columns: minmax(72px, 1fr) minmax(42px, 0.55fr) auto !important;
+    gap: 4px;
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  .patientModule .orderItem strong {
+    font-size: 13px;
+  }
+
+  .patientModule .orderItem span {
+    font-size: 11px;
+  }
+
+  .patientModule .orderItem div button {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 560px) {
+  .patientModule .settingsInnerTabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    margin: 10px 0 12px;
+  }
+
+  .patientModule .settingsInnerTabs button {
+    padding: 9px 5px;
+    font-size: 12px;
+  }
+
+  .patientModule .settingsLayout {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .patientModule .settingsMenuList button {
+    min-height: 50px;
+    padding: 8px 10px;
+  }
+
+  .patientModule .settingsContentPanel {
+    padding: 10px;
+  }
+
+  .patientModule .staffRegisterForm {
+    gap: 10px;
+  }
+
+  .patientModule .staffFormPair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .patientModule .staffRegisterForm label span {
+    font-size: 11px;
+  }
+
+  .patientModule .staffRegisterForm input,
+  .patientModule .staffRegisterForm select {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  .patientModule .cancerPermissionToggle {
+    min-height: 40px;
+  }
+
+  .patientModule .staffRegisterForm > .primaryButton {
+    width: 100%;
+  }
+
+  .patientModule .todayAdjustHistoryItem {
+    grid-template-columns: 42px minmax(48px, 0.9fr) 34px 34px 34px minmax(62px, 1fr);
+    gap: 3px;
+    padding: 6px;
+    font-size: 10px;
+  }
+
+  .patientModule .adjustHistoryButton,
+  .patientModule .tableSectionTabs .adjustHistoryButton {
+    min-height: 24px;
+    padding: 3px 7px;
+    font-size: 11px;
+  }
+}
+
+.patientModule .assignmentTable {
+  min-width: 1140px;
+}
+
+.patientModule .dialysisCol {
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  background: #ecfeff !important;
+  border-right: 1.5px solid #475569 !important;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+
+.patientModule .assignmentTable thead .dialysisCol {
+  background: #cffafe !important;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.patientModule .numberCell.hasStudent {
+  position: relative;
+}
+
+.patientModule .studentMark {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.patientModule .outpatientAdjust,
+.patientModule .dialysisAdjust {
+  display: grid;
+  gap: 3px;
+  min-width: 112px;
+}
+
+.patientModule .outpatientAdjustRow,
+.patientModule .dialysisAdjustRow {
+  display: grid;
+  grid-template-columns: 34px 22px 22px 22px;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.patientModule .dialysisAdjustRow {
+  grid-template-columns: 42px 22px 22px 22px;
+}
+
+.patientModule .outpatientAdjustRow span,
+.patientModule .dialysisAdjustRow span {
+  color: #0f172a;
+  text-align: left;
+}
+
+.patientModule .outpatientAdjustRow b,
+.patientModule .dialysisAdjustRow b {
+  color: #0f172a;
+  text-align: center;
+}
+
+.patientModule .dialysisTagList {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.patientModule .dialysisTag,
+.patientModule .dialysisTotal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 18px;
+  padding: 2px 3px;
+  border-radius: 999px;
+  background: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.patientModule .dialysisTag.dialysis-mwf {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.patientModule .dialysisTag.dialysis-tts {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.patientModule .dialysisTotal {
+  background: transparent;
+  border-color: transparent;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.patientModule .compactMoveForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.patientModule .compactMoveForm .autoStaffBox {
+  min-height: 42px;
+}
+
+.patientModule .moveFormQuartet {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.95fr) repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+.patientModule .moveFormQuartet label,
+.patientModule .moveFormQuartet .autoStaffBox {
+  min-height: 64px;
+}
+
+.patientModule .moveFormQuartet .autoStaffBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  justify-content: flex-start;
+}
+
+.patientModule .moveFormQuartet .autoStaffBox span,
+.patientModule .moveFormQuartet label span {
+  display: block;
+  height: 16px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.patientModule .moveFormQuartet .autoStaffBox strong,
+.patientModule .moveFormQuartet select,
+.patientModule .moveFormQuartet .jpDateButton {
+  min-height: 46px;
+}
+
+.patientModule .moveFormQuartet .jpDateButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 46px;
+  padding: 0 10px;
+  line-height: 1;
+}
+
+.patientModule .moveFormQuartet .jpDateButton span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.patientModule .moveFormQuartet .jpDateButton span:first-child {
+  transform: translateY(1px);
+}
+
+.patientModule .moveFormQuartet .autoStaffBox strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border: 1px solid #b8c7dc;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.patientModule .moveHeaderInline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.patientModule .clearDueButton {
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  background: #fff1f2;
+  color: #b91c1c;
+  padding: 2px 5px;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.patientModule .jpDateInputWrap {
+  position: static;
+}
+
+.patientModule .jpCalendarPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3200;
+  width: min(292px, calc(100vw - 28px));
+}
+
+.patientModule .jpCalendar {
+  position: fixed;
+  top: min(58vh, 340px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3200;
+  width: min(292px, calc(100vw - 28px));
+}
+
+.patientModule .jpWeek,
+.patientModule .jpDays {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.patientModule .jpDays button,
+.patientModule .jpDays span {
+  width: 100%;
+}
+
+.patientModule .jpDays button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+}
+
+.patientModule .jpDays button.sun {
+  color: #b91c1c;
+}
+
+.patientModule .jpDays button.sat {
+  color: #1d4ed8;
+}
+
+.patientModule .jpDays button.selected {
+  color: #ffffff;
+}
+
+.patientModule .memoInlineField {
+  display: block !important;
+  width: 100%;
+}
+
+.patientModule .memoInlineField input {
+  width: 100%;
+  min-width: 0;
+}
+
+.patientModule .memoInlineField input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .patientModule .compactMoveForm {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .patientModule .moveFormQuartet {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+}
+
+@media (max-width: 560px) {
+  .patientModule .moveFormQuartet {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .patientModule .moveFormQuartet label span,
+  .patientModule .moveFormQuartet .autoStaffBox span,
+  .patientModule .memoInlineField span {
+    font-size: 10px;
+  }
+
+  .patientModule .moveFormQuartet select,
+  .patientModule .moveFormQuartet .autoStaffBox,
+  .patientModule .memoInlineField input {
+    min-height: 46px;
+    font-size: 12px;
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .patientModule .moveFormQuartet .jpDateButton {
+    height: 46px;
+    min-height: 46px;
+    padding: 0 7px;
+    font-size: 12px;
+  }
+
+  .patientModule .moveFormQuartet .autoStaffBox {
+    padding: 0;
+  }
+
+  .patientModule .moveFormQuartet label,
+  .patientModule .moveFormQuartet .autoStaffBox {
+    min-height: 60px;
+  }
+
+  .patientModule .moveFormQuartet .autoStaffBox strong {
+    min-height: 46px;
+    padding: 10px 7px;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .patientModule .outpatientAdjust,
+  .patientModule .dialysisAdjust {
+    min-width: 104px;
+  }
+
+  .patientModule .outpatientAdjustRow {
+    grid-template-columns: 30px 20px 20px 20px;
+  }
+
+  .patientModule .dialysisAdjustRow {
+    grid-template-columns: 38px 20px 20px 20px;
+  }
+}
+
+.calendarCell,
+.calendarCell .dayNumber {
+  color: #0f172a;
+}
+
+.calendarCell.sunday .dayNumber {
+  color: #991b1b;
+}
+
+.calendarCell.saturdayCell .dayNumber {
+  color: #1e40af;
+}
+
+.calendarCell .saturdayMini {
+  color: #1e40af;
+}
+
+.calendarCell .announcementMini {
+  color: #0f766e;
+}
+
+.calendarCell .dayCounts span {
+  color: #174ea6;
+}
+
+.calendarCell .holidayWorkTags span {
+  color: #b91c1c;
+}
+
+.patientModule .tableSectionTabs .adjustHistoryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.appHeader {
+  align-items: stretch;
+  background: #ffffff;
+  border: 1px solid #d8e2ee;
+  border-top: 4px solid #0f766e;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+}
+
+.appTitleTabs {
+  padding: 4px;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  background: #f1f5f9;
+}
+
+.appTitleTabs button {
+  min-height: 42px;
+  border: 1px solid transparent;
+  color: #334155;
+  font-size: 20px;
+  font-weight: 760;
+}
+
+.appTitleTabs button.active {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+  box-shadow: none;
+  font-weight: 950;
+}
+
+.loginRow {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  gap: 6px;
+}
+
+.loginSelect span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+  font-weight: 900;
+}
+
+.loginSelect select {
+  border-color: #cbd5e1;
+  box-shadow: none;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.patientMiniProfessionTabs {
+  padding: 2px;
+  border-color: #d8e2ee;
+  background: #edf4f3;
+}
+
+.patientMiniProfessionTabs button {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 4px 7px;
+  color: #334155;
+  font-weight: 760;
+}
+
+.patientMiniProfessionTabs button.active {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+  box-shadow: none;
+  font-weight: 950;
+}
+
+.patientModule .viewTabs {
+  align-items: center;
+  padding: 4px 6px;
+  border: 1px solid #d8e2ee;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.patientModule .viewTabGroup {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.patientModule .viewTabGroup button {
+  position: relative;
+  min-height: 34px;
+  padding: 7px 15px 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #475569;
+  font-size: 15px;
+  font-weight: 760;
+  box-shadow: none;
+}
+
+.patientModule .viewTabGroup button.active {
+  background: transparent;
+  color: #0f766e;
+  border-color: transparent;
+  box-shadow: none;
+  font-weight: 950;
+}
+
+.patientModule .viewTabGroup button.active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: #0f766e;
+}
+
+.patientModule .viewTabs .settingsTabButton.active {
+  color: #ffffff;
+  background: #0f766e;
+  border-color: #0f766e;
+  box-shadow: none;
+}
+
+.patientModule .viewTabs .settingsTabButton {
+  background: #ffffff;
+  border: 1px solid #d8e2ee;
+}
+
+@media (max-width: 560px) {
+  .appHeader {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .appTitleTabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .appTitleTabs button {
+    min-height: 42px;
+    padding: 8px 6px;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .loginRow.patientLoginRow {
+    padding: 0;
+    gap: 5px;
+  }
+
+  .patientMiniProfessionTabs button {
+    min-height: 28px;
+    padding: 4px 6px;
+    color: #334155;
+  }
+
+  .patientMiniProfessionTabs button.active {
+    color: #ffffff;
+  }
+
+  .patientModule .viewTabs {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    padding: 4px 6px;
+  }
+
+  .patientModule .viewTabGroup button {
+    min-height: 34px;
+    padding: 7px 6px 9px;
+    font-size: 14px;
+  }
+}
+
+.patientModule .assignmentTable .nameCell {
+  position: relative;
+  justify-content: flex-start;
+  gap: 5px;
+  text-align: left;
 }

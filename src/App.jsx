@@ -7,15 +7,37 @@ const AFTERNOON_HOURS = 4.25;
 const SUMMER_LIMIT = 5;
 
 const DEFAULT_STAFF = [
-  { id: "s1", lastName: "山田", firstName: "太郎", name: "山田 太郎", job: "PT", role: "admin" },
-  { id: "s2", lastName: "田中", firstName: "美咲", name: "田中 美咲", job: "PT", role: "staff" },
-  { id: "s3", lastName: "佐藤", firstName: "健", name: "佐藤 健", job: "PT", role: "staff" },
-  { id: "s4", lastName: "高橋", firstName: "優", name: "高橋 優", job: "PT", role: "staff" },
-  { id: "s5", lastName: "吉田", firstName: "彩", name: "吉田 彩", job: "OT", role: "staff" },
-  { id: "s6", lastName: "伊藤", firstName: "翔", name: "伊藤 翔", job: "OT", role: "staff" },
-  { id: "s7", lastName: "渡辺", firstName: "葵", name: "渡辺 葵", job: "OT", role: "staff" },
-  { id: "s8", lastName: "中村", firstName: "蓮", name: "中村 蓮", job: "OT", role: "staff" },
+  { id: "s1", lastName: "阿部", firstName: "寛", name: "阿部 寛", job: "PT", role: "admin" },
+  { id: "s2", lastName: "大泉", firstName: "洋", name: "大泉 洋", job: "PT", role: "staff" },
+  { id: "s3", lastName: "佐藤", firstName: "二朗", name: "佐藤 二朗", job: "PT", role: "staff" },
+  { id: "s4", lastName: "ムロ", firstName: "ツヨシ", name: "ムロ ツヨシ", job: "PT", role: "staff" },
+  { id: "s5", lastName: "天海", firstName: "祐希", name: "天海 祐希", job: "OT", role: "staff" },
+  { id: "s6", lastName: "小池", firstName: "栄子", name: "小池 栄子", job: "OT", role: "staff" },
+  { id: "s7", lastName: "松重", firstName: "豊", name: "松重 豊", job: "OT", role: "staff" },
+  { id: "s8", lastName: "光石", firstName: "研", name: "光石 研", job: "OT", role: "staff" },
 ];
+
+const SAMPLE_STAFF_NAME_BY_ID = {
+  s1: { lastName: "阿部", firstName: "寛" },
+  s2: { lastName: "大泉", firstName: "洋" },
+  s3: { lastName: "佐藤", firstName: "二朗" },
+  s4: { lastName: "ムロ", firstName: "ツヨシ" },
+  s5: { lastName: "天海", firstName: "祐希" },
+  s6: { lastName: "小池", firstName: "栄子" },
+  s7: { lastName: "松重", firstName: "豊" },
+  s8: { lastName: "光石", firstName: "研" },
+};
+
+const OLD_SAMPLE_STAFF_NAME_BY_ID = {
+  s1: { lastName: "山田", firstName: "太郎" },
+  s2: { lastName: "田中", firstName: "美咲" },
+  s3: { lastName: "佐藤", firstName: "健" },
+  s4: { lastName: "高橋", firstName: "優" },
+  s5: { lastName: "吉田", firstName: "彩" },
+  s6: { lastName: "伊藤", firstName: "翔" },
+  s7: { lastName: "渡辺", firstName: "葵" },
+  s8: { lastName: "中村", firstName: "蓮" },
+};
 
 const LEAVE_TYPES = {
   paid: "有休",
@@ -35,6 +57,12 @@ const METHODS = {
   time: "時間休",
 };
 
+const HOLIDAY_WORK_METHODS = {
+  full: "終日勤務",
+  morning: "午前勤務",
+  afternoon: "午後勤務",
+};
+
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 const ANNOUNCEMENT_TYPES = {
@@ -44,6 +72,11 @@ const ANNOUNCEMENT_TYPES = {
 };
 
 const SATURDAY_GROUP_KEYS = ["A", "B", "C", "D"];
+
+function makeId(prefix = "id") {
+  if (globalThis.crypto?.randomUUID) return globalThis.makeId();
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 function defaultSaturdayGroups(staffList) {
   const groups = { A: [], B: [], C: [], D: [] };
@@ -307,6 +340,12 @@ function recordDisplay(record) {
     return `夏季休暇${nums[record.summerNumber - 1] || record.summerNumber}`;
   }
 
+  if (record.type === "holiday") {
+    if (record.method === "morning") return "日祝勤務（午前）";
+    if (record.method === "afternoon") return "日祝勤務（午後）";
+    return "日祝勤務（終日）";
+  }
+
   return LEAVE_TYPES[record.type] || "";
 }
 
@@ -352,6 +391,23 @@ function normalizeStaffMember(member) {
     firstName,
     name: `${lastName || ""} ${firstName || ""}`.trim() || member.name || "",
   };
+}
+
+function migrateSampleStaffName(member) {
+  const normalized = normalizeStaffMember(member);
+  const oldName = OLD_SAMPLE_STAFF_NAME_BY_ID[normalized.id];
+  const nextName = SAMPLE_STAFF_NAME_BY_ID[normalized.id];
+  if (!oldName || !nextName) return normalized;
+
+  const isOldSampleName = normalized.lastName === oldName.lastName && normalized.firstName === oldName.firstName;
+  if (!isOldSampleName) return normalized;
+
+  return normalizeStaffMember({
+    ...normalized,
+    lastName: nextName.lastName,
+    firstName: nextName.firstName,
+    name: `${nextName.lastName} ${nextName.firstName}`,
+  });
 }
 
 function sortStaff(list) {
@@ -491,10 +547,10 @@ export default function App() {
 
   const [staff, setStaff] = useState(() => {
     const saved = localStorage.getItem("leaveStaffV4");
-    if (saved) return JSON.parse(saved).map(normalizeStaffMember);
+    if (saved) return JSON.parse(saved).map(migrateSampleStaffName);
 
     const oldSaved = localStorage.getItem("leaveStaffV3");
-    if (oldSaved) return JSON.parse(oldSaved).map(normalizeStaffMember);
+    if (oldSaved) return JSON.parse(oldSaved).map(migrateSampleStaffName);
 
     return DEFAULT_STAFF.map(normalizeStaffMember);
   });
@@ -546,6 +602,7 @@ export default function App() {
   const [loginId, setLoginId] = useState(staff[0]?.id || "s1");
   const [view, setView] = useState("calendar");
   const [appSection, setAppSection] = useState("leave");
+  const [patientProfession, setPatientProfession] = useState(staff[0]?.job || "PT");
   const [displayScope, setDisplayScope] = useState("all");
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -553,6 +610,12 @@ export default function App() {
   const [showStaffEdit, setShowStaffEdit] = useState(false);
   const [showAnnouncementEdit, setShowAnnouncementEdit] = useState(false);
   const [showSaturdayEdit, setShowSaturdayEdit] = useState(false);
+  const [showLeaveForm, setShowLeaveForm] = useState(false);
+  const [showSaturdayGroupSettings, setShowSaturdayGroupSettings] = useState(false);
+  const [swapTargetStaffId, setSwapTargetStaffId] = useState(null);
+  const [swapCandidateDate, setSwapCandidateDate] = useState(null);
+  const [swapCandidateStaffIds, setSwapCandidateStaffIds] = useState([]);
+  const [showSaturdaySwapHelp, setShowSaturdaySwapHelp] = useState(false);
 
   const [form, setForm] = useState({
     staffId: staff[0]?.id || "s1",
@@ -635,6 +698,10 @@ export default function App() {
   const isAdmin = loginUser?.role === "admin";
   const currentFy = fiscalYear(`${year}-${pad(month)}-01`);
   const todayAnnouncements = useMemo(() => expandAnnouncements(announcements, todayKey()), [announcements]);
+
+  useEffect(() => {
+    if (loginUser?.job) setPatientProfession(loginUser.job);
+  }, [loginUser?.id, loginUser?.job]);
 
   const enrichedRecords = useMemo(() => {
     const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
@@ -728,6 +795,64 @@ export default function App() {
     return people;
   }
 
+  function saturdayBaseStaffForDate(date) {
+    const groupKey = saturdayBaseGroupKeyForDate(date);
+    if (!groupKey) return [];
+    const people = (saturdayGroups[groupKey] || []).map((id) => staff.find((s) => s.id === id)).filter(Boolean);
+    if (displayScope === "mine") return people.filter((person) => person.id === loginId);
+    return people;
+  }
+
+  function saturdayDutyRowsForDate(date, job) {
+    const schedule = saturdayScheduleForDate(date);
+    if (!schedule) return [];
+
+    const basePeople = saturdayBaseStaffForDate(date).filter((person) => person.job === job);
+    const finalPeople = saturdayStaffForDate(date).filter((person) => person.job === job);
+
+    if (!schedule.isOverride) {
+      return finalPeople.map((person, index) => ({
+        id: `${job}-${person.id}-${index}`,
+        before: person,
+        after: person,
+        changed: false,
+        removed: false,
+        added: false,
+      }));
+    }
+
+    const finalIds = new Set(finalPeople.map((person) => person.id));
+    const baseIds = new Set(basePeople.map((person) => person.id));
+    const unchanged = finalPeople.filter((person) => baseIds.has(person.id));
+    const removed = basePeople.filter((person) => !finalIds.has(person.id));
+    const added = finalPeople.filter((person) => !baseIds.has(person.id));
+    const changeCount = Math.max(removed.length, added.length);
+
+    const changedRows = Array.from({ length: changeCount }, (_, index) => {
+      const before = removed[index] || null;
+      const after = added[index] || null;
+      return {
+        id: `${job}-${before?.id || "none"}-${after?.id || "none"}-${index}`,
+        before,
+        after,
+        changed: Boolean(before && after),
+        removed: Boolean(before && !after),
+        added: Boolean(!before && after),
+      };
+    });
+
+    const unchangedRows = unchanged.map((person, index) => ({
+      id: `${job}-${person.id}-unchanged-${index}`,
+      before: person,
+      after: person,
+      changed: false,
+      removed: false,
+      added: false,
+    }));
+
+    return [...changedRows, ...unchangedRows].filter((row) => row.before || row.after);
+  }
+
   function canShowSaturdayForDate(date) {
     const schedule = saturdayScheduleForDate(date);
     if (!schedule) return false;
@@ -742,6 +867,19 @@ export default function App() {
       OT: list.filter((r) => r.staff.job === "OT").length,
       total: list.length,
     };
+  }
+
+  function holidayWorkCountByJob(date) {
+    const list = scopedRecordsForDate(date).filter((r) => r.type === "holiday");
+    return {
+      PT: list.filter((r) => r.staff.job === "PT").length,
+      OT: list.filter((r) => r.staff.job === "OT").length,
+      total: list.length,
+    };
+  }
+
+  function announcementsForDate(date) {
+    return expandAnnouncements(announcements, date);
   }
 
   function validateRecord(nextRecord) {
@@ -789,7 +927,7 @@ export default function App() {
   function addRecord() {
     let nextRecord = {
       ...form,
-      id: crypto.randomUUID(),
+      id: makeId(),
       createdAt: Date.now(),
     };
 
@@ -802,7 +940,11 @@ export default function App() {
       return;
     }
 
-    if (!["paid", "child"].includes(nextRecord.type)) {
+    if (!["paid", "child", "holiday"].includes(nextRecord.type)) {
+      nextRecord.method = "full";
+    }
+
+    if (nextRecord.type === "holiday" && nextRecord.method === "time") {
       nextRecord.method = "full";
     }
 
@@ -865,6 +1007,11 @@ export default function App() {
   }
 
   function previewText() {
+    if (form.type === "holiday") {
+      if (form.method === "morning") return "日祝勤務（午前）として登録";
+      if (form.method === "afternoon") return "日祝勤務（午後）として登録";
+      return "日祝勤務（終日）として登録";
+    }
     if (!["paid", "child"].includes(form.type)) return `${LEAVE_TYPES[form.type]}として登録`;
     if (form.method === "full") return "計算結果：終日取得 1日";
     if (form.method === "morning") return "計算結果：時間休 3.5h";
@@ -877,6 +1024,11 @@ export default function App() {
     return scopedRecordsForDate(selectedDate);
   }
 
+  function selectedAnnouncements() {
+    if (!selectedDate) return [];
+    return announcementsForDate(selectedDate);
+  }
+
   function toggleDate(date) {
     setSelectedDate((current) => (current === date ? null : date));
   }
@@ -885,7 +1037,7 @@ export default function App() {
     setStaff((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: makeId(),
         lastName: "新規",
         firstName: "職員",
         name: "新規 職員",
@@ -936,7 +1088,7 @@ export default function App() {
 
     setAnnouncements((prev) => [
       {
-        id: crypto.randomUUID(),
+        id: makeId(),
         title,
         message: announcementForm.message.trim(),
         priority: announcementForm.priority,
@@ -974,6 +1126,9 @@ export default function App() {
 
   function openSaturdayEdit(date = selectedDate || form.date || todayKey()) {
     const existing = saturdayScheduleForDate(date);
+    setSwapTargetStaffId(null);
+    setSwapCandidateDate(null);
+    setSwapCandidateStaffIds([]);
     setSaturdayForm({
       date,
       staffIds: existing?.staffIds || [],
@@ -990,6 +1145,121 @@ export default function App() {
         staffIds: exists ? prev.staffIds.filter((id) => id !== staffId) : [...prev.staffIds, staffId],
       };
     });
+  }
+
+  function setSaturdayStaffAttendance(staffId, shouldAttend) {
+    setSaturdayForm((prev) => {
+      const exists = prev.staffIds.includes(staffId);
+      if (shouldAttend && !exists) return { ...prev, staffIds: [...prev.staffIds, staffId] };
+      if (!shouldAttend && exists) return { ...prev, staffIds: prev.staffIds.filter((id) => id !== staffId) };
+      return prev;
+    });
+  }
+
+  function replaceSaturdayStaff(outgoingStaffId, incomingStaffId) {
+    if (!outgoingStaffId || !incomingStaffId || outgoingStaffId === incomingStaffId) return;
+    setSaturdayForm((prev) => {
+      if (!prev.staffIds.includes(outgoingStaffId)) return prev;
+      if (prev.staffIds.includes(incomingStaffId)) return prev;
+      return {
+        ...prev,
+        staffIds: prev.staffIds.map((staffId) => (staffId === outgoingStaffId ? incomingStaffId : staffId)),
+      };
+    });
+    setSwapTargetStaffId(null);
+  }
+
+  function handleSaturdaySwapDrop(event, outgoingStaffId) {
+    event.preventDefault();
+    const incomingStaffId = event.dataTransfer.getData("text/saturday-staff-id");
+    replaceSaturdayStaff(outgoingStaffId, incomingStaffId);
+  }
+
+  function handleSaturdayStaffDrop(event, shouldAttend) {
+    event.preventDefault();
+    const staffId = event.dataTransfer.getData("text/saturday-staff-id");
+    if (staffId) setSaturdayStaffAttendance(staffId, shouldAttend);
+  }
+
+  function saturdayCandidateDates(baseDate) {
+    const base = baseDate ? new Date(`${baseDate}T00:00:00`) : today;
+    const start = new Date(base.getFullYear(), base.getMonth(), 1);
+    const end = new Date(base.getFullYear(), base.getMonth() + 2, 0);
+    const dates = [];
+
+    for (let d = new Date(start); d <= end; d = addDateDays(d, 1)) {
+      if (d.getDay() === 6) dates.push(toDateKey(d));
+    }
+
+    return dates;
+  }
+
+  function selectSaturdayCandidate(date, staffIdToAdd = null) {
+    const existing = saturdayScheduleForDate(date);
+    const staffIds = existing?.staffIds || [];
+    setSwapTargetStaffId(null);
+    setSaturdayForm({
+      date,
+      staffIds: staffIdToAdd && !staffIds.includes(staffIdToAdd) ? [...staffIds, staffIdToAdd] : staffIds,
+      note: existing?.note || "",
+    });
+  }
+
+  function selectSwapCandidate(date) {
+    const existing = saturdayScheduleForDate(date);
+    setSwapCandidateDate(date);
+    setSwapCandidateStaffIds(existing?.staffIds || []);
+    setSwapTargetStaffId(null);
+  }
+
+  function swapSaturdayStaffBetweenDates(leftStaffId, rightStaffId) {
+    if (!leftStaffId || !rightStaffId || leftStaffId === rightStaffId) return;
+    if (!swapCandidateDate) return;
+
+    setSaturdayForm((prev) => {
+      if (!prev.staffIds.includes(leftStaffId)) return prev;
+      if (prev.staffIds.includes(rightStaffId)) return prev;
+      return {
+        ...prev,
+        staffIds: prev.staffIds.map((staffId) => (staffId === leftStaffId ? rightStaffId : staffId)),
+      };
+    });
+
+    setSwapCandidateStaffIds((prev) => {
+      if (!prev.includes(rightStaffId)) return prev;
+      if (prev.includes(leftStaffId)) return prev;
+      return prev.map((staffId) => (staffId === rightStaffId ? leftStaffId : staffId));
+    });
+
+    setSwapTargetStaffId(null);
+  }
+
+  function handleSaturdayTapSwap(rightStaffId) {
+    if (!swapCandidateDate) {
+      alert("候補の土曜日を選択してください。");
+      return;
+    }
+    if (!swapTargetStaffId) {
+      alert("左側の出勤者を先に選択してください。");
+      return;
+    }
+
+    const leftPerson = staff.find((person) => person.id === swapTargetStaffId);
+    const rightPerson = staff.find((person) => person.id === rightStaffId);
+    if (!leftPerson || !rightPerson) return;
+
+    swapSaturdayStaffBetweenDates(swapTargetStaffId, rightStaffId);
+  }
+
+  function handleSaturdayCrossSwapDrop(event, leftStaffId) {
+    event.preventDefault();
+    const rightStaffId = event.dataTransfer.getData("text/saturday-staff-id");
+    swapSaturdayStaffBetweenDates(leftStaffId, rightStaffId);
+  }
+
+  function arraysEqualByValue(a, b) {
+    if (a.length !== b.length) return false;
+    return a.every((value, index) => value === b[index]);
   }
 
   function toggleSaturdayGroupStaff(groupKey, staffId) {
@@ -1034,16 +1304,32 @@ export default function App() {
     }
 
     setSaturdayOverrides((prev) => {
-      const next = {
-        date: saturdayForm.date,
-        staffIds: saturdayForm.staffIds,
-        note: saturdayForm.note.trim(),
-        updatedAt: Date.now(),
+      const upsert = (list, next) => {
+        const exists = list.some((item) => item.date === next.date);
+        if (exists) return list.map((item) => (item.date === next.date ? next : item));
+        return [...list, next];
       };
 
-      const exists = prev.some((item) => item.date === saturdayForm.date);
-      if (exists) return prev.map((item) => (item.date === saturdayForm.date ? next : item));
-      return [...prev, next];
+      let nextList = upsert(prev, {
+        date: saturdayForm.date,
+        staffIds: saturdayForm.staffIds,
+        note: (saturdayForm.note || "").trim(),
+        updatedAt: Date.now(),
+      });
+
+      if (swapCandidateDate) {
+        const originalCandidateIds = saturdayScheduleForDate(swapCandidateDate)?.staffIds || [];
+        if (!arraysEqualByValue(originalCandidateIds, swapCandidateStaffIds)) {
+          nextList = upsert(nextList, {
+            date: swapCandidateDate,
+            staffIds: swapCandidateStaffIds,
+            note: saturdayScheduleForDate(swapCandidateDate)?.note || "",
+            updatedAt: Date.now(),
+          });
+        }
+      }
+
+      return nextList;
     });
 
     setSelectedDate(saturdayForm.date);
@@ -1058,7 +1344,10 @@ export default function App() {
 
   const visibleStaff = isAdmin ? activeStaff : activeStaff.filter((s) => s.id === loginId);
   const showTimeInputs = ["paid", "child"].includes(form.type) && form.method === "time";
-  const showMethod = ["paid", "child"].includes(form.type);
+  const showMethod = ["paid", "child", "holiday"].includes(form.type);
+  const methodOptions = form.type === "holiday"
+    ? Object.entries(HOLIDAY_WORK_METHODS)
+    : Object.entries(METHODS);
   const showBreakCheck =
     showTimeInputs &&
     overlapMinutes(toMinutes(form.start), toMinutes(form.end), toMinutes("12:00"), toMinutes("13:00")) > 0;
@@ -1083,20 +1372,36 @@ export default function App() {
           </button>
         </div>
 
-        <label className="loginSelect">
-          <span>表示</span>
-          <select value={loginId} onChange={(e) => setLoginId(e.target.value)}>
-            {activeStaff.map((s) => (
-              <option key={s.id} value={s.id}>
-                {personName(s)} {s.job}{s.role === "admin" ? "（科長）" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className={`loginRow ${appSection === "patients" ? "patientLoginRow" : ""}`}>
+          <label className="loginSelect">
+            <span>表示</span>
+            <select value={loginId} onChange={(e) => setLoginId(e.target.value)}>
+              {activeStaff.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {personName(s)} {s.job}{s.role === "admin" ? "（科長）" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          {appSection === "patients" && (
+            <div className="patientMiniProfessionTabs" aria-label="患者人数管理 PT OT 切替">
+              {PM_PROFESSIONS.map((item) => (
+                <button
+                  key={item}
+                  className={patientProfession === item ? "active" : ""}
+                  type="button"
+                  onClick={() => setPatientProfession(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </header>
 
       {appSection === "patients" ? (
-        <FullPatientManager loginUser={loginUser} />
+        <FullPatientManager loginUser={loginUser} profession={patientProfession} setProfession={setPatientProfession} />
       ) : (
         <>
       <AnnouncementBoard
@@ -1106,19 +1411,35 @@ export default function App() {
         onDelete={deleteAnnouncement}
       />
 
-      <section className="card">
-        <div className="cardTitleRow">
-          <h2>休暇・勤務登録</h2>
-          <div className="actionButtons">
-            {isAdmin && (
-              <button className="softButton" type="button" onClick={() => openSaturdayEdit(form.date)}>
-                土曜出勤設定
-              </button>
-            )}
-            <button className="softButton" type="button" onClick={() => setShowStaffEdit(true)}>
-              職員編集
+      <section className={`card leaveEntryCard ${showLeaveForm ? "open" : ""}`}>
+        <div className="cardTitleRow leaveEntryHeader">
+          <button
+            className="leaveEntryTitleButton"
+            type="button"
+            onClick={() => setShowLeaveForm((prev) => !prev)}
+            aria-expanded={showLeaveForm}
+          >
+            <span>
+              <span className="leaveEntryTitle">休暇・勤務登録</span>
+              <span className="leaveEntryHint">
+                {showLeaveForm ? "入力欄を閉じる" : "タップして登録画面を開く"}
+              </span>
+            </span>
+            <span className="leaveEntryStatus">{showLeaveForm ? "閉じる" : "開く"}</span>
+          </button>
+        </div>
+
+        {showLeaveForm && (
+          <>
+        <div className="actionButtons leaveEntryActions">
+          {isAdmin && (
+            <button className="softButton" type="button" onClick={() => openSaturdayEdit(form.date)}>
+              土曜出勤設定
             </button>
-          </div>
+          )}
+          <button className="softButton" type="button" onClick={() => setShowStaffEdit(true)}>
+            職員編集
+          </button>
         </div>
 
         <div className="formGrid">
@@ -1150,7 +1471,11 @@ export default function App() {
                 setForm({
                   ...form,
                   type: e.target.value,
-                  method: ["paid", "child"].includes(e.target.value) ? form.method : "full",
+                  method: ["paid", "child"].includes(e.target.value)
+                    ? form.method
+                    : e.target.value === "holiday" && ["full", "morning", "afternoon"].includes(form.method)
+                      ? form.method
+                      : "full",
                 })
               }
             >
@@ -1166,7 +1491,7 @@ export default function App() {
             <label>
               <span>取得方法</span>
               <select value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
-                {Object.entries(METHODS).map(([key, value]) => (
+                {methodOptions.map(([key, value]) => (
                   <option key={key} value={key}>
                     {value}
                   </option>
@@ -1209,57 +1534,52 @@ export default function App() {
         <button className="primaryButton" type="button" onClick={addRecord}>
           登録する
         </button>
+          </>
+        )}
       </section>
 
       <nav className="toolbar">
-        <div className="viewButtons">
+        <div className="calendarModeBar" aria-label="カレンダー表示切替">
           <button className={view === "calendar" ? "active" : ""} onClick={() => setView("calendar")}>
             カレンダー
           </button>
-          <button className={view === "summary" ? "active" : ""} onClick={() => setView("summary")}>
-            集計
-          </button>
-        </div>
-
-        <div className="scopeButtons" aria-label="表示切替">
           <button
             type="button"
             className={displayScope === "all" ? "active" : ""}
             onClick={() => { setDisplayScope("all"); setSelectedDate(null); }}
           >
-            全体表示
+            全体
           </button>
           <button
             type="button"
             className={displayScope === "mine" ? "active" : ""}
             onClick={() => { setDisplayScope("mine"); setSelectedDate(null); }}
           >
-            自分の予定
+            自分
+          </button>
+        </div>
+        <div className="summaryModeBox">
+          <button className={view === "summary" ? "active" : ""} onClick={() => setView("summary")}>
+            集計
           </button>
         </div>
 
-        <div className="monthNav">
-          <button onClick={() => {
-            if (month === 1) { setYear(year - 1); setMonth(12); } else setMonth(month - 1);
-            setSelectedDate(null);
-          }}>前月</button>
-          <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />
-          <select value={month} onChange={(e) => { setMonth(Number(e.target.value)); setSelectedDate(null); }}>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>
-                {m}月
-              </option>
-            ))}
-          </select>
-          <button onClick={() => {
-            if (month === 12) { setYear(year + 1); setMonth(1); } else setMonth(month + 1);
-            setSelectedDate(null);
-          }}>翌月</button>
-        </div>
       </nav>
 
       {view === "calendar" ? (
         <section className="calendarCard">
+          <div className="monthNav calendarMonthNav">
+            <button onClick={() => {
+              if (month === 1) { setYear(year - 1); setMonth(12); } else setMonth(month - 1);
+              setSelectedDate(null);
+            }}>＜</button>
+            <strong className="calendarMonthLabel">{year}年{month}月</strong>
+            <button onClick={() => {
+              if (month === 12) { setYear(year + 1); setMonth(1); } else setMonth(month + 1);
+              setSelectedDate(null);
+            }}>＞</button>
+          </div>
+
           <div className="weekHeader">
             {["日", "月", "火", "水", "木", "金", "土"].map((d) => (
               <div key={d}>{d}</div>
@@ -1272,6 +1592,8 @@ export default function App() {
 
               const date = dateKey(year, month, day);
               const count = countByJob(date);
+              const holidayWork = holidayWorkCountByJob(date);
+              const dayAnnouncements = announcementsForDate(date);
               const weekday = new Date(`${date}T00:00:00`).getDay();
               const holidayName = holidays[date];
 
@@ -1291,12 +1613,19 @@ export default function App() {
                   <div className="dayHeader">
                     <span className="dayNumber">{day}</span>
                     {canShowSaturdayForDate(date) && <span className="saturdayMini">土勤</span>}
+                    {dayAnnouncements.length > 0 && <span className="announcementMini">予{dayAnnouncements.length}</span>}
                   </div>
 
                   <div className="dayCounts">
                     {count.PT > 0 && <span>PT {count.PT}</span>}
                     {count.OT > 0 && <span>OT {count.OT}</span>}
                   </div>
+                  {holidayWork.total > 0 && (
+                    <div className="holidayWorkTags">
+                      {holidayWork.PT > 0 && <span>休出 PT {holidayWork.PT}</span>}
+                      {holidayWork.OT > 0 && <span>休出 OT {holidayWork.OT}</span>}
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -1319,10 +1648,25 @@ export default function App() {
               </button>
             </div>
 
-            {selectedRecords().length === 0 && !canShowSaturdayForDate(selectedDate) && !holidays[selectedDate] ? (
+            {selectedRecords().length === 0 && selectedAnnouncements().length === 0 && !canShowSaturdayForDate(selectedDate) && !holidays[selectedDate] ? (
               <p className="emptyText">この日の登録はありません。</p>
             ) : (
               <div className="detailList">
+                {selectedAnnouncements().map((item) => (
+                  <div className={`detailItem announcementDetail ${item.priority === "important" ? "important" : ""}`} key={`${item.id}-${item.occurrenceDate || selectedDate}`}>
+                    <div>
+                      <strong>{item.time ? `${item.time}　` : ""}{item.title}</strong>
+                      {item.message && <p>{item.message}</p>}
+                      <small>{announcementScheduleText(item)}</small>
+                    </div>
+                    {isAdmin && (
+                      <button type="button" className="deleteButton" onClick={() => deleteAnnouncement(item.id)}>
+                        削除
+                      </button>
+                    )}
+                  </div>
+                ))}
+
                 {holidays[selectedDate] && (
                   <div className="detailItem holidayDetail">
                     <div>
@@ -1334,26 +1678,60 @@ export default function App() {
 
                 {canShowSaturdayForDate(selectedDate) && (
                   <div className="detailItem saturdayWorkDetail">
-                    <div>
-                      <strong>土曜出勤</strong>
-                      {saturdayScheduleForDate(selectedDate)?.isOverride && <small>この日のみ個別変更</small>}
-                      {saturdayStaffForDate(selectedDate).map((person) => (
-                        <p key={person.id}>{personName(person)}　{person.job}</p>
-                      ))}
-                      {saturdayScheduleForDate(selectedDate)?.note && <small>{saturdayScheduleForDate(selectedDate).note}</small>}
-                    </div>
-                    {isAdmin && (
-                      <div className="detailActions">
-                        <button type="button" className="softMiniButton" onClick={() => openSaturdayEdit(selectedDate)}>
-                          編集
-                        </button>
-                        {saturdayScheduleForDate(selectedDate)?.isOverride && (
-                          <button type="button" className="deleteButton" onClick={() => deleteSaturdaySchedule(selectedDate)}>
-                            個別変更解除
-                          </button>
+                    <div className="saturdayWorkBody">
+                      <div className="saturdayWorkTitle">
+                        <div className="saturdayWorkTitleText">
+                          <strong>土曜出勤</strong>
+                          {saturdayScheduleForDate(selectedDate)?.isOverride && <small>この日のみ個別変更</small>}
+                        </div>
+                        {isAdmin && (
+                          <div className="detailActions">
+                            <button type="button" className="softMiniButton" onClick={() => openSaturdayEdit(selectedDate)}>
+                              出勤日を変更
+                            </button>
+                            {saturdayScheduleForDate(selectedDate)?.isOverride && (
+                              <button type="button" className="deleteButton compactAction" onClick={() => deleteSaturdaySchedule(selectedDate)}>
+                                個別変更解除
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
+                      <div className="saturdayJobColumns">
+                        {["PT", "OT"].map((job) => {
+                          const rows = saturdayDutyRowsForDate(selectedDate, job);
+                          return (
+                            <section className="saturdayJobColumn" key={job}>
+                              <h4>{job}</h4>
+                              {rows.length === 0 ? (
+                                <p className="saturdayEmpty">該当なし</p>
+                              ) : (
+                                rows.map((row) => (
+                                  <p key={row.id} className={row.changed || row.added || row.removed ? "saturdayChanged" : ""}>
+                                    {row.changed ? (
+                                      <>
+                                        {personName(row.before)} {job} <span>⇒</span> {personName(row.after)} {job}
+                                      </>
+                                    ) : row.added ? (
+                                      <>
+                                        追加 <span>⇒</span> {personName(row.after)} {job}
+                                      </>
+                                    ) : row.removed ? (
+                                      <>
+                                        {personName(row.before)} {job} <span>⇒</span> 未設定
+                                      </>
+                                    ) : (
+                                      <>{personName(row.after || row.before)} {job}</>
+                                    )}
+                                  </p>
+                                ))
+                              )}
+                            </section>
+                          );
+                        })}
+                      </div>
+                      {saturdayScheduleForDate(selectedDate)?.note && <small>{saturdayScheduleForDate(selectedDate).note}</small>}
+                    </div>
                   </div>
                 )}
 
@@ -1515,6 +1893,20 @@ export default function App() {
               </button>
             </div>
 
+            <button
+              className="groupSettingsToggle"
+              type="button"
+              onClick={() => setShowSaturdayGroupSettings((prev) => !prev)}
+            >
+              <span>
+                <strong>グループ設定</strong>
+                <small>基本グループとローテーション開始日の設定</small>
+              </span>
+              <b>{showSaturdayGroupSettings ? "閉じる" : "開く"}</b>
+            </button>
+
+            {showSaturdayGroupSettings && (
+              <>
             <section className="groupSettings">
               <h3>ローテーション開始設定</h3>
               <p className="settingHelp">開始日と開始グループを設定すると、その土曜日からA→B→C→Dの順に月をまたいで自動で回ります。</p>
@@ -1563,48 +1955,129 @@ export default function App() {
                 ))}
               </div>
             </section>
+              </>
+            )}
 
             <section className="saturdayOverrideBox">
-              <h3>その日だけ変更</h3>
-              <p className="settingHelp">交換や1名のみの変更がある場合は、対象日の最終的な出勤者にチェックを入れて保存します。</p>
-              <div className="saturdayForm">
-                <label>
-                  <span>対象日</span>
-                  <JapaneseDateInput
-                    value={saturdayForm.date}
-                    onChange={(date) => {
-                      const existing = saturdayScheduleForDate(date);
-                      setSaturdayForm({
-                        date,
-                        staffIds: existing?.staffIds || [],
-                        note: existing?.note || "",
-                      });
-                    }}
-                  />
-                </label>
-
-                <label>
-                  <span>メモ</span>
-                  <input
-                    value={saturdayForm.note}
-                    onChange={(e) => setSaturdayForm({ ...saturdayForm, note: e.target.value })}
-                    placeholder="例：山田→田中へ交換"
-                  />
-                </label>
-
+              <div className="saturdayChangeTitleRow">
+                <h3>土曜出勤変更</h3>
+                <button
+                  className="saturdayInfoMark"
+                  type="button"
+                  onClick={() => setShowSaturdaySwapHelp((prev) => !prev)}
+                  aria-label="交換方法"
+                >
+                  i
+                </button>
+              </div>
+              {showSaturdaySwapHelp && (
+                <p className="saturdayTapHint">左の出勤者と、候補土曜日の出勤者を選んで入れ替えます。</p>
+              )}
+              <div className="saturdayForm saturdayChangeForm">
                 <div className="saturdayStaffSelect">
-                  <span>この日の出勤者</span>
-                  <div className="staffCheckGrid">
-                    {activeStaff.map((s) => (
-                      <label key={s.id} className="staffCheckItem">
-                        <input
-                          type="checkbox"
-                          checked={saturdayForm.staffIds.includes(s.id)}
-                          onChange={() => toggleSaturdayStaff(s.id)}
-                        />
-                        <span>{personName(s)}　{s.job}</span>
-                      </label>
-                    ))}
+                  <span>出勤者と候補の土曜日</span>
+                  <div className="saturdayDatePuzzle">
+                    <section className="saturdayAttendeePanel">
+                      <div className="saturdayPanelTitle">
+                        <h4>出勤者</h4>
+                      </div>
+                      <strong className="saturdaySelectedDate">{saturdayForm.date.replaceAll("-", "/")}</strong>
+                      <div className="saturdaySwapBoard">
+                        <div>
+                          <span className="saturdaySwapLabel">現在の出勤者</span>
+                          <div className="saturdayPuzzleList">
+                            {saturdayForm.staffIds.length === 0 ? (
+                              <p className="saturdayPuzzleEmpty">出勤者が未設定です</p>
+                            ) : (
+                              saturdayForm.staffIds.map((staffId) => {
+                                const person = staff.find((s) => s.id === staffId);
+                                if (!person) return null;
+                                return (
+                                  <button
+                                    className={`saturdayPuzzleCard selected ${swapTargetStaffId === person.id ? "swapTarget" : ""}`}
+                                    key={person.id}
+                                    type="button"
+                                    onClick={() => setSwapTargetStaffId((current) => (current === person.id ? null : person.id))}
+                                  >
+                                    <strong>{personName(person)}</strong>
+                                    <span>{person.job}</span>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="saturdayCandidatePanel">
+                      <h4>候補の土曜日</h4>
+                      <div className="saturdayCandidateSplit">
+                        <div className="saturdayCandidateList">
+                          {saturdayCandidateDates(saturdayForm.date).filter((date) => date !== saturdayForm.date).map((date) => {
+                            const schedule = saturdayScheduleForDate(date);
+                            const people = (date === swapCandidateDate ? swapCandidateStaffIds : schedule?.staffIds || [])
+                              .map((staffId) => staff.find((s) => s.id === staffId))
+                              .filter(Boolean);
+                            return (
+                              <button
+                                className={`saturdayCandidateDate ${date === swapCandidateDate ? "selected" : ""}`}
+                                key={date}
+                                type="button"
+                                onClick={() => selectSwapCandidate(date)}
+                              >
+                                <strong>{date.replaceAll("-", "/")}</strong>
+                                <small>
+                                  基本：{saturdayBaseGroupKeyForDate(date) || "-"}
+                                  {saturdayOverrideForDate(date) ? " ／ 個別変更あり" : ""}
+                                </small>
+                                <span className="saturdayCandidatePeople">
+                                  {people.length === 0 ? "未設定" : people.map((person) => `${personName(person)} ${person.job}`).join("、")}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="saturdayCandidateStaff">
+                          <span className="saturdaySwapLabel">
+                            {swapCandidateDate ? `${swapCandidateDate.replaceAll("-", "/")} の出勤者` : "候補土曜日を選択"}
+                          </span>
+                          {swapCandidateDate && (
+                            <button className="candidateBackButton" type="button" onClick={() => {
+                              setSwapCandidateDate(null);
+                              setSwapCandidateStaffIds([]);
+                              setSwapTargetStaffId(null);
+                            }} aria-label="候補土曜日へ戻る" title="候補土曜日へ戻る">
+                              ↩
+                            </button>
+                          )}
+                          <div className="saturdayPuzzleList">
+                            {!swapCandidateDate ? (
+                              <p className="saturdayPuzzleEmpty">右上の日付をタップ</p>
+                            ) : swapCandidateStaffIds.length === 0 ? (
+                              <p className="saturdayPuzzleEmpty">出勤者が未設定です</p>
+                            ) : (
+                              swapCandidateStaffIds.map((staffId) => {
+                                const person = staff.find((s) => s.id === staffId);
+                                if (!person) return null;
+                                return (
+                                  <button
+                                    className={`saturdayPuzzleCard candidate ${swapTargetStaffId ? "tapReady" : ""}`}
+                                    key={person.id}
+                                    type="button"
+                                    onClick={() => handleSaturdayTapSwap(person.id)}
+                                  >
+                                    <strong>{personName(person)}</strong>
+                                    <span>{person.job}</span>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
                   </div>
                 </div>
               </div>
@@ -1709,6 +2182,12 @@ const PM_MOVE_TYPES = [
 ];
 
 const PM_EMPTY_COUNTS = Object.fromEntries(PM_DEPARTMENTS.map((d) => [d.key, 0]));
+const PM_EMPTY_OUTPATIENT_DETAIL = { general: 0, student: 0 };
+const PM_EMPTY_DIALYSIS = { mwf: 0, tts: 0 };
+const PM_DIALYSIS_TYPES = [
+  { key: "mwf", label: "月水金", short: "月水金" },
+  { key: "tts", label: "火木土", short: "火木土" },
+];
 
 const PM_SAMPLE_STAFF = [
   {
@@ -1716,8 +2195,8 @@ const PM_SAMPLE_STAFF = [
     profession: "PT",
     type: "main",
     canCancerRehab: true,
-    lastName: "山田",
-    firstName: "太郎",
+    lastName: "阿部",
+    firstName: "寛",
     order: 1,
     counts: { ...PM_EMPTY_COUNTS, outpatient: 5, ortho: 3, neuroSurgery: 1, cancer: 1, neuroInternal: 1, internal: 5 },
     note: "13単位1名（内）",
@@ -1727,8 +2206,8 @@ const PM_SAMPLE_STAFF = [
     profession: "PT",
     type: "main",
     canCancerRehab: false,
-    lastName: "田中",
-    firstName: "美咲",
+    lastName: "大泉",
+    firstName: "洋",
     order: 2,
     counts: { ...PM_EMPTY_COUNTS, outpatient: 5, ortho: 2, surgery: 1, cancer: 1, neuroInternal: 1, internal: 5 },
     note: "",
@@ -1739,7 +2218,7 @@ const PM_SAMPLE_STAFF = [
     type: "main",
     canCancerRehab: true,
     lastName: "佐藤",
-    firstName: "健",
+    firstName: "二朗",
     order: 3,
     counts: { ...PM_EMPTY_COUNTS, outpatient: 5, ortho: 3, neuroSurgery: 1, neuroInternal: 2, internal: 5 },
     note: "",
@@ -1749,8 +2228,8 @@ const PM_SAMPLE_STAFF = [
     profession: "PT",
     type: "main",
     canCancerRehab: false,
-    lastName: "高橋",
-    firstName: "優",
+    lastName: "ムロ",
+    firstName: "ツヨシ",
     order: 4,
     counts: { ...PM_EMPTY_COUNTS, outpatient: 2, ortho: 2, neuroSurgery: 1, neuroInternal: 2, internal: 6 },
     note: "6/6退 脳内、6/7退 整",
@@ -1760,8 +2239,8 @@ const PM_SAMPLE_STAFF = [
     profession: "OT",
     type: "main",
     canCancerRehab: true,
-    lastName: "吉田",
-    firstName: "彩",
+    lastName: "天海",
+    firstName: "祐希",
     order: 1,
     counts: { ...PM_EMPTY_COUNTS, ortho: 4, neuroSurgery: 1, internal: 3 },
     note: "",
@@ -1771,10 +2250,32 @@ const PM_SAMPLE_STAFF = [
     profession: "OT",
     type: "main",
     canCancerRehab: false,
-    lastName: "伊藤",
-    firstName: "翔",
+    lastName: "小池",
+    firstName: "栄子",
     order: 2,
     counts: { ...PM_EMPTY_COUNTS, ortho: 3, cancer: 1, internal: 4 },
+    note: "",
+  },
+  {
+    id: "ot3",
+    profession: "OT",
+    type: "main",
+    canCancerRehab: true,
+    lastName: "松重",
+    firstName: "豊",
+    order: 3,
+    counts: { ...PM_EMPTY_COUNTS, neuroSurgery: 1, internal: 2, urology: 1 },
+    note: "",
+  },
+  {
+    id: "ot4",
+    profession: "OT",
+    type: "main",
+    canCancerRehab: false,
+    lastName: "光石",
+    firstName: "研",
+    order: 4,
+    counts: { ...PM_EMPTY_COUNTS, ortho: 2, internal: 2, ent: 1 },
     note: "",
   },
 ];
@@ -1816,17 +2317,70 @@ function pmDisplayDate(dateStr) {
 }
 
 function pmNormalizeStaff(staff, index = 0) {
+  const counts = { ...PM_EMPTY_COUNTS, ...(staff.counts || {}) };
+  const outpatientDetail = {
+    ...PM_EMPTY_OUTPATIENT_DETAIL,
+    ...(staff.outpatientDetail || {}),
+  };
+  if (!staff.outpatientDetail) {
+    outpatientDetail.general = Number(counts.outpatient || 0);
+    outpatientDetail.student = 0;
+  }
+  counts.outpatient = Number(outpatientDetail.general || 0) + Number(outpatientDetail.student || 0);
+
   return {
-    id: staff.id || crypto.randomUUID(),
+    id: staff.id || makeId(),
     profession: staff.profession || "PT",
     type: staff.type || "main",
     canCancerRehab: Boolean(staff.canCancerRehab),
     lastName: staff.lastName || "",
     firstName: staff.firstName || "",
     order: Number(staff.order || index + 1),
-    counts: { ...PM_EMPTY_COUNTS, ...(staff.counts || {}) },
+    counts,
+    outpatientDetail,
+    dialysis: { ...PM_EMPTY_DIALYSIS, ...(staff.dialysis || {}) },
     note: staff.note || "",
   };
+}
+
+const PM_SAMPLE_STAFF_NAME_BY_ID = {
+  pt1: { lastName: "阿部", firstName: "寛" },
+  pt2: { lastName: "大泉", firstName: "洋" },
+  pt3: { lastName: "佐藤", firstName: "二朗" },
+  pt4: { lastName: "ムロ", firstName: "ツヨシ" },
+  ot1: { lastName: "天海", firstName: "祐希" },
+  ot2: { lastName: "小池", firstName: "栄子" },
+};
+
+const PM_OLD_SAMPLE_STAFF_NAME_BY_ID = {
+  pt1: { lastName: "山田", firstName: "太郎" },
+  pt2: { lastName: "田中", firstName: "美咲" },
+  pt3: { lastName: "佐藤", firstName: "健" },
+  pt4: { lastName: "高橋", firstName: "優" },
+  ot1: { lastName: "吉田", firstName: "彩" },
+  ot2: { lastName: "伊藤", firstName: "翔" },
+};
+
+function pmMigrateSampleStaff(staff, index = 0) {
+  const normalized = pmNormalizeStaff(staff, index);
+  const oldName = PM_OLD_SAMPLE_STAFF_NAME_BY_ID[normalized.id];
+  const nextName = PM_SAMPLE_STAFF_NAME_BY_ID[normalized.id];
+  if (!oldName || !nextName) return normalized;
+
+  const isOldSampleName = normalized.lastName === oldName.lastName && normalized.firstName === oldName.firstName;
+  if (!isOldSampleName) return normalized;
+
+  return pmNormalizeStaff({
+    ...normalized,
+    lastName: nextName.lastName,
+    firstName: nextName.firstName,
+  }, index);
+}
+
+function pmEnsureSampleStaff(list) {
+  const ids = new Set(list.map((staff) => staff.id));
+  const additions = PM_SAMPLE_STAFF.filter((staff) => !ids.has(staff.id)).map(pmNormalizeStaff);
+  return [...list, ...additions];
 }
 
 function pmCountTotal(staff) {
@@ -1834,6 +2388,36 @@ function pmCountTotal(staff) {
     (sum, dept) => sum + Number(staff.counts?.[dept.key] || 0),
     0
   );
+}
+
+function pmOutpatientDetail(staff) {
+  const detail = { ...PM_EMPTY_OUTPATIENT_DETAIL, ...(staff.outpatientDetail || {}) };
+  if (!staff.outpatientDetail) {
+    detail.general = Number(staff.counts?.outpatient || 0);
+    detail.student = 0;
+  }
+  return {
+    general: Number(detail.general || 0),
+    student: Number(detail.student || 0),
+  };
+}
+
+function pmOutpatientTotal(staff) {
+  const detail = pmOutpatientDetail(staff);
+  return detail.general + detail.student;
+}
+
+function pmDialysisDetail(staff) {
+  const detail = { ...PM_EMPTY_DIALYSIS, ...(staff.dialysis || {}) };
+  return {
+    mwf: Number(detail.mwf || 0),
+    tts: Number(detail.tts || 0),
+  };
+}
+
+function pmDialysisTotal(staff) {
+  const detail = pmDialysisDetail(staff);
+  return detail.mwf + detail.tts;
 }
 
 function pmIsDue(movement) {
@@ -1942,17 +2526,18 @@ function PMJapaneseDateInput({ value, onChange }) {
   );
 }
 
-function FullPatientManager({ loginUser }) {
-  const [profession, setProfession] = useState(loginUser?.job || "PT");
+function FullPatientManager({ loginUser, profession, setProfession }) {
   const [view, setView] = useState("table");
 
   useEffect(() => {
     if (loginUser?.job) setProfession(loginUser.job);
-  }, [loginUser?.id, loginUser?.job]);
+  }, [loginUser?.id, loginUser?.job, setProfession]);
   const [fullTable, setFullTable] = useState(false);
   const [staff, setStaff] = useState(() => {
     const saved = localStorage.getItem("integratedAssignmentTableStaffV1");
-    return saved ? JSON.parse(saved).map(pmNormalizeStaff) : PM_SAMPLE_STAFF.map(pmNormalizeStaff);
+    return saved
+      ? pmEnsureSampleStaff(JSON.parse(saved).map(pmMigrateSampleStaff))
+      : PM_SAMPLE_STAFF.map(pmNormalizeStaff);
   });
   const [movements, setMovements] = useState(() => {
     const saved = localStorage.getItem("integratedAssignmentTableMovementsV1");
@@ -1991,6 +2576,8 @@ function FullPatientManager({ loginUser }) {
     profession: "PT",
     canCancerRehab: false,
   });
+  const [settingsView, setSettingsView] = useState("register");
+  const [showTodayAdjustHistory, setShowTodayAdjustHistory] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("integratedAssignmentTableStaffV1", JSON.stringify(staff));
@@ -2035,6 +2622,12 @@ function FullPatientManager({ loginUser }) {
       .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.createdAt).localeCompare(String(a.createdAt)));
   }, [history, profession]);
 
+  const todayAdjustHistory = useMemo(() => {
+    return history
+      .filter((item) => item.profession === profession && item.date === pmTodayKey() && !item.moveType)
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }, [history, profession]);
+
   const fiscal = pmFiscalYear(pmTodayKey());
   const tableDensity = visibleStaff.length >= 14 ? "dense3" : visibleStaff.length >= 10 ? "dense2" : "dense1";
 
@@ -2047,13 +2640,29 @@ function FullPatientManager({ loginUser }) {
   }
 
   const movementStaffOptions = staffOptionsForDepartment(movementForm.department);
+  const loginPatientStaff = useMemo(() => {
+    if (!loginUser) return null;
+    return staff.find((person) => (
+      person.profession === loginUser.job
+      && (person.lastName || "") === (loginUser.lastName || "")
+      && (person.firstName || "") === (loginUser.firstName || "")
+    )) || null;
+  }, [staff, loginUser]);
+
+  const autoMovementStaff = (
+    movementStaffOptions.find((person) => person.id === loginPatientStaff?.id)
+    || movementStaffOptions.find((person) => person.id === movementForm.staffId)
+    || movementStaffOptions[0]
+    || null
+  );
 
   useEffect(() => {
-    if (!movementStaffOptions.some((person) => person.id === movementForm.staffId)) {
-      setMovementForm((prev) => ({ ...prev, staffId: movementStaffOptions[0]?.id || "" }));
+    const nextStaffId = autoMovementStaff?.id || "";
+    if (movementForm.staffId !== nextStaffId) {
+      setMovementForm((prev) => ({ ...prev, staffId: nextStaffId }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profession, movementForm.department, staff.length]);
+  }, [profession, movementForm.department, staff.length, loginPatientStaff?.id, autoMovementStaff?.id]);
 
   function isChangedToday(staffId, department) {
     return recentChanges[`${staffId}:${department}`] === pmTodayKey();
@@ -2072,6 +2681,19 @@ function FullPatientManager({ loginUser }) {
     setStaff((prev) =>
       prev.map((person) => {
         if (person.id !== staffId) return person;
+        if (department === "outpatient") {
+          return {
+            ...person,
+            counts: {
+              ...person.counts,
+              outpatient: nextValue,
+            },
+            outpatientDetail: {
+              general: nextValue,
+              student: 0,
+            },
+          };
+        }
         return {
           ...person,
           counts: {
@@ -2085,12 +2707,65 @@ function FullPatientManager({ loginUser }) {
     markChanged(staffId, department);
   }
 
+  function updateOutpatientDetail(staffId, key, value) {
+    const nextValue = Math.max(0, Number(value || 0));
+    setStaff((prev) =>
+      prev.map((person) => {
+        if (person.id !== staffId) return person;
+        const detail = pmOutpatientDetail(person);
+        const nextDetail = { ...detail, [key]: nextValue };
+        return {
+          ...person,
+          outpatientDetail: nextDetail,
+          counts: {
+            ...person.counts,
+            outpatient: Number(nextDetail.general || 0) + Number(nextDetail.student || 0),
+          },
+        };
+      })
+    );
+    markChanged(staffId, "outpatient");
+  }
+
+  function quickAdjustOutpatient(staffId, key, diff) {
+    const target = staff.find((person) => person.id === staffId);
+    if (!target) return;
+    const detail = pmOutpatientDetail(target);
+    updateOutpatientDetail(staffId, key, Math.max(0, Number(detail[key] || 0) + diff));
+  }
+
+  function updateDialysisDetail(staffId, key, value) {
+    const nextValue = Math.max(0, Number(value || 0));
+    setStaff((prev) =>
+      prev.map((person) => {
+        if (person.id !== staffId) return person;
+        return {
+          ...person,
+          dialysis: {
+            ...pmDialysisDetail(person),
+            [key]: nextValue,
+          },
+        };
+      })
+    );
+    markChanged(staffId, "dialysis");
+  }
+
+  function quickAdjustDialysis(staffId, key, diff) {
+    const target = staff.find((person) => person.id === staffId);
+    if (!target) return;
+    const detail = pmDialysisDetail(target);
+    updateDialysisDetail(staffId, key, Math.max(0, Number(detail[key] || 0) + diff));
+  }
+
   function addHistory(entry) {
     setHistory((prev) => [
       {
-        id: crypto.randomUUID(),
+        id: makeId(),
         createdAt: new Date().toISOString(),
         pmFiscalYear: pmFiscalYear(entry.date || pmTodayKey()),
+        updatedById: loginUser?.id || "",
+        updatedByName: loginUser ? personName(loginUser) : "",
         ...entry,
       },
       ...prev,
@@ -2099,17 +2774,18 @@ function FullPatientManager({ loginUser }) {
 
   function registerMovement(e) {
     e.preventDefault();
-    const targetStaff = staff.find((person) => person.id === movementForm.staffId);
+    const targetStaff = autoMovementStaff || staff.find((person) => person.id === movementForm.staffId);
     if (!targetStaff) {
-      alert("担当者を選択してください。");
+      alert("ログイン者に対応する担当者が見つかりません。職員編集を確認してください。");
       return;
     }
 
     setMovements((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: makeId(),
         ...movementForm,
+        staffId: targetStaff.id,
         profession: targetStaff.profession,
         staffName: pmPersonName(targetStaff),
         done: false,
@@ -2149,7 +2825,7 @@ function FullPatientManager({ loginUser }) {
 
     setHistory((prev) => [
       ...due.map((movement) => ({
-        id: crypto.randomUUID(),
+        id: makeId(),
         date: movement.date,
         createdAt: new Date().toISOString(),
         pmFiscalYear: pmFiscalYear(movement.date),
@@ -2162,6 +2838,8 @@ function FullPatientManager({ loginUser }) {
         pmDepartmentShort: pmDepartmentShort(movement.department),
         delta: -1,
         amount: 1,
+        updatedById: loginUser?.id || "",
+        updatedByName: loginUser ? personName(loginUser) : "",
         note: movement.note || "",
       })),
       ...prev,
@@ -2190,6 +2868,8 @@ function FullPatientManager({ loginUser }) {
         counts: { ...stats.byDepartment },
         total: stats.newCount,
         byMoveType: { ...stats.byMoveType },
+        dialysis: { ...pmDialysisDetail(person) },
+        dialysisTotal: pmDialysisTotal(person),
       };
     });
     setFiscalSnapshots(prev => ({ ...prev, [`${fy}_${profession}`]: { fiscal: fy, profession, snapshot, savedAt: pmTodayKey() } }));
@@ -2213,7 +2893,7 @@ function FullPatientManager({ loginUser }) {
       ...prev,
       pmNormalizeStaff({
         ...staffForm,
-        id: crypto.randomUUID(),
+        id: makeId(),
         order: maxOrder + 1,
       }),
     ]);
@@ -2363,47 +3043,207 @@ function FullPatientManager({ loginUser }) {
       tableDensity={tableDensity}
       isChangedToday={isChangedToday}
       updateCount={updateCount}
+      updateOutpatientDetail={updateOutpatientDetail}
+      updateDialysisDetail={updateDialysisDetail}
       updateNote={updateNote}
       movementsForStaffDisplay={movementsForStaffDisplay}
       quickAdjust={quickAdjust}
+      quickAdjustOutpatient={quickAdjustOutpatient}
+      quickAdjustDialysis={quickAdjustDialysis}
       activeCell={activeCell}
       setActiveCell={setActiveCell}
       onEditMovement={setEditMovement}
+      onClearDueMovements={applyDueMovements}
       sectionActions={!fullTable && (
         <>
-          <button className={view === "calendar" ? "active" : ""} onClick={() => setView("calendar")}>📅 カレンダー</button>
-          <button className="tabExpandBtn" type="button" onClick={() => setFullTable(true)}>⛶ 拡大表示</button>
+          <button className="tabExpandBtn iconOnly" type="button" onClick={() => setFullTable(true)} aria-label="拡大表示" title="拡大表示">⛶</button>
+          <button
+            className={`adjustHistoryButton ${showTodayAdjustHistory ? "active" : ""}`}
+            type="button"
+            onClick={() => setShowTodayAdjustHistory((prev) => !prev)}
+          >
+            -+履歴
+          </button>
         </>
       )}
     />
   );
 
+  const patientCalendar = (
+    <section className="card patientCalendarSection">
+      <div className="calendarHeader compactCalendarHeader">
+        <button className="calNavBtn iconOnly" type="button" aria-label="前月" onClick={() => {
+          if (calendarMonth === 1) { setCalendarMonth(12); setCalendarYear(y => y - 1); }
+          else setCalendarMonth(m => m - 1);
+        }}>{"<"}</button>
+        <button className="calNavBtn iconOnly" type="button" aria-label="翌月" onClick={() => {
+          if (calendarMonth === 12) { setCalendarMonth(1); setCalendarYear(y => y + 1); }
+          else setCalendarMonth(m => m + 1);
+        }}>{">"}</button>
+      </div>
+
+      <div className="calendarTwoMonths simpleCalendar">
+        {[0, 1].map((monthOffset) => {
+          const displayDate = new Date(calendarYear, calendarMonth - 1 + monthOffset, 1);
+          const displayYear = displayDate.getFullYear();
+          const displayMonth = displayDate.getMonth() + 1;
+          const firstDay = new Date(displayYear, displayMonth - 1, 1).getDay();
+          const daysInMonth = new Date(displayYear, displayMonth, 0).getDate();
+          const todayStr = pmTodayKey();
+          const cells = [];
+
+          for (let i = 0; i < firstDay; i++) cells.push(<div key={"empty-" + displayYear + "-" + displayMonth + "-" + i} className="calDayEmpty" />);
+          for (let d = 1; d <= daysInMonth; d++) {
+            const dow = (firstDay + d - 1) % 7;
+            const dateStr = displayYear + "-" + String(displayMonth).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+            const isToday = dateStr === todayStr;
+            cells.push(
+              <div key={dateStr} className={"calDay calDayLarge " + (dow === 0 ? "sun" : dow === 6 ? "sat" : "") + " " + (isToday ? "today" : "")}>
+                <span className="calDayNum">{d}</span>
+              </div>
+            );
+          }
+
+          return (
+            <div className="calendarMonthPanel" key={displayYear + "-" + displayMonth}>
+              <h3>{displayYear}{"\u5e74"}{displayMonth}{"\u6708"}</h3>
+              <div className="calendarGrid calendarLarge">
+                {["\u65e5", "\u6708", "\u706b", "\u6c34", "\u6728", "\u91d1", "\u571f"].map(d => (
+                  <div key={d} className={"calDayLabel " + (d === "\u65e5" ? "sun" : d === "\u571f" ? "sat" : "")}>{d}</div>
+                ))}
+                {cells}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+
+  const annualSummaryTable = (
+    <>
+      <div className="fiscalSelector">
+        <button
+          className={`fiscalBtn ${selectedFiscal === null ? "active" : ""}`}
+          onClick={() => setSelectedFiscal(null)}
+        >{fiscal}年度（今年度）</button>
+        {Object.values(fiscalSnapshots)
+          .filter(s => s.profession === profession)
+          .sort((a, b) => b.fiscal - a.fiscal)
+          .map(s => (
+            <button
+              key={s.fiscal}
+              className={`fiscalBtn ${selectedFiscal === s.fiscal ? "active" : ""}`}
+              onClick={() => setSelectedFiscal(s.fiscal)}
+            >{s.fiscal}年度</button>
+          ))
+        }
+      </div>
+
+      <div className="annualTableWrap">
+        <table className="annualTable annualWideTable">
+          <thead>
+            <tr>
+              <th>氏名</th>
+              <th>外来</th>
+              {PM_DEPARTMENTS.filter((dept) => dept.key !== "outpatient" && dept.key !== "stopped").map((dept) => (
+                <th key={dept.key}>{dept.short}</th>
+              ))}
+              <th>合計</th>
+              <th>透析</th>
+              <th>退院</th>
+              <th>3W</th>
+              <th>5W</th>
+              <th>転院</th>
+            </tr>
+          </thead>
+          <tbody>
+            {selectedFiscal === null ? (
+              visibleStaff.map((person) => {
+                const stats = annualStats(person.id);
+                return (
+                  <tr key={person.id}>
+                    <td>{pmPersonName(person)}</td>
+                    <td>{Number(stats.byDepartment.outpatient || 0)}</td>
+                    {PM_DEPARTMENTS.filter((dept) => dept.key !== "outpatient" && dept.key !== "stopped").map((dept) => (
+                      <td key={dept.key}>{Number(stats.byDepartment?.[dept.key] || 0)}</td>
+                    ))}
+                    <td className="annualTotalCell">{stats.newCount}</td>
+                    <td>{pmDialysisTotal(person)}</td>
+                    <td>{stats.byMoveType.discharge || 0}</td>
+                    <td>{stats.byMoveType.recovery || 0}</td>
+                    <td>{stats.byMoveType.community || 0}</td>
+                    <td>{stats.byMoveType.transfer || 0}</td>
+                  </tr>
+                );
+              })
+            ) : (() => {
+              const s = fiscalSnapshots[`${selectedFiscal}_${profession}`];
+              if (!s) return <tr><td colSpan="20">データがありません</td></tr>;
+              return Object.entries(s.snapshot).map(([id, data]) => (
+                <tr key={id}>
+                  <td>{data.name}</td>
+                  <td>{data.counts.outpatient || 0}</td>
+                  {PM_DEPARTMENTS.filter(d => d.key !== "outpatient" && d.key !== "stopped").map(dept => (
+                    <td key={dept.key}>{data.counts[dept.key] || 0}</td>
+                  ))}
+                  <td className="annualTotalCell">{data.total || 0}</td>
+                  <td>{data.dialysisTotal || 0}</td>
+                  <td>{data.byMoveType?.discharge || 0}</td>
+                  <td>{data.byMoveType?.recovery || 0}</td>
+                  <td>{data.byMoveType?.community || 0}</td>
+                  <td>{data.byMoveType?.transfer || 0}</td>
+                </tr>
+              ));
+            })()}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+
   return (
     <div className="patientModule appShell">
-      <header className="appHeader">
-        <div className="headerTitleRow">
-          <h1>患者人数管理</h1>
-
-          <div className="professionTabs">
-            {PM_PROFESSIONS.map((item) => (
-              <button key={item} className={profession === item ? "active" : ""} onClick={() => setProfession(item)}>
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
       <nav className="viewTabs">
-        <button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>管理表</button>
-        <button className={view === "move" ? "active" : ""} onClick={() => setView("move")}>患者移動</button>
-        <button className={view === "history" ? "active" : ""} onClick={() => setView("history")}>履歴・年間</button>
-        <button className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}>設定</button>
+        <div className="viewTabGroup">
+          <button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>管理表</button>
+          <button className={view === "move" ? "active" : ""} onClick={() => setView("move")}>患者移動</button>
+        </div>
+        <button className={view === "settings" ? "active settingsTabButton" : "settingsTabButton"} aria-label="設定" title="設定" onClick={() => setView("settings")}>
+          <img alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAZNSURBVHhe5ZtHqzVFEIaPETMYUVEwY9ioYBYT6A8w7MXw7Y0bwexCULdmxbRQV+pCRXcGXJjFCCbMCxNGVNT3uXwtZVGdZuYcz/F74eFyZ7prqvv0dKyZLVCbi9PFZeLyAtwnHen/NzpYvC7+6oD0B4mV13biAxEVsgb5thUrrfNEVLhWzhUrrdtEVLBWyL+UopPaXdSa6JPCFuhXcZY4JYDr3LfpnxAl8Xz8WFinubG4WvB+/iy+ELeLnYXXRuJtYQv0sSiJ+zb9WwI7XruIO8SXAj/w5yoRpZ1Mm4pHhXUw8aE4UVhtL74TNt1zoiTu2/TfCuxYnSR4nk2XeERsIiYXhX9MRA9N/CkuFkl7C5/mAVES932evUQS9nmOT2PhR5q0EloKb3lI4PSl5lqC16eka4TPgx3sYdffyzFZJZQK/1NwLeE7s8TZoiTuR/ly9iDnx+hKKBX+XbGvuMhca+EEURL9SJQvx4ViP/GeuWYZXAmbiVLh9xBJp4pPRZTW8r6oDZvcb5k5fiJ4btKeolQJ/JhdYkiJjPnCJzEWM2ZHeRiq7hL7iBbRskj/lYjsPS52E16lSrhSNGsL8bnwRhjTo8Jb0cml95UFzfnCD2OtIt86kRZS2OWHKYlKeEdYv+EzQbmahJHfhTXwvdhVtIhf+ggx1VCEHey1tiBaB/5a/ykP5WoSKzgmINbAH4IOZxWEn/hr/f9GdK0seQetgcTJYpmFf5Hfd4ou7SToab0h5v7Mw5dR+EWH632mHJSnW8eJaNr5tFhG4Zf3Ff+PFYOVm+jUeuOa6KgOEzjH32hY6xGjT+TnJP1Wbg7OeN2j/QWOvih+FNYW/3Od+8zseoQf1lYCvycRvWc03z5atGhrcaP4RXgbEaQj/VaiRccIbwN/txGjtKM4RFwifF/AZKNlYnGA6N0RTrwmyF8TfvjJT1qa4z/lqIraYgPyFsGUlp0YPxewtGxW0pSjGWUP5G95JUqbr8wBKA/lulng+79aB/vvzPGjzBFfi1rzovny0Cg/vCTY8Lx+/V/+j9IBdmqvA68pfkX5I2gxa+cOW67/J0qU4x5R000iyvuMyC2Juc79KB99Qk33iihvDso9O9NcaIFMtd6f3Ru/lgAcrG1acj8qyG/Cbo1Fwq/eH3N2hbsA7LJ+JJ4V9wuGJnZq+IVoMTVdK7zNF0SPSO9tsF1WE/7hJ/7iN/6z0Up5KJe3GVYArWLMPvurwts8SvSI9N4GdoeK8kStfe1E1l88XgwVS2Y/3r8shugVYe1gt3VJHolyWXsQVgCnNEN1uPD2GHqGiHzeFvaHinJ5e5NXAAsob48+YYiuE94W9odqIRUwZQtgUuZtLaQFbFB9wLKOAiy0vA0qZKiyo0BUAdQ0p7SMn5zVMf4yrnJo0TIPiI63FjUPYMqMn/hLevynHJTHt0yYneEu1Bg7E+R4vSTu3yd83rnNBBe9FmB2WVoLcD/KN4+1AOcca2JV1FMJU60GCaxgNchfOsooHbwpaq/ekNXggeIfpf0AhizWzTyUdXSUGVZtP4DypP2AcwS7VFXtINhRiYISqMHWHSF2dmzeVsjHPmJN0Wtsd4QoxyiN3RPkdbhBRL1wBOlIX9sEScrtCXadBJX0sPAPgNpo4EVTTrvCPwhri/+5znZ7S5O3wg9rKzHJrvC8zgWY0R0q+PX4O2aGh3LH+aPOBXInQ0+JZVTuZGjQAoq4v1U8G8Q/7/Ogs8Hc6TAxesusSU6Hc/EBF4hV0Oj4gFyESOsBJr3ykWLKCBHstY46oyNEcjFCTDZqRhjmbIwQMT5jY4TeENjDLvZLwr9oWt8VI4SIqvJGgCisqBJKUWJEe90tWn9B0pE+FyXGc3ieF35NEiWGiKsjvi4y5ivhNNESJ9jyBQj3W+IEeV5rnCAB1N1xgoh3r1QJzNh6I0V9RLlXb6Qoz8ePXOFHh8uWKiE6aUnk5v3s1JTE/ShfaR2R82N04ZNKlRDxoGD3ZqpoceITsPefRIsntVQC006aZNI8vhfAfjQ9t0xe+CSM0qFED53qi5HnhU0ffTHCcxb+xUgSx9esvIj85t1bxDdDkXgez+X5+IE/+DXXb4as2GffIL8a69XY7wZvFSutDf7L0daZXUTLzHElxLlD784w6ef89fhs9jdogpC2NFoaJgAAAABJRU5ErkJggg==" />
+        </button>
       </nav>
 
       {view === "table" && (
         <>
           {table}
+          {showTodayAdjustHistory && (
+            <section className="card todayAdjustHistoryCard">
+              <div className="cardHeader compactHistoryHeader">
+                <h2>-+履歴</h2>
+                <span>{pmDisplayDate(pmTodayKey())}</span>
+              </div>
+              <div className="historyList todayAdjustHistoryList">
+                {todayAdjustHistory.length === 0 ? (
+                  <p className="emptyText">本日の-+履歴はありません。</p>
+                ) : (
+                  todayAdjustHistory.map((item) => (
+                    <div className="historyItem todayAdjustHistoryItem" key={item.id}>
+                      <span>{pmDisplayDate(item.date)}</span>
+                      <strong>{item.staffName}</strong>
+                      <span>{item.action}</span>
+                      <span>{item.pmDepartmentShort}</span>
+                      <span className={Number(item.delta) >= 0 ? "plus" : "minus"}>
+                        {Number(item.delta) >= 0 ? "+" : ""}{item.delta}
+                      </span>
+                      <span className="historyUpdater">更新者：{item.updatedByName || "記録なし"}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          )}
+          {patientCalendar}
         </>
       )}
 
@@ -2427,49 +3267,44 @@ function FullPatientManager({ loginUser }) {
         <section className="card">
           <div className="cardHeader">
             <h2>患者移動</h2>
-            <button className="softButton" type="button" onClick={applyDueMovements}>
-              本日分を反映
-            </button>
           </div>
 
-          <form className="moveForm" onSubmit={registerMovement}>
-            <label>
+          <form className="moveForm compactMoveForm" onSubmit={registerMovement}>
+            <div className="moveFormQuartet">
+              <div className="autoStaffBox">
+                <span>担当者</span>
+                <strong>{autoMovementStaff ? pmPersonName(autoMovementStaff) : "未設定"}</strong>
+              </div>
+              <label>
               <span>移動日</span>
               <PMJapaneseDateInput value={movementForm.date} onChange={(date) => setMovementForm({ ...movementForm, date })} />
-            </label>
+              </label>
 
-            <label>
+              <label>
               <span>種類</span>
               <select value={movementForm.moveType} onChange={(e) => setMovementForm({ ...movementForm, moveType: e.target.value })}>
                 {PM_MOVE_TYPES.map((item) => (
                   <option key={item.key} value={item.key}>{item.label}</option>
                 ))}
               </select>
-            </label>
+              </label>
 
-            <label>
+              <label>
               <span>科</span>
               <select value={movementForm.department} onChange={(e) => setMovementForm({ ...movementForm, department: e.target.value })}>
                 {PM_DEPARTMENTS.filter((dept) => dept.key !== "stopped").map((dept) => (
                   <option key={dept.key} value={dept.key}>{dept.label}</option>
                 ))}
               </select>
-            </label>
+              </label>
+            </div>
 
-            <label>
-              <span>担当者</span>
-              <select value={movementForm.staffId} onChange={(e) => setMovementForm({ ...movementForm, staffId: e.target.value })}>
-                {movementStaffOptions.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {pmPersonName(person)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="wide">
-              <span>メモ</span>
-              <input value={movementForm.note} onChange={(e) => setMovementForm({ ...movementForm, note: e.target.value })} />
+            <label className="memoInlineField">
+              <input
+                value={movementForm.note}
+                placeholder="メモ"
+                onChange={(e) => setMovementForm({ ...movementForm, note: e.target.value })}
+              />
             </label>
 
             <button className="primaryButton" type="submit">登録</button>
@@ -2509,7 +3344,7 @@ function FullPatientManager({ loginUser }) {
       {view === "history" && (
         <section className="card">
           <div className="cardHeader">
-            <h2>履歴・年間集計</h2>
+            <h2>履歴・集計</h2>
             <button className="softButton" type="button" onClick={saveFiscalSnapshot}>今年度を保存</button>
           </div>
 
@@ -2541,6 +3376,7 @@ function FullPatientManager({ loginUser }) {
                     <th key={dept.key}>{dept.short}</th>
                   ))}
                   <th>合計</th>
+                  <th>透析</th>
                   <th>退院</th>
                   <th>3W</th>
                   <th>5W</th>
@@ -2559,6 +3395,7 @@ function FullPatientManager({ loginUser }) {
                           <td key={dept.key}>{Number(stats.byDepartment?.[dept.key] || 0)}</td>
                         ))}
                         <td className="annualTotalCell">{stats.newCount}</td>
+                        <td>{pmDialysisTotal(person)}</td>
                         <td>{stats.byMoveType.discharge || 0}</td>
                         <td>{stats.byMoveType.recovery || 0}</td>
                         <td>{stats.byMoveType.community || 0}</td>
@@ -2577,6 +3414,7 @@ function FullPatientManager({ loginUser }) {
                         <td key={dept.key}>{data.counts[dept.key] || 0}</td>
                       ))}
                       <td className="annualTotalCell">{data.total || 0}</td>
+                      <td>{data.dialysisTotal || 0}</td>
                       <td>{data.byMoveType?.discharge || 0}</td>
                       <td>{data.byMoveType?.recovery || 0}</td>
                       <td>{data.byMoveType?.community || 0}</td>
@@ -2604,6 +3442,7 @@ function FullPatientManager({ loginUser }) {
                       <span className={Number(item.delta) >= 0 ? "plus" : "minus"}>
                         {Number(item.delta) >= 0 ? "+" : ""}{item.delta}
                       </span>
+                      <span className="historyUpdater">更新者：{item.updatedByName || "記録なし"}</span>
                       {item.note && <small>{item.note}</small>}
                     </div>
                   ))
@@ -2614,99 +3453,111 @@ function FullPatientManager({ loginUser }) {
         </section>
       )}
 
-      {view === "calendar" && (
-        <section className="card">
-          <div className="calendarHeader">
-            <button className="calNavBtn" onClick={() => {
-              if (calendarMonth === 1) { setCalendarMonth(12); setCalendarYear(y => y - 1); }
-              else setCalendarMonth(m => m - 1);
-            }}>◀</button>
-            <span className="calendarTitle">{calendarYear}年{calendarMonth}月</span>
-            <button className="calNavBtn" onClick={() => {
-              if (calendarMonth === 12) { setCalendarMonth(1); setCalendarYear(y => y + 1); }
-              else setCalendarMonth(m => m + 1);
-            }}>▶</button>
-          </div>
-          <div className="calendarGrid calendarLarge">
-            {["日","月","火","水","木","金","土"].map(d => (
-              <div key={d} className={`calDayLabel ${d === "日" ? "sun" : d === "土" ? "sat" : ""}`}>{d}</div>
-            ))}
-            {(() => {
-              const firstDay = new Date(calendarYear, calendarMonth - 1, 1).getDay();
-              const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
-              const todayStr = pmTodayKey();
-              const cells = [];
-              for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`} />);
-              for (let d = 1; d <= daysInMonth; d++) {
-                const dow = (firstDay + d - 1) % 7;
-                const dateStr = `${calendarYear}-${String(calendarMonth).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-                const isToday = dateStr === todayStr;
-                const movesOnDay = pendingMovements.filter(m => m.date === dateStr && m.profession === profession);
-                cells.push(
-                  <div key={d} className={`calDay calDayLarge ${dow === 0 ? "sun" : dow === 6 ? "sat" : ""} ${isToday ? "today" : ""}`}>
-                    <span className="calDayNum">{d}</span>
-                    {movesOnDay.map(m => (
-                      <span key={m.id} className={`calMoveTag move-${m.moveType}`}>
-                        {m.staffName?.split(" ")[0] || ""} {pmDepartmentShort(m.department)} {pmMoveShort(m.moveType)}
-                      </span>
-                    ))}
-                  </div>
-                );
-              }
-              return cells;
-            })()}
-          </div>
-        </section>
-      )}
-
       {view === "settings" && (
         <section className="card">
           <h2>設定</h2>
           <p className="settingLead">スタッフ登録時に「がんリハ実施権」を付けると、管理表のがん列が入力可能になります。</p>
 
-          <form className="staffForm cancerRightForm" onSubmit={addStaff}>
-            <label>
-              <span>姓</span>
-              <input value={staffForm.lastName} onChange={(e) => setStaffForm({ ...staffForm, lastName: e.target.value })} />
-            </label>
-            <label>
-              <span>名</span>
-              <input value={staffForm.firstName} onChange={(e) => setStaffForm({ ...staffForm, firstName: e.target.value })} />
-            </label>
-            <label>
-              <span>職種</span>
-              <select value={staffForm.profession} onChange={(e) => setStaffForm({ ...staffForm, profession: e.target.value })}>
-                <option value="PT">PT</option>
-                <option value="OT">OT</option>
-              </select>
-            </label>
-            <label className="checkSetting">
-              <span>がんリハ実施権</span>
-              <div className="checkBoxLine">
-                <input
-                  type="checkbox"
-                  checked={staffForm.canCancerRehab}
-                  onChange={(e) => setStaffForm({ ...staffForm, canCancerRehab: e.target.checked })}
-                />
-                <strong>可</strong>
-              </div>
-            </label>
-            <button className="primaryButton" type="submit">追加</button>
-          </form>
+          <div className="settingsLayout">
+            <div className="settingsMenuList" aria-label="設定メニュー">
+              <button className={settingsView === "register" ? "active" : ""} type="button" onClick={() => setSettingsView("register")}>
+                <span className="settingsMenuIcon">＋</span>
+                <span className="settingsMenuText">
+                  <strong>スタッフ登録</strong>
+                  <small>名前・職種・実施権を登録</small>
+                </span>
+                <span className="settingsMenuArrow">›</span>
+              </button>
+              <button className={settingsView === "order" ? "active" : ""} type="button" onClick={() => setSettingsView("order")}>
+                <span className="settingsMenuIcon">↕</span>
+                <span className="settingsMenuText">
+                  <strong>表示順並べ替え</strong>
+                  <small>管理表の並びを調整</small>
+                </span>
+                <span className="settingsMenuArrow">›</span>
+              </button>
+              <button className={settingsView === "summary" ? "active" : ""} type="button" onClick={() => setSettingsView("summary")}>
+                <span className="settingsMenuIcon">Σ</span>
+                <span className="settingsMenuText">
+                  <strong>集計</strong>
+                  <small>年度集計と保存</small>
+                </span>
+                <span className="settingsMenuArrow">›</span>
+              </button>
+            </div>
 
-          <h3>{profession} 表示順</h3>
-          <div className="orderList">
-            {visibleStaff.map((person) => (
-              <div className="orderItem" key={person.id}>
-                <strong>{pmPersonName(person)}</strong>
-                <span>{person.canCancerRehab ? "がんリハ可" : ""}</span>
-                <div>
-                  <button type="button" onClick={() => moveStaffOrder(person.id, -1)}>↑</button>
-                  <button type="button" onClick={() => moveStaffOrder(person.id, 1)}>↓</button>
-                  <button className="deleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
-                </div>
+            <div className="settingsContentPanel">
+          {settingsView === "register" ? (
+            <form className="staffForm cancerRightForm staffRegisterForm" onSubmit={addStaff}>
+              <div className="staffFormPair">
+                <label>
+                  <span>姓</span>
+                  <input value={staffForm.lastName} onChange={(e) => setStaffForm({ ...staffForm, lastName: e.target.value })} />
+                </label>
+                <label>
+                  <span>名</span>
+                  <input value={staffForm.firstName} onChange={(e) => setStaffForm({ ...staffForm, firstName: e.target.value })} />
+                </label>
               </div>
-            ))}
+
+              <div className="staffFormPair">
+                <label>
+                  <span>職種</span>
+                  <select value={staffForm.profession} onChange={(e) => setStaffForm({ ...staffForm, profession: e.target.value })}>
+                    <option value="PT">PT</option>
+                    <option value="OT">OT</option>
+                  </select>
+                </label>
+                <label className="checkSetting">
+                  <span>がんリハ実施権</span>
+                  <div className="cancerPermissionToggle">
+                    <button
+                      type="button"
+                      className={staffForm.canCancerRehab ? "active" : ""}
+                      onClick={() => setStaffForm({ ...staffForm, canCancerRehab: true })}
+                    >
+                      可
+                    </button>
+                    <button
+                      type="button"
+                      className={!staffForm.canCancerRehab ? "active" : ""}
+                      onClick={() => setStaffForm({ ...staffForm, canCancerRehab: false })}
+                    >
+                      否
+                    </button>
+                  </div>
+                </label>
+              </div>
+
+              <button className="primaryButton" type="submit">追加</button>
+            </form>
+          ) : settingsView === "order" ? (
+            <>
+              <h3>{profession} 表示順</h3>
+              <div className="orderList">
+                {visibleStaff.map((person) => (
+                  <div className="orderItem" key={person.id}>
+                    <strong>{pmPersonName(person)}</strong>
+                    <span>{person.canCancerRehab ? "がんリハ可" : ""}</span>
+                    <div>
+                      <button type="button" onClick={() => moveStaffOrder(person.id, -1)}>↑</button>
+                      <button type="button" onClick={() => moveStaffOrder(person.id, 1)}>↓</button>
+                      <button className="deleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="cardHeader settingsSummaryHeader">
+                <h3>集計</h3>
+                <button className="softButton" type="button" onClick={saveFiscalSnapshot}>今年度を保存</button>
+              </div>
+              {annualSummaryTable}
+            </>
+          )}
+            </div>
           </div>
         </section>
       )}
@@ -2762,12 +3613,17 @@ function PMAssignmentTable({
   tableDensity,
   isChangedToday,
   updateCount,
+  updateOutpatientDetail,
+  updateDialysisDetail,
   updateNote,
   movementsForStaffDisplay,
   quickAdjust,
+  quickAdjustOutpatient,
+  quickAdjustDialysis,
   activeCell,
   setActiveCell,
   onEditMovement,
+  onClearDueMovements,
   sectionActions,
 }) {
   const [activeStaffId, activeDeptKey] = activeCell ? activeCell.split(":") : [null, null];
@@ -2775,6 +3631,17 @@ function PMAssignmentTable({
   const [notePopup, setNotePopup] = useState(null); // staffId or null
   const [noteEditMode, setNoteEditMode] = useState(false);
   const [noteEditValue, setNoteEditValue] = useState("");
+  function showOutpatientSummary() {
+    const lines = staffList.map((person) => {
+      const detail = pmOutpatientDetail(person);
+      const tags = [
+        detail.general > 0 ? `[一般${detail.general}]` : "",
+        detail.student > 0 ? `[夕${detail.student}]` : "",
+      ].filter(Boolean).join("");
+      return `${pmPersonName(person)} ${tags || "[一般0]"}`;
+    });
+    alert(lines.join("\n"));
+  }
 
   return (
     <section className={`excelTableCard ${tableDensity}`}>
@@ -2791,6 +3658,16 @@ function PMAssignmentTable({
               {PM_DEPARTMENTS.map((dept) => (
                 <th key={dept.key} className={`deptHead ${dept.key} sep-${dept.key} ${activeDeptKey === dept.key ? "activeDeptGuide" : ""}`}>
                   <span>{dept.short}</span>
+                  {dept.key === "outpatient" && (
+                    <button
+                      type="button"
+                      className="infoButton headerInfo"
+                      title="外来内訳"
+                      onClick={showOutpatientSummary}
+                    >
+                      i
+                    </button>
+                  )}
                   {dept.key === "internal" && (
                     <button
                       type="button"
@@ -2804,7 +3681,15 @@ function PMAssignmentTable({
                 </th>
               ))}
               <th className="totalCol">合計</th>
-              <th className="moveCol">患者移動</th>
+              <th className={`dialysisCol ${activeDeptKey === "dialysis" ? "activeDeptGuide" : ""}`}>透析</th>
+              <th className="moveCol">
+                <span className="moveHeaderInline">
+                  患者移動
+                  <button type="button" className="clearDueButton" onClick={(e) => { e.stopPropagation(); onClearDueMovements(); }}>
+                    消去
+                  </button>
+                </span>
+              </th>
               <th className="noteCol">備考</th>
             </tr>
           </thead>
@@ -2821,20 +3706,37 @@ function PMAssignmentTable({
 
                   {PM_DEPARTMENTS.map((dept) => {
                     const disabled = dept.key === "cancer" ? !person.canCancerRehab : false;
-                    const value = Number(person.counts?.[dept.key] || 0);
+                    const outpatientDetail = pmOutpatientDetail(person);
+                    const value = dept.key === "outpatient" ? pmOutpatientTotal(person) : Number(person.counts?.[dept.key] || 0);
                     const changed = isChangedToday(person.id, dept.key);
                     const cellKey = `${person.id}:${dept.key}`;
                     const isActive = activeCell === cellKey;
+                    const hasStudent = dept.key === "outpatient" && outpatientDetail.student > 0;
 
                     return (
                       <td
                         key={dept.key}
-                        className={`numberCell dept-${dept.key} sep-${dept.key} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === dept.key && activeRowIndex >= 0 && rowIndex <= activeRowIndex ? "tColGuide" : ""} ${isActive ? "tActiveCell" : ""} ${person.canCancerRehab && dept.key === "cancer" ? "cancerAllowed" : ""} ${changed ? "changed" : ""} ${disabled ? "disabledCell" : ""}`}
+                        className={`numberCell dept-${dept.key} sep-${dept.key} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === dept.key && activeRowIndex >= 0 && rowIndex <= activeRowIndex ? "tColGuide" : ""} ${isActive ? "tActiveCell" : ""} ${person.canCancerRehab && dept.key === "cancer" ? "cancerAllowed" : ""} ${changed ? "changed" : ""} ${disabled ? "disabledCell" : ""} ${hasStudent ? "hasStudent" : ""}`}
                         onClick={() => {
                           if (!disabled) setActiveCell(isActive ? null : cellKey);
                         }}
                       >
-                        {isActive && !disabled ? (
+                        {isActive && !disabled && dept.key === "outpatient" ? (
+                          <div className="outpatientAdjust" onClick={(e) => e.stopPropagation()}>
+                            <div className="outpatientAdjustRow">
+                              <span>一般</span>
+                              <button type="button" className="inlineBtn minus" onClick={() => quickAdjustOutpatient(person.id, "general", -1)}>−</button>
+                              <b>{outpatientDetail.general}</b>
+                              <button type="button" className="inlineBtn plus" onClick={() => quickAdjustOutpatient(person.id, "general", 1)}>＋</button>
+                            </div>
+                            <div className="outpatientAdjustRow">
+                              <span>夕方</span>
+                              <button type="button" className="inlineBtn minus" onClick={() => quickAdjustOutpatient(person.id, "student", -1)}>−</button>
+                              <b>{outpatientDetail.student}</b>
+                              <button type="button" className="inlineBtn plus" onClick={() => quickAdjustOutpatient(person.id, "student", 1)}>＋</button>
+                            </div>
+                          </div>
+                        ) : isActive && !disabled ? (
                           <div className="inlineAdjust" onClick={(e) => e.stopPropagation()}>
                             <button type="button" className="inlineBtn minus" onClick={() => quickAdjust(person.id, dept.key, -1)}>−</button>
                             <span className="inlineValue">{value}</span>
@@ -2854,6 +3756,7 @@ function PMAssignmentTable({
                               }}
                               onChange={(e) => updateCount(person.id, dept.key, e.target.value.replace(/[^0-9]/g, ""))}
                             />
+                            {hasStudent && <span className="studentMark">夕</span>}
                           </div>
                         )}
                       </td>
@@ -2861,6 +3764,36 @@ function PMAssignmentTable({
                   })}
 
                   <td className={`totalCol totalNumber ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>{pmCountTotal(person)}</td>
+                  <td
+                    className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""} ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""} ${activeDeptKey === "dialysis" && activeRowIndex >= 0 && rowIndex <= activeRowIndex ? "tColGuide" : ""}`}
+                    onClick={() => setActiveCell(activeCell === `${person.id}:dialysis` ? null : `${person.id}:dialysis`)}
+                  >
+                    {activeCell === `${person.id}:dialysis` ? (
+                      <div className="dialysisAdjust" onClick={(e) => e.stopPropagation()}>
+                        {PM_DIALYSIS_TYPES.map((type) => {
+                          const detail = pmDialysisDetail(person);
+                          return (
+                            <div className="dialysisAdjustRow" key={type.key}>
+                              <span>{type.short}</span>
+                              <button type="button" className="inlineBtn minus" onClick={() => quickAdjustDialysis(person.id, type.key, -1)}>−</button>
+                              <b>{detail[type.key]}</b>
+                              <button type="button" className="inlineBtn plus" onClick={() => quickAdjustDialysis(person.id, type.key, 1)}>＋</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="dialysisTagList">
+                        {PM_DIALYSIS_TYPES.filter((type) => pmDialysisDetail(person)[type.key] > 0).length === 0 ? (
+                          <span className="dialysisTotal">0</span>
+                        ) : (
+                          PM_DIALYSIS_TYPES.filter((type) => pmDialysisDetail(person)[type.key] > 0).map((type) => (
+                            <span className={`dialysisTag dialysis-${type.key}`} key={type.key}>{type.short}{pmDialysisDetail(person)[type.key]}</span>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </td>
                   <td className={`moveCol ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>
                     <div className="moveTagList">
                       {movementsForStaffDisplay(person.id).map((movement) => (
@@ -2938,7 +3871,7 @@ function PMAssignmentTable({
 }
 
 
-function AnnouncementBoard({ announcements, isAdmin, onOpenEdit, onDelete }) {
+function AnnouncementBoard({ announcements, isAdmin, onOpenEdit }) {
   const shown = announcements.slice(0, 8);
 
   return (
@@ -2955,21 +3888,18 @@ function AnnouncementBoard({ announcements, isAdmin, onOpenEdit, onDelete }) {
       {shown.length === 0 ? (
         <p className="emptyText left compactEmpty">本日表示するお知らせはありません。</p>
       ) : (
-        <div className="announcementList compactList">
+        <ul className="announcementList compactList">
           {shown.map((item) => (
-            <div className={`announcementItem compactItem ${item.priority === "important" ? "important" : ""}`} key={`${item.id}-${item.occurrenceDate}`}>
+            <li className={`announcementItem compactItem ${item.priority === "important" ? "important" : ""}`} key={`${item.id}-${item.occurrenceDate}`}>
+              <span className={`announcementBadge ${item.priority === "important" ? "important" : "normal"}`}>
+                {item.priority === "important" ? "重要" : "通常"}
+              </span>
               <span className="announcementTitle">
-                {item.priority === "important" ? "🔴 " : "⚪ "}
                 {item.time ? `${item.time}　` : ""}{item.title}
               </span>
-              {isAdmin && (
-                <button className="deleteButton small compactDelete" type="button" onClick={() => onDelete(item.id)}>
-                  削除
-                </button>
-              )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );
