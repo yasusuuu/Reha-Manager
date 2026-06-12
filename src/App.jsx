@@ -1,4 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import {
+  collection,
+  doc,
+  getDocs,
+  limit,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { auth, provider, db } from "./firebase";
 import "./App.css";
 
 const FULL_DAY_HOURS = 7.75;
@@ -543,6 +555,151 @@ function JapaneseDateInput({ value, onChange, allowClear = false, placeholder = 
 }
 
 export default function App() {
+  const [firebaseUser, setFirebaseUser] = useState(null);
+const [authLoading, setAuthLoading] = useState(true);
+const [loginStaff, setLoginStaff] = useState(null);
+const [staffAuthLoading, setStaffAuthLoading] = useState(false);
+const [staffAuthError, setStaffAuthError] = useState("");
+const [linkForm, setLinkForm] = useState({
+  job: "PT",
+  staffNumber: "",
+});
+
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    setFirebaseUser(user);
+    setAuthLoading(false);
+  });
+
+  return () => unsubscribe();
+}, []);
+
+useEffect(() => {
+  if (!firebaseUser) {
+    setLoginStaff(null);
+    setStaffAuthError("");
+    setStaffAuthLoading(false);
+    return;
+  }
+
+  async function loadLoginStaff() {
+    setStaffAuthLoading(true);
+    setStaffAuthError("");
+
+    try {
+      const staffRef = collection(db, "staff");
+      const uidSnapshot = await getDocs(
+        query(staffRef, where("uid", "==", firebaseUser.uid), limit(1))
+      );
+
+      if (uidSnapshot.empty) {
+        setLoginStaff(null);
+        return;
+      }
+
+      const staffDoc = uidSnapshot.docs[0];
+      const staffData = staffDoc.data();
+
+      if (staffData.active === false) {
+        setLoginStaff(null);
+        setStaffAuthError("この職員アカウントは無効です。");
+        return;
+      }
+
+      setLoginStaff({
+        id: staffDoc.id,
+        ...staffData,
+      });
+    } catch (error) {
+      console.error("Staff load failed", error);
+      setLoginStaff(null);
+      setStaffAuthError("職員情報の取得に失敗しました。");
+    } finally {
+      setStaffAuthLoading(false);
+    }
+  }
+
+  loadLoginStaff();
+}, [firebaseUser]);
+
+async function handleGoogleLogin() {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error("Google login failed", error);
+    alert("Googleログインに失敗しました。");
+  }
+}
+
+async function handleLogout() {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Logout failed", error);
+    alert("ログアウトに失敗しました。");
+  }
+}
+async function handleStaffLink() {
+  if (!firebaseUser) return;
+
+  const staffNumber = linkForm.staffNumber.trim();
+
+  if (!staffNumber) {
+    alert("職員番号を入力してください。");
+    return;
+  }
+
+  setStaffAuthLoading(true);
+  setStaffAuthError("");
+
+  try {
+    const staffRef = collection(db, "staff");
+    const staffSnapshot = await getDocs(
+      query(
+        staffRef,
+        where("job", "==", linkForm.job),
+        where("staffNumber", "==", staffNumber),
+        limit(1)
+      )
+    );
+
+    if (staffSnapshot.empty) {
+      setStaffAuthError("職種と職員番号が一致する職員が見つかりません。");
+      return;
+    }
+
+    const staffDoc = staffSnapshot.docs[0];
+    const staffData = staffDoc.data();
+
+    if (staffData.active === false) {
+      setStaffAuthError("この職員アカウントは無効です。");
+      return;
+    }
+
+    if (staffData.uid && staffData.uid !== firebaseUser.uid) {
+      setStaffAuthError("この職員番号はすでに別のGoogleアカウントと連携されています。");
+      return;
+    }
+
+    await updateDoc(doc(db, "staff", staffDoc.id), {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email || "",
+      linkedAt: serverTimestamp(),
+    });
+
+    setLoginStaff({
+      id: staffDoc.id,
+      ...staffData,
+      uid: firebaseUser.uid,
+      email: firebaseUser.email || "",
+    });
+  } catch (error) {
+    console.error("Staff link failed", error);
+    setStaffAuthError("職員連携に失敗しました。");
+  } finally {
+    setStaffAuthLoading(false);
+  }
+}
   const today = new Date();
 
   const [staff, setStaff] = useState(() => {
@@ -554,6 +711,41 @@ export default function App() {
 
     return DEFAULT_STAFF.map(normalizeStaffMember);
   });
+
+useEffect(() => {
+  async function loadStaffFromFirestore() {
+    try {
+      const staffSnapshot = await getDocs(collection(db, "staff"));
+      const firestoreStaff = staffSnapshot.docs
+        .map((staffDoc) => {
+          const data = staffDoc.data();
+          return normalizeStaffMember({
+            id: staffDoc.id,
+            lastName: data.lastName || "",
+            firstName: data.firstName || "",
+            name: `${data.lastName || ""} ${data.firstName || ""}`.trim(),
+            job: data.job || "PT",
+            role: data.role || "staff",
+            active: data.active !== false,
+            order: Number(data.order || 999),
+            staffNumber: data.staffNumber || "",
+            uid: data.uid || "",
+            email: data.email || "",
+          });
+        })
+        .filter((person) => person.active)
+        .sort((a, b) => (a.order || 999) - (b.order || 999));
+
+      if (firestoreStaff.length > 0) {
+        setStaff(firestoreStaff);
+      }
+    } catch (error) {
+      console.error("Staff list load failed", error);
+    }
+  }
+
+  loadStaffFromFirestore();
+}, []);
 
   const [records, setRecords] = useState(() => {
     const saved = localStorage.getItem("leaveRecordsV3");
@@ -694,7 +886,16 @@ export default function App() {
   }, []);
 
   const activeStaff = useMemo(() => sortStaff(staff), [staff]);
-  const loginUser = staff.find((s) => s.id === loginId) || staff[0];
+const loginUser = loginStaff
+  ? {
+      id: loginStaff.id,
+      lastName: loginStaff.lastName || "",
+      firstName: loginStaff.firstName || "",
+      name: `${loginStaff.lastName || ""} ${loginStaff.firstName || ""}`.trim(),
+      job: loginStaff.job || "PT",
+      role: loginStaff.role || "staff",
+    }
+  : staff.find((s) => s.id === loginId) || staff[0];
   const isAdmin = loginUser?.role === "admin";
   const currentFy = fiscalYear(`${year}-${pad(month)}-01`);
   const todayAnnouncements = useMemo(() => expandAnnouncements(announcements, todayKey()), [announcements]);
@@ -1352,6 +1553,80 @@ export default function App() {
     showTimeInputs &&
     overlapMinutes(toMinutes(form.start), toMinutes(form.end), toMinutes("12:00"), toMinutes("13:00")) > 0;
 
+    if (authLoading) {
+  return (
+    <div className="loginGate">
+      <div className="loginCard">
+        <h1>読み込み中</h1>
+      </div>
+    </div>
+  );
+}
+
+if (!firebaseUser) {
+  return (
+    <div className="loginGate">
+      <div className="loginCard">
+        <h1>休暇・患者管理</h1>
+        <p>Googleアカウントでログインしてください。</p>
+        <button type="button" onClick={handleGoogleLogin}>
+          Googleでログイン
+        </button>
+      </div>
+    </div>
+  );
+}
+if (staffAuthLoading) {
+  return (
+    <div className="loginGate">
+      <div className="loginCard">
+        <h1>職員情報を確認中</h1>
+      </div>
+    </div>
+  );
+}
+
+if (!loginStaff) {
+  return (
+    <div className="loginGate">
+      <div className="loginCard">
+        <h1>初回連携</h1>
+        <p>職種と職員番号を入力してください。</p>
+
+        <label className="loginField">
+          <span>職種</span>
+          <select
+            value={linkForm.job}
+            onChange={(e) => setLinkForm((prev) => ({ ...prev, job: e.target.value }))}
+          >
+            <option value="PT">PT</option>
+            <option value="OT">OT</option>
+          </select>
+        </label>
+
+        <label className="loginField">
+          <span>職員番号</span>
+          <input
+            type="text"
+            value={linkForm.staffNumber}
+            onChange={(e) => setLinkForm((prev) => ({ ...prev, staffNumber: e.target.value }))}
+            placeholder="職員番号"
+          />
+        </label>
+
+        {staffAuthError && <p className="loginError">{staffAuthError}</p>}
+
+        <button type="button" onClick={handleStaffLink}>
+          連携する
+        </button>
+
+        <button type="button" className="loginSubButton" onClick={handleLogout}>
+          ログアウト
+        </button>
+      </div>
+    </div>
+  );
+}
   return (
     <div className="appShell">
       <header className="appHeader">
@@ -1378,7 +1653,7 @@ export default function App() {
             <select value={loginId} onChange={(e) => setLoginId(e.target.value)}>
               {activeStaff.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {personName(s)} {s.job}{s.role === "admin" ? "（科長）" : ""}
+                  {personName(s)} {s.job}
                 </option>
               ))}
             </select>
@@ -1398,12 +1673,28 @@ export default function App() {
             </div>
           )}
         </div>
+
+        <div className="authStatus">
+<span>
+  {loginStaff
+    ? `${loginStaff.lastName || ""} ${loginStaff.firstName || ""}`.trim()
+    : firebaseUser.displayName || firebaseUser.email}
+</span>
+  <button type="button" onClick={handleLogout}>
+    ログアウト
+  </button>
+</div>
       </header>
 
       {appSection === "patients" ? (
-        <FullPatientManager loginUser={loginUser} profession={patientProfession} setProfession={setPatientProfession} />
-      ) : (
-        <>
+<FullPatientManager
+  loginUser={loginUser}
+  profession={patientProfession}
+  setProfession={setPatientProfession}
+  staffSource={activeStaff}
+  />
+ ) : (
+   <>
       <AnnouncementBoard
         announcements={todayAnnouncements}
         isAdmin={isAdmin}
@@ -2129,7 +2420,7 @@ export default function App() {
                   </select>
                   <select value={s.role} onChange={(e) => updateStaff(s.id, "role", e.target.value)}>
                     <option value="staff">一般</option>
-                    <option value="admin">科長</option>
+                    <option value="admin">管理者</option>
                   </select>
                   <button type="button" onClick={() => deleteStaff(s.id)}>
                     削除
@@ -2526,7 +2817,7 @@ function PMJapaneseDateInput({ value, onChange }) {
   );
 }
 
-function FullPatientManager({ loginUser, profession, setProfession }) {
+function FullPatientManager({ loginUser, profession, setProfession, staffSource = [] }) {
   const [view, setView] = useState("table");
 
   useEffect(() => {
@@ -2539,6 +2830,33 @@ function FullPatientManager({ loginUser, profession, setProfession }) {
       ? pmEnsureSampleStaff(JSON.parse(saved).map(pmMigrateSampleStaff))
       : PM_SAMPLE_STAFF.map(pmNormalizeStaff);
   });
+  useEffect(() => {
+  if (!staffSource.length) return;
+
+  setStaff((prevStaff) => {
+    const nextStaff = staffSource.map((person, index) => {
+      const existing =
+        prevStaff.find((item) => item.id === person.id) ||
+        prevStaff.find(
+          (item) =>
+            item.profession === person.job &&
+            item.lastName === person.lastName &&
+            item.firstName === person.firstName
+        );
+
+      return pmNormalizeStaff({
+        ...existing,
+        id: person.id,
+        profession: person.job || "PT",
+        lastName: person.lastName || "",
+        firstName: person.firstName || "",
+        order: Number(person.order || index + 1),
+      });
+    });
+
+    return nextStaff;
+  });
+}, [staffSource]);
   const [movements, setMovements] = useState(() => {
     const saved = localStorage.getItem("integratedAssignmentTableMovementsV1");
     return saved ? JSON.parse(saved) : [];
