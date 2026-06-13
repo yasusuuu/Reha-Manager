@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import {
   addDoc,
@@ -2961,6 +2961,8 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
     return saved ? JSON.parse(saved) : {};
   });
   const [selectedFiscal, setSelectedFiscal] = useState(null); // null = 今年度
+  const [patientDataReady, setPatientDataReady] = useState(false);
+  const patientRemoteApplyingRef = useRef(false);
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
@@ -2982,25 +2984,59 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
   const [settingsView, setSettingsView] = useState("register");
   const [showTodayAdjustHistory, setShowTodayAdjustHistory] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem("integratedAssignmentTableStaffV1", JSON.stringify(staff));
-  }, [staff]);
+useEffect(() => {
+  const unsubscribe = onSnapshot(doc(db, "settings", "patientManager"), (snapshot) => {
+    if (!snapshot.exists()) {
+      setPatientDataReady(true);
+      return;
+    }
 
-  useEffect(() => {
-    localStorage.setItem("integratedAssignmentTableMovementsV1", JSON.stringify(movements));
-  }, [movements]);
+    const data = snapshot.data();
+    patientRemoteApplyingRef.current = true;
 
-  useEffect(() => {
-    localStorage.setItem("integratedAssignmentTableHistoryV1", JSON.stringify(history));
-  }, [history]);
+    if (Array.isArray(data.staff)) {
+      setStaff(data.staff.map(pmNormalizeStaff));
+    }
 
-  useEffect(() => {
-    localStorage.setItem("integratedAssignmentTableRecentChangesV1", JSON.stringify(recentChanges));
-  }, [recentChanges]);
+    if (Array.isArray(data.movements)) {
+      setMovements(data.movements);
+    }
 
-  useEffect(() => {
-    localStorage.setItem("integratedAssignmentTableFiscalSnapshotsV1", JSON.stringify(fiscalSnapshots));
-  }, [fiscalSnapshots]);
+    if (Array.isArray(data.history)) {
+      setHistory(data.history);
+    }
+
+    if (data.recentChanges) {
+      setRecentChanges(data.recentChanges);
+    }
+
+    if (data.fiscalSnapshots) {
+      setFiscalSnapshots(data.fiscalSnapshots);
+    }
+
+    setPatientDataReady(true);
+    setTimeout(() => {
+  patientRemoteApplyingRef.current = false;
+}, 0);
+  });
+
+  return () => unsubscribe();
+}, []);
+
+useEffect(() => {
+if (!patientDataReady || patientRemoteApplyingRef.current) return;
+
+  setDoc(doc(db, "settings", "patientManager"), {
+    staff,
+    movements,
+    history,
+    recentChanges,
+    fiscalSnapshots,
+    updatedAt: Date.now(),
+    updatedBy: loginUser?.id || "",
+    updatedByName: loginUser ? personName(loginUser) : "",
+  });
+}, [patientDataReady, staff, movements, history, recentChanges, fiscalSnapshots, loginUser]);
 
   useEffect(() => {
     applyDueMovements();
@@ -3313,6 +3349,20 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
   function updateNote(staffId, note) {
     setStaff((prev) => prev.map((person) => (person.id === staffId ? { ...person, note } : person)));
   }
+
+function updateCancerPermission(id, canCancerRehab) {
+  if (!canCancerRehab && activeCell === `${id}:cancer`) {
+    setActiveCell(null);
+  }
+
+  setStaff((prev) =>
+    prev.map((person) =>
+      person.id === id
+        ? pmNormalizeStaff({ ...person, canCancerRehab })
+        : person
+    )
+  );
+}
 
   function moveStaffOrder(id, direction) {
     const list = visibleStaff;
@@ -3941,8 +3991,22 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
                 {visibleStaff.map((person) => (
                   <div className="orderItem" key={person.id}>
                     <strong>{pmPersonName(person)}</strong>
-                    <span>{person.canCancerRehab ? "がんリハ可" : ""}</span>
-                    <div>
+<div className="miniCancerToggle" aria-label={`${pmPersonName(person)} がんリハ実施権`}>
+  <button
+    type="button"
+    className={person.canCancerRehab ? "active" : ""}
+    onClick={() => updateCancerPermission(person.id, true)}
+  >
+    可
+  </button>
+  <button
+    type="button"
+    className={!person.canCancerRehab ? "active" : ""}
+    onClick={() => updateCancerPermission(person.id, false)}
+  >
+    否
+  </button>
+</div>                    <div>
                       <button type="button" onClick={() => moveStaffOrder(person.id, -1)}>↑</button>
                       <button type="button" onClick={() => moveStaffOrder(person.id, 1)}>↓</button>
                       <button className="deleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
@@ -4124,7 +4188,9 @@ function PMAssignmentTable({
                           if (!disabled) setActiveCell(isActive ? null : cellKey);
                         }}
                       >
-                        {isActive && !disabled && dept.key === "outpatient" ? (
+                      {disabled ? (
+  <span className="disabledCancerMark">—</span>
+) : isActive && dept.key === "outpatient" ? (
                           <div className="outpatientAdjust" onClick={(e) => e.stopPropagation()}>
                             <div className="outpatientAdjustRow">
                               <span>一般</span>
