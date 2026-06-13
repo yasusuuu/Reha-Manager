@@ -10,6 +10,7 @@ import {
   onSnapshot,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -784,30 +785,12 @@ useEffect(() => {
   return () => unsubscribe();
 }, []);
 
-  const [saturdayGroups, setSaturdayGroups] = useState(() => {
-    const saved = localStorage.getItem("leaveSaturdayGroupsV1");
-    if (saved) return JSON.parse(saved);
-    return defaultSaturdayGroups(staff);
-  });
-
-  const [saturdayOverrides, setSaturdayOverrides] = useState(() => {
-    const saved = localStorage.getItem("leaveSaturdayOverridesV1");
-    if (saved) return JSON.parse(saved);
-
-    // 旧版で日付ごとに登録していた土曜出勤データがあれば、例外設定として引き継ぎます。
-    const oldSaved = localStorage.getItem("leaveSaturdaySchedulesV1");
-    return oldSaved ? JSON.parse(oldSaved) : [];
-  });
-
-  const [saturdayRotation, setSaturdayRotation] = useState(() => {
-    const saved = localStorage.getItem("leaveSaturdayRotationV1");
-    if (saved) return JSON.parse(saved);
-    return {
-      startDate: "2026-04-04",
-      startGroup: "A",
-    };
-  });
-
+const [saturdayGroups, setSaturdayGroups] = useState(() => defaultSaturdayGroups(staff));
+const [saturdayOverrides, setSaturdayOverrides] = useState([]);
+const [saturdayRotation, setSaturdayRotation] = useState({
+  startDate: "2026-04-04",
+  startGroup: "A",
+});
 
   const [holidays, setHolidays] = useState(() => {
     try {
@@ -869,19 +852,30 @@ useEffect(() => {
     localStorage.setItem("leaveStaffV4", JSON.stringify(staff));
   }, [staff]);
 
-  useEffect(() => {
-    localStorage.setItem("leaveSaturdayGroupsV1", JSON.stringify(saturdayGroups));
-  }, [saturdayGroups]);
+useEffect(() => {
+  const unsubscribe = onSnapshot(doc(db, "settings", "saturdayDuty"), (snapshot) => {
+    if (!snapshot.exists()) return;
 
-  useEffect(() => {
-    localStorage.setItem("leaveSaturdayOverridesV1", JSON.stringify(saturdayOverrides));
-  }, [saturdayOverrides]);
+    const data = snapshot.data();
 
+    if (data.groups) {
+      setSaturdayGroups(data.groups);
+    }
 
-  useEffect(() => {
-    localStorage.setItem("leaveSaturdayRotationV1", JSON.stringify(saturdayRotation));
-  }, [saturdayRotation]);
+    if (Array.isArray(data.overrides)) {
+      setSaturdayOverrides(data.overrides);
+    }
 
+    if (data.rotation) {
+      setSaturdayRotation({
+        startDate: data.rotation.startDate || "2026-04-04",
+        startGroup: data.rotation.startGroup || "A",
+      });
+    }
+  });
+
+  return () => unsubscribe();
+}, []);
 
   useEffect(() => {
     let active = true;
@@ -1515,22 +1509,42 @@ async function deleteAnnouncement(id) {
     return a.every((value, index) => value === b[index]);
   }
 
-  function toggleSaturdayGroupStaff(groupKey, staffId) {
-    setSaturdayGroups((prev) => {
-      const current = prev[groupKey] || [];
-      const exists = current.includes(staffId);
-      return {
-        ...prev,
-        [groupKey]: exists ? current.filter((id) => id !== staffId) : [...current, staffId],
-      };
-    });
-  }
+async function saveSaturdaySettings(nextGroups, nextOverrides, nextRotation) {
+  if (!isAdmin) return;
+
+  await setDoc(doc(db, "settings", "saturdayDuty"), {
+    groups: nextGroups,
+    overrides: nextOverrides,
+    rotation: nextRotation,
+    updatedAt: Date.now(),
+    updatedBy: loginUser?.id || "",
+    updatedByName: loginUser ? personName(loginUser) : "",
+  });
+}
+
+function toggleSaturdayGroupStaff(groupKey, staffId) {
+  setSaturdayGroups((prev) => {
+    const current = prev[groupKey] || [];
+    const exists = current.includes(staffId);
+    const nextGroups = {
+      ...prev,
+      [groupKey]: exists ? current.filter((id) => id !== staffId) : [...current, staffId],
+    };
+
+    saveSaturdaySettings(nextGroups, saturdayOverrides, saturdayRotation);
+    return nextGroups;
+  });
+}
 
   function resetSaturdayOverride(date) {
     if (!isAdmin) return;
     if (!saturdayOverrideForDate(date)) return;
     if (!confirm("この日の個別変更を解除して、基本グループに戻しますか？")) return;
-    setSaturdayOverrides((prev) => prev.filter((item) => item.date !== date));
+setSaturdayOverrides((prev) => {
+  const nextOverrides = prev.filter((item) => item.date !== date);
+  saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
+  return nextOverrides;
+});
     setSaturdayForm((prev) => {
       const groupKey = saturdayBaseGroupKeyForDate(date);
       return {
@@ -1581,6 +1595,7 @@ async function deleteAnnouncement(id) {
           });
         }
       }
+saveSaturdaySettings(saturdayGroups, nextList, saturdayRotation);
 
       return nextList;
     });
@@ -1589,11 +1604,16 @@ async function deleteAnnouncement(id) {
     setShowSaturdayEdit(false);
   }
 
-  function deleteSaturdaySchedule(date) {
-    if (!isAdmin) return;
-    if (!confirm("この日の土曜出勤を削除しますか？")) return;
-    setSaturdayOverrides((prev) => prev.filter((item) => item.date !== date));
-  }
+function deleteSaturdaySchedule(date) {
+  if (!isAdmin) return;
+  if (!confirm("この日の土曜出勤を削除しますか？")) return;
+
+  setSaturdayOverrides((prev) => {
+    const nextOverrides = prev.filter((item) => item.date !== date);
+    saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
+    return nextOverrides;
+  });
+}
 
   const visibleStaff = isAdmin ? activeStaff : activeStaff.filter((s) => s.id === loginId);
   const showTimeInputs = ["paid", "child"].includes(form.type) && form.method === "time";
@@ -2258,14 +2278,27 @@ if (!loginStaff) {
                   <span>開始日</span>
                   <JapaneseDateInput
                     value={saturdayRotation.startDate}
-                    onChange={(startDate) => setSaturdayRotation((prev) => ({ ...prev, startDate }))}
+                    onChange={(startDate) => {
+  setSaturdayRotation((prev) => {
+    const nextRotation = { ...prev, startDate };
+    saveSaturdaySettings(saturdayGroups, saturdayOverrides, nextRotation);
+    return nextRotation;
+  });
+}}
                   />
                 </label>
                 <label>
                   <span>開始グループ</span>
                   <select
                     value={saturdayRotation.startGroup}
-                    onChange={(e) => setSaturdayRotation((prev) => ({ ...prev, startGroup: e.target.value }))}
+                    onChange={(e) => {
+  const startGroup = e.target.value;
+  setSaturdayRotation((prev) => {
+    const nextRotation = { ...prev, startGroup };
+    saveSaturdaySettings(saturdayGroups, saturdayOverrides, nextRotation);
+    return nextRotation;
+  });
+}}
                   >
                     {SATURDAY_GROUP_KEYS.map((groupKey) => (
                       <option key={groupKey} value={groupKey}>{groupKey}</option>
