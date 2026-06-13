@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import {
+  addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   limit,
+  onSnapshot,
   query,
   serverTimestamp,
   updateDoc,
@@ -752,10 +755,22 @@ useEffect(() => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [announcements, setAnnouncements] = useState(() => {
-    const saved = localStorage.getItem("leaveAnnouncementsV1");
-    return saved ? JSON.parse(saved) : [];
+const [announcements, setAnnouncements] = useState([]);
+
+useEffect(() => {
+  const unsubscribe = onSnapshot(collection(db, "announcements"), (snapshot) => {
+    const nextAnnouncements = snapshot.docs
+      .map((announcementDoc) => ({
+        id: announcementDoc.id,
+        ...announcementDoc.data(),
+      }))
+      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+
+    setAnnouncements(nextAnnouncements);
   });
+
+  return () => unsubscribe();
+}, []);
 
   const [saturdayGroups, setSaturdayGroups] = useState(() => {
     const saved = localStorage.getItem("leaveSaturdayGroupsV1");
@@ -845,10 +860,6 @@ useEffect(() => {
   useEffect(() => {
     localStorage.setItem("leaveRecordsV3", JSON.stringify(records));
   }, [records]);
-
-  useEffect(() => {
-    localStorage.setItem("leaveAnnouncementsV1", JSON.stringify(announcements));
-  }, [announcements]);
 
   useEffect(() => {
     localStorage.setItem("leaveSaturdayGroupsV1", JSON.stringify(saturdayGroups));
@@ -1272,7 +1283,7 @@ const loginUser = loginStaff
     if (form.staffId === id) setForm((prev) => ({ ...prev, staffId: fallbackId }));
   }
 
-  function saveAnnouncement(e) {
+  async function saveAnnouncement(e) {
     e.preventDefault();
     if (!isAdmin) return;
 
@@ -1287,23 +1298,20 @@ const loginUser = loginStaff
       return;
     }
 
-    setAnnouncements((prev) => [
-      {
-        id: makeId(),
-        title,
-        message: announcementForm.message.trim(),
-        priority: announcementForm.priority,
-        scheduleType: announcementForm.scheduleType,
-        date: announcementForm.date,
-        time: announcementForm.time,
-        weekday: announcementForm.weekday,
-        nth: announcementForm.nth,
-        endDate: announcementForm.endDate,
-        createdAt: Date.now(),
-        createdBy: loginId,
-      },
-      ...prev,
-    ]);
+    await addDoc(collection(db, "announcements"), {
+  title,
+  message: announcementForm.message.trim(),
+  priority: announcementForm.priority,
+  scheduleType: announcementForm.scheduleType,
+  date: announcementForm.date,
+  time: announcementForm.time,
+  weekday: announcementForm.weekday,
+  nth: announcementForm.nth,
+  endDate: announcementForm.endDate,
+  createdAt: Date.now(),
+  createdBy: loginUser?.id || "",
+  createdByName: loginUser ? personName(loginUser) : "",
+});
 
     setAnnouncementForm({
       title: "",
@@ -1319,12 +1327,17 @@ const loginUser = loginStaff
     setShowAnnouncementEdit(false);
   }
 
-  function deleteAnnouncement(id) {
-    if (!isAdmin) return;
-    if (!confirm("このお知らせを削除しますか？")) return;
-    setAnnouncements((prev) => prev.filter((item) => item.id !== id));
-  }
+async function deleteAnnouncement(id) {
+  if (!isAdmin) return;
+  if (!confirm("このお知らせを削除しますか？")) return;
 
+  try {
+    await deleteDoc(doc(db, "announcements", id));
+  } catch (error) {
+    console.error("Announcement delete failed", error);
+    alert("お知らせの削除に失敗しました。");
+  }
+}  
   function openSaturdayEdit(date = selectedDate || form.date || todayKey()) {
     const existing = saturdayScheduleForDate(date);
     setSwapTargetStaffId(null);
