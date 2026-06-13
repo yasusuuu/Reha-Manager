@@ -89,7 +89,7 @@ const ANNOUNCEMENT_TYPES = {
 const SATURDAY_GROUP_KEYS = ["A", "B", "C", "D"];
 
 function makeId(prefix = "id") {
-  if (globalThis.crypto?.randomUUID) return globalThis.makeId();
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
@@ -750,10 +750,22 @@ useEffect(() => {
   loadStaffFromFirestore();
 }, []);
 
-  const [records, setRecords] = useState(() => {
-    const saved = localStorage.getItem("leaveRecordsV3");
-    return saved ? JSON.parse(saved) : [];
+const [records, setRecords] = useState([]);
+
+useEffect(() => {
+  const unsubscribe = onSnapshot(collection(db, "leaveRecords"), (snapshot) => {
+    const nextRecords = snapshot.docs
+      .map((recordDoc) => ({
+        id: recordDoc.id,
+        ...recordDoc.data(),
+      }))
+      .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+
+    setRecords(nextRecords);
   });
+
+  return () => unsubscribe();
+}, []);
 
 const [announcements, setAnnouncements] = useState([]);
 
@@ -858,10 +870,6 @@ useEffect(() => {
   }, [staff]);
 
   useEffect(() => {
-    localStorage.setItem("leaveRecordsV3", JSON.stringify(records));
-  }, [records]);
-
-  useEffect(() => {
     localStorage.setItem("leaveSaturdayGroupsV1", JSON.stringify(saturdayGroups));
   }, [saturdayGroups]);
 
@@ -914,6 +922,16 @@ const loginUser = loginStaff
   useEffect(() => {
     if (loginUser?.job) setPatientProfession(loginUser.job);
   }, [loginUser?.id, loginUser?.job]);
+
+  useEffect(() => {
+  if (!loginUser?.id) return;
+
+  setLoginId(loginUser.id);
+  setForm((prev) => ({
+    ...prev,
+    staffId: loginUser.id,
+  }));
+}, [loginUser?.id]);
 
   const enrichedRecords = useMemo(() => {
     const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
@@ -1136,21 +1154,23 @@ const loginUser = loginStaff
     return "";
   }
 
-  function addRecord() {
+  async function addRecord() {
     let nextRecord = {
       ...form,
       id: makeId(),
       createdAt: Date.now(),
     };
 
-    if (!isAdmin) {
-      nextRecord.staffId = loginId;
-    }
+    const validStaffIds = new Set(activeStaff.map((person) => person.id));
 
-    if (!nextRecord.staffId) {
-      alert("職員を選択してください。");
-      return;
-    }
+if (!isAdmin || !validStaffIds.has(nextRecord.staffId)) {
+  nextRecord.staffId = loginUser?.id || activeStaff[0]?.id || "";
+}
+
+if (!nextRecord.staffId) {
+  alert("職員を選択してください。");
+  return;
+}
 
     if (!["paid", "child", "holiday"].includes(nextRecord.type)) {
       nextRecord.method = "full";
@@ -1161,24 +1181,43 @@ const loginUser = loginStaff
     }
 
     const error = validateRecord(nextRecord);
+
     if (error) {
       alert(error);
       return;
     }
 
-    setRecords((prev) => [...prev, nextRecord]);
-    setSelectedDate(nextRecord.date);
-    setForm((prev) => ({ ...prev, note: "" }));
-  }
+try {
+  const { id, ...recordData } = nextRecord;
+await addDoc(collection(db, "leaveRecords"), {
+  ...recordData,
+  createdBy: loginUser?.id || "",
+  createdByName: loginUser ? personName(loginUser) : "",
+});
 
-  function removeRecord(id, record) {
+} catch (error) {
+  console.error("Leave record add failed", error);
+  alert("休暇・勤務登録に失敗しました。");
+  return;
+}
+setSelectedDate(nextRecord.date);
+setForm((prev) => ({ ...prev, note: "" }));
+}
+
+  async function removeRecord(id, record) {
     if (!isAdmin && record.staffId !== loginId) {
       alert("自分の登録以外は削除できません。");
       return;
     }
 
     if (!confirm("削除しますか？")) return;
-    setRecords((prev) => prev.filter((r) => r.id !== id));
+
+try {
+  await deleteDoc(doc(db, "leaveRecords", id));
+} catch (error) {
+  console.error("Leave record delete failed", error);
+  alert("休暇・勤務記録の削除に失敗しました。");
+}
   }
 
   function countSaturdayDutiesForFiscalYear(staffId) {
