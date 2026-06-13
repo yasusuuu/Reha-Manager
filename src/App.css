@@ -5605,3 +5605,34 @@ th {
     max-width: 220px;
   }
 }
+/* スマホでフォーム文字が白くなる対策 */
+input,
+select,
+textarea {
+  color: #0f172a;
+  background-color: #ffffff;
+  -webkit-text-fill-color: #0f172a;
+}
+
+select option {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b;
+  -webkit-text-fill-color: #64748b;
+  opacity: 1;
+}
+
+.leaveEntryCard input,
+.leaveEntryCard select,
+.leaveEntryCard textarea,
+.formGrid input,
+.formGrid select,
+.formGrid textarea {
+  color: #0f172a;
+  background-color: #ffffff;
+  -webkit-text-fill-color: #0f172a;
+}
