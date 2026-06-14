@@ -5765,4 +5765,40 @@ textarea::placeholder {
   .patientModule .miniCancerToggle button {
     width: 28px;
     min-width: 28px;
-   
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .patientModule .orderItem > div:last-child button {
+    height: 30px;
+    min-height: 30px;
+  }
+
+  .patientModule .orderItem > div:last-child button:not(:last-child) {
+    width: 30px;
+    min-width: 30px;
+  }
+}
+
+.patientModule .patientCalendarSection .calDay.today .calDayNum {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+.patientModule .patientCalendarSection .calDay.sun.today {
+  background: #fef2f2 !important;
+}
+
+.patientModule .patientCalendarSection .calDay.sun.today .calDayNum {
+  color: #b91c1c !important;
+  -webkit-text-fill-color: #b91c1c !important;
+}
+
+.patientModule .patientCalendarSection .calDay.sat.today {
+  background: #eff6ff !important;
+}
+
+.patientModule .patientCalendarSection .calDay.sat.today .calDayNum {
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+}
