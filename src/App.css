@@ -5802,3 +5802,23 @@ textarea::placeholder {
   color: #1d4ed8 !important;
   -webkit-text-fill-color: #1d4ed8 !important;
 }
+/* 患者人数管理: 当日変更セルを青く表示 */
+.patientModule .assignmentTable td.numberCell.changed,
+.patientModule .assignmentTable td.dialysisCol.changed {
+  background: #bfdbfe !important;
+}
+
+.patientModule .assignmentTable td.numberCell.changed.tActiveCell,
+.patientModule .assignmentTable td.dialysisCol.changed.tActiveCell {
+  background: #93c5fd !important;
+}
+
+.patientModule .assignmentTable td.numberCell.changed input,
+.patientModule .assignmentTable td.numberCell.changed .inlineValue,
+.patientModule .assignmentTable td.numberCell.changed .plainNumberLine,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTagList,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisAdjust,
+.patientModule .assignmentTable td.dialysisCol.changed .inlineValue {
+  color: #1d4ed8 !important;
+  font-weight: 900;
+}
