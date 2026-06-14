@@ -754,7 +754,17 @@ useEffect(() => {
 const [records, setRecords] = useState([]);
 
 useEffect(() => {
-  const unsubscribe = onSnapshot(collection(db, "leaveRecords"), (snapshot) => {
+  const targetFiscalYear = fiscalYear(todayKey());
+  const startDate = `${targetFiscalYear}-04-01`;
+  const endDate = `${targetFiscalYear + 1}-04-01`;
+
+  const recordsQuery = query(
+    collection(db, "leaveRecords"),
+    where("date", ">=", startDate),
+    where("date", "<", endDate)
+  );
+
+  const unsubscribe = onSnapshot(recordsQuery, (snapshot) => {
     const nextRecords = snapshot.docs
       .map((recordDoc) => ({
         id: recordDoc.id,
