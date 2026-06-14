@@ -1498,6 +1498,29 @@ async function deleteAnnouncement(id) {
     swapSaturdayStaffBetweenDates(swapTargetStaffId, rightStaffId);
   }
 
+  function moveSaturdayStaffWithoutTarget() {
+  if (!swapCandidateDate) {
+    alert("候補の土曜日を選択してください。");
+    return;
+  }
+
+  if (!swapTargetStaffId) {
+    alert("左側の出勤者を先に選択してください。");
+    return;
+  }
+
+  setSaturdayForm((prev) => ({
+    ...prev,
+    staffIds: prev.staffIds.filter((id) => id !== swapTargetStaffId),
+  }));
+
+  setSwapCandidateStaffIds((prev) =>
+    prev.includes(swapTargetStaffId) ? prev : [...prev, swapTargetStaffId]
+  );
+
+  setSwapTargetStaffId(null);
+}
+
   function handleSaturdayCrossSwapDrop(event, leftStaffId) {
     event.preventDefault();
     const rightStaffId = event.dataTransfer.getData("text/saturday-staff-id");
@@ -1565,11 +1588,10 @@ setSaturdayOverrides((prev) => {
 
     const weekday = new Date(`${saturdayForm.date}T00:00:00`).getDay();
     if (weekday !== 6 && !confirm("選択日が土曜日ではありません。この日で登録しますか？")) return;
-    if (saturdayForm.staffIds.length === 0) {
-      alert("土曜出勤者を1名以上選択してください。");
-      return;
-    }
-
+if (saturdayForm.staffIds.length === 0 && !swapCandidateDate) {
+  alert("土曜出勤者を1名以上選択してください。");
+  return;
+}
     setSaturdayOverrides((prev) => {
       const upsert = (list, next) => {
         const exists = list.some((item) => item.date === next.date);
@@ -2429,27 +2451,40 @@ if (!loginStaff) {
                             </button>
                           )}
                           <div className="saturdayPuzzleList">
-                            {!swapCandidateDate ? (
-                              <p className="saturdayPuzzleEmpty">右上の日付をタップ</p>
-                            ) : swapCandidateStaffIds.length === 0 ? (
-                              <p className="saturdayPuzzleEmpty">出勤者が未設定です</p>
-                            ) : (
-                              swapCandidateStaffIds.map((staffId) => {
-                                const person = staff.find((s) => s.id === staffId);
-                                if (!person) return null;
-                                return (
-                                  <button
-                                    className={`saturdayPuzzleCard candidate ${swapTargetStaffId ? "tapReady" : ""}`}
-                                    key={person.id}
-                                    type="button"
-                                    onClick={() => handleSaturdayTapSwap(person.id)}
-                                  >
-                                    <strong>{personName(person)}</strong>
-                                    <span>{person.job}</span>
-                                  </button>
-                                );
-                              })
-                            )}
+{!swapCandidateDate ? (
+  <p className="saturdayPuzzleEmpty">右上の日付をタップ</p>
+) : (
+  <>
+    <button
+      className={`saturdayPuzzleCard candidate noTarget ${swapTargetStaffId ? "tapReady" : ""}`}
+      type="button"
+      onClick={moveSaturdayStaffWithoutTarget}
+    >
+      <strong>変更対象者なし</strong>
+      <span>移動</span>
+    </button>
+
+    {swapCandidateStaffIds.length === 0 ? (
+      <p className="saturdayPuzzleEmpty">出勤者が未設定です</p>
+    ) : (
+      swapCandidateStaffIds.map((staffId) => {
+        const person = staff.find((s) => s.id === staffId);
+        if (!person) return null;
+        return (
+          <button
+            className={`saturdayPuzzleCard candidate ${swapTargetStaffId ? "tapReady" : ""}`}
+            key={person.id}
+            type="button"
+            onClick={() => handleSaturdayTapSwap(person.id)}
+          >
+            <strong>{personName(person)}</strong>
+            <span>{person.job}</span>
+          </button>
+        );
+      })
+    )}
+  </>
+)}
                           </div>
                         </div>
                       </div>
