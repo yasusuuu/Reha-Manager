@@ -3051,9 +3051,19 @@ useEffect(() => {
       setHistory(data.history);
     }
 
-    if (data.recentChanges) {
-      setRecentChanges(data.recentChanges);
-    }
+if (data.recentChanges) {
+  setRecentChanges((prev) => {
+    const today = pmTodayKey();
+    const keepTodayChanges = Object.fromEntries(
+      Object.entries(prev).filter(([, value]) => value === today)
+    );
+
+    return {
+      ...data.recentChanges,
+      ...keepTodayChanges,
+    };
+  });
+}
 
     if (data.fiscalSnapshots) {
       setFiscalSnapshots(data.fiscalSnapshots);
@@ -3148,16 +3158,43 @@ if (!patientDataReady || patientRemoteApplyingRef.current) return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profession, movementForm.department, staff.length, loginPatientStaff?.id, autoMovementStaff?.id]);
 
-  function isChangedToday(staffId, department) {
-    return recentChanges[`${staffId}:${department}`] === pmTodayKey();
-  }
+function isChangedToday(staffId, department) {
+  const today = pmTodayKey();
+  const key = `${staffId}:${department}`;
 
-  function markChanged(staffId, department) {
-    setRecentChanges((prev) => ({
-      ...prev,
-      [`${staffId}:${department}`]: pmTodayKey(),
-    }));
-  }
+  if (recentChanges[key] === today) return true;
+
+  return history.some(
+    (item) =>
+      item.date === today &&
+      item.staffId === staffId &&
+      item.department === department
+  );
+}
+
+function markChanged(staffId, department) {
+  const today = pmTodayKey();
+  const key = `${staffId}:${department}`;
+  const nextRecentChanges = {
+    ...recentChanges,
+    [key]: today,
+  };
+
+  setRecentChanges(nextRecentChanges);
+
+  setDoc(
+    doc(db, "settings", "patientManager"),
+    {
+      recentChanges: nextRecentChanges,
+      updatedAt: Date.now(),
+      updatedBy: loginUser?.id || "",
+      updatedByName: loginUser ? personName(loginUser) : "",
+    },
+    { merge: true }
+  ).catch((error) => {
+    console.error("Patient recent changes save failed", error);
+  });
+}
 
   function updateCount(staffId, department, value) {
     const nextValue = Math.max(0, Number(value || 0));
@@ -4167,6 +4204,7 @@ function PMAssignmentTable({
           <thead>
             <tr>
               <th className="stickyName nameCol">氏名</th>
+              <th className="stickyTotal totalCol">合計</th>
               {PM_DEPARTMENTS.map((dept) => (
                 <th key={dept.key} className={`deptHead ${dept.key} sep-${dept.key} ${activeDeptKey === dept.key ? "activeDeptGuide" : ""}`}>
                   <span>{dept.short}</span>
@@ -4192,7 +4230,6 @@ function PMAssignmentTable({
                   )}
                 </th>
               ))}
-              <th className="totalCol">合計</th>
               <th className={`dialysisCol ${activeDeptKey === "dialysis" ? "activeDeptGuide" : ""}`}>透析</th>
               <th className="moveCol">
                 <span className="moveHeaderInline">
@@ -4215,6 +4252,7 @@ function PMAssignmentTable({
                       <strong>{pmPersonName(person)}</strong>
                     </div>
                   </th>
+                  <td className={`stickyTotal totalCol totalNumber ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>{pmCountTotal(person)}</td>
 
                   {PM_DEPARTMENTS.map((dept) => {
                     const disabled = dept.key === "cancer" ? !person.canCancerRehab : false;
@@ -4228,7 +4266,7 @@ function PMAssignmentTable({
                     return (
                       <td
                         key={dept.key}
-                        className={`numberCell dept-${dept.key} sep-${dept.key} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === dept.key && activeRowIndex >= 0 && rowIndex <= activeRowIndex ? "tColGuide" : ""} ${isActive ? "tActiveCell" : ""} ${person.canCancerRehab && dept.key === "cancer" ? "cancerAllowed" : ""} ${changed ? "changed" : ""} ${disabled ? "disabledCell" : ""} ${hasStudent ? "hasStudent" : ""}`}
+                        className={`numberCell dept-${dept.key} sep-${dept.key} ${changed ? "changed" : ""} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === dept.key ? "tColGuide" : ""} ${isActive ? "tActiveCell" : ""}`}
                         onClick={() => {
                           if (!disabled) setActiveCell(isActive ? null : cellKey);
                         }}
@@ -4277,9 +4315,8 @@ function PMAssignmentTable({
                     );
                   })}
 
-                  <td className={`totalCol totalNumber ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>{pmCountTotal(person)}</td>
                   <td
-                    className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""} ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""} ${activeDeptKey === "dialysis" && activeRowIndex >= 0 && rowIndex <= activeRowIndex ? "tColGuide" : ""}`}
+                  className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === "dialysis" ? "tColGuide" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
                     onClick={() => setActiveCell(activeCell === `${person.id}:dialysis` ? null : `${person.id}:dialysis`)}
                   >
                     {activeCell === `${person.id}:dialysis` ? (

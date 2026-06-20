@@ -5518,307 +5518,235 @@ th {
   text-align: left;
 }
 
-.loginGate {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: #eef3f8;
+/* Patient table: keep the T guide visible without hiding same-day changes. */
+.patientModule .assignmentTable td.tRowGuide,
+.patientModule .assignmentTable td.tRowAfterCell,
+.patientModule .assignmentTable th.activeNameGuide {
+  background-color: #e8f1ff !important;
 }
 
-.loginCard {
-  width: min(420px, 100%);
-  padding: 28px;
-  border: 1px solid #d8e2ee;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1);
-  text-align: center;
+.patientModule .assignmentTable td.tColGuide,
+.patientModule .assignmentTable th.activeDeptGuide {
+  background-color: #dcecff !important;
 }
 
-.loginCard h1 {
-  margin: 0 0 10px;
-  color: #0f172a;
-  font-size: 24px;
-  font-weight: 900;
+.patientModule .assignmentTable td.tRowGuide.tColGuide,
+.patientModule .assignmentTable td.tActiveCell {
+  background-color: #c9e0ff !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
-.loginCard p {
-  margin: 0 0 20px;
-  color: #475569;
-  font-size: 14px;
-}
-
-.loginCard button {
-  width: 100%;
-  min-height: 46px;
-  border: 0;
-  border-radius: 12px;
-  background: #0f766e;
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 900;
-  cursor: pointer;
-}
-.authStatus {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  padding: 4px;
-  border: 1px solid #d8e2ee;
-  border-radius: 999px;
-  background: #f8fafc;
-}
-
-.authStatus span {
-  max-width: 180px;
-  padding-left: 8px;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 800;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.authStatus button {
-  min-height: 30px;
-  border: 0;
-  border-radius: 999px;
-  padding: 5px 10px;
-  background: #e2e8f0;
-  color: #0f172a;
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-@media (max-width: 560px) {
-  .authStatus {
-    width: 100%;
-    justify-content: space-between;
-    margin-left: 0;
-  }
-
-  .authStatus span {
-    max-width: 220px;
-  }
-}
-/* スマホでフォーム文字が白くなる対策 */
-input,
-select,
-textarea {
-  color: #0f172a;
-  background-color: #ffffff;
-  -webkit-text-fill-color: #0f172a;
-}
-
-select option {
-  color: #0f172a;
-  background-color: #ffffff;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #64748b;
-  -webkit-text-fill-color: #64748b;
-  opacity: 1;
-}
-
-.leaveEntryCard input,
-.leaveEntryCard select,
-.leaveEntryCard textarea,
-.formGrid input,
-.formGrid select,
-.formGrid textarea {
-  color: #0f172a;
-  background-color: #ffffff;
-  -webkit-text-fill-color: #0f172a;
-}
-
-.patientModule .numberCell.dept-cancer.disabledCell::after {
-  content: none !important;
-}
-
-.patientModule .disabledCancerMark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  color: #0f172a;
-  font-weight: 900;
-}
-
-.patientModule .miniCancerToggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 8px;
-  background: #eef4f8;
-  border: 1px solid #cbd5e1;
-}
-
-.patientModule .miniCancerToggle button {
-  border: 0;
-  border-radius: 6px;
-  padding: 4px 9px;
-  background: transparent;
-  color: #334155;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.patientModule .miniCancerToggle button.active {
-  background: #0f766e;
-  color: #ffffff;
-}
-.patientModule .orderItem {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) auto auto;
-  align-items: center;
-  gap: 10px;
-  min-height: 46px;
-  padding: 8px 10px;
-}
-
-.patientModule .miniCancerToggle {
-  width: auto;
-  min-width: 70px;
-  height: 32px;
-  display: inline-grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border-radius: 9px;
-  background: #e8eef5;
-  border: 1px solid #cbd5e1;
-  box-shadow: none;
-}
-
-.patientModule .miniCancerToggle button {
-  width: 32px;
-  min-width: 32px;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: #334155;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.patientModule .miniCancerToggle button.active {
-  background: #0f766e;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff;
-}
-
-.patientModule .orderItem > div:last-child {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: flex-end;
-  width: auto;
-}
-
-.patientModule .orderItem > div:last-child button {
-  height: 32px;
-  min-height: 32px;
-  padding: 0 10px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.patientModule .orderItem > div:last-child button:not(:last-child) {
-  width: 32px;
-  min-width: 32px;
-  padding: 0;
-}
-
-.patientModule .orderItem > div:last-child button:last-child {
-  min-width: 48px;
-}
-
-@media (max-width: 640px) {
-  .patientModule .orderItem {
-    grid-template-columns: minmax(90px, 1fr) auto auto;
-    gap: 6px;
-    min-height: 42px;
-    padding: 6px 8px;
-  }
-
-  .patientModule .miniCancerToggle {
-    min-width: 62px;
-    height: 30px;
-  }
-
-  .patientModule .miniCancerToggle button {
-    width: 28px;
-    min-width: 28px;
-    height: 26px;
-    font-size: 12px;
-  }
-
-  .patientModule .orderItem > div:last-child button {
-    height: 30px;
-    min-height: 30px;
-  }
-
-  .patientModule .orderItem > div:last-child button:not(:last-child) {
-    width: 30px;
-    min-width: 30px;
-  }
-}
-
-.patientModule .patientCalendarSection .calDay.today .calDayNum {
-  color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
-}
-
-.patientModule .patientCalendarSection .calDay.sun.today {
-  background: #fef2f2 !important;
-}
-
-.patientModule .patientCalendarSection .calDay.sun.today .calDayNum {
-  color: #b91c1c !important;
-  -webkit-text-fill-color: #b91c1c !important;
-}
-
-.patientModule .patientCalendarSection .calDay.sat.today {
-  background: #eff6ff !important;
-}
-
-.patientModule .patientCalendarSection .calDay.sat.today .calDayNum {
-  color: #1d4ed8 !important;
-  -webkit-text-fill-color: #1d4ed8 !important;
-}
-/* 患者人数管理: 当日変更セルを青く表示 */
-.patientModule .assignmentTable td.numberCell.changed,
-.patientModule .assignmentTable td.dialysisCol.changed {
-  background: #bfdbfe !important;
-}
-
-.patientModule .assignmentTable td.numberCell.changed.tActiveCell,
-.patientModule .assignmentTable td.dialysisCol.changed.tActiveCell {
-  background: #93c5fd !important;
-}
-
+/* The changed value stays blue in both the normal and +/- display. */
 .patientModule .assignmentTable td.numberCell.changed input,
 .patientModule .assignmentTable td.numberCell.changed .inlineValue,
-.patientModule .assignmentTable td.numberCell.changed .plainNumberLine,
-.patientModule .assignmentTable td.dialysisCol.changed .dialysisTagList,
-.patientModule .assignmentTable td.dialysisCol.changed .dialysisAdjust,
-.patientModule .assignmentTable td.dialysisCol.changed .inlineValue {
+.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTotal,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTag,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisAdjustRow b {
   color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8;
+  font-weight: 900 !important;
+}
+
+/* Adjustment controls retain their own colors; only the number shows as changed. */
+.patientModule .assignmentTable .inlineBtn.minus {
+  color: #b91c1c !important;
+}
+
+.patientModule .assignmentTable .inlineBtn.plus {
+  color: #1d4ed8 !important;
+}
+
+/* =========================
+   Patient table highlight final override
+   T字ガイドを診療科セルにも合計・患者移動・備考と同じ強さで表示
+========================= */
+
+.patientModule .assignmentTable td.numberCell.tRowGuide,
+.patientModule .assignmentTable td.dialysisCol.tRowGuide,
+.patientModule .assignmentTable td.totalCol.tRowGuide,
+.patientModule .assignmentTable td.moveCol.tRowGuide,
+.patientModule .assignmentTable td.noteCol.tRowGuide,
+.patientModule .assignmentTable th.activeNameGuide {
+  background: #bfdbfe !important;
+  background-color: #bfdbfe !important;
+  background-image: none !important;
+}
+
+.patientModule .assignmentTable td.numberCell.tColGuide,
+.patientModule .assignmentTable td.dialysisCol.tColGuide,
+.patientModule .assignmentTable th.activeDeptGuide {
+  background: #93c5fd !important;
+  background-color: #93c5fd !important;
+  background-image: none !important;
+}
+
+.patientModule .assignmentTable td.numberCell.tActiveCell,
+.patientModule .assignmentTable td.numberCell.tRowGuide.tColGuide,
+.patientModule .assignmentTable td.dialysisCol.tActiveCell,
+.patientModule .assignmentTable td.dialysisCol.tRowGuide.tColGuide {
+  background: #60a5fa !important;
+  background-color: #60a5fa !important;
+  background-image: none !important;
+  outline: 0 !important;
+}
+
+/* changedの青文字はハイライト中も維持 */
+.patientModule .assignmentTable td.numberCell.changed input,
+.patientModule .assignmentTable td.numberCell.changed .inlineValue,
+.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTotal,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTag,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisAdjustRow b {
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+  font-weight: 900 !important;
+}
+
+/* がんリハ不可セルもT字ハイライトを優先 */
+.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide {
+  background: #bfdbfe !important;
+  background-color: #bfdbfe !important;
+}
+
+.patientModule .assignmentTable td.numberCell.disabledCell.tColGuide {
+  background: #93c5fd !important;
+  background-color: #93c5fd !important;
+}
+
+.patientModule .assignmentTable td.numberCell.disabledCell.tActiveCell,
+.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide.tColGuide {
+  background: #60a5fa !important;
+  background-color: #60a5fa !important;
+}
+
+
+
+/* =========================
+   Patient table final order: 氏名 / 合計 / 外来 ...
+   合計列を氏名の右に固定して、全体を見ながら負荷を把握しやすくする
+========================= */
+.patientModule .assignmentTable .stickyTotal {
+  position: sticky;
+  left: 86px;
+  z-index: 300;
+  width: 70px;
+  min-width: 70px;
+  background: #fff5d6 !important;
+  border-right: 1.5px solid #475569 !important;
+  border-left: 0 !important;
+}
+
+.patientModule .assignmentTable thead .stickyTotal {
+  z-index: 335;
+  background: #ffe9a8 !important;
+  color: #0f172a !important;
   font-weight: 900;
+}
+
+.patientModule .assignmentTable .stickyName {
+  z-index: 320;
+}
+
+.patientModule .assignmentTable thead .stickyName {
+  z-index: 340;
+}
+
+.patientModule .assignmentTable .stickyTotal.tRowGuide,
+.patientModule .assignmentTable .stickyTotal.tRowAfterCell {
+  background-color: #bfdbfe !important;
+}
+
+.patientModule .assignmentTable .stickyTotal.totalNumber {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+/* 合計を先頭へ移動したため、外来列の区切りを少し見やすく維持 */
+.patientModule .assignmentTable .sep-outpatient {
+  border-right: 1.5px solid #475569 !important;
+}
+
+/* 患者管理画面のカレンダー：当日は白抜きにせず、日付だけ太字にする */
+.patientModule .simpleCalendar .calDay.today,
+.patientModule .calDay.today {
+  background: inherit !important;
+  color: inherit !important;
+  border-color: #e2e8f0 !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .simpleCalendar .calDay.today.sun,
+.patientModule .calDay.today.sun {
+  background: #fff1f2 !important;
+  color: #b91c1c !important;
+  border-color: #fecdd3 !important;
+}
+
+.patientModule .simpleCalendar .calDay.today.sat,
+.patientModule .calDay.today.sat {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-color: #bfdbfe !important;
+}
+
+.patientModule .simpleCalendar .calDay.today .calDayNum,
+.patientModule .calDay.today .calDayNum {
+  font-weight: 950 !important;
+}
+
+
+/* =========================
+   患者管理カレンダー：当日表示
+   背景やラベルは追加せず、曜日別の太枠で表示
+========================= */
+
+/* 今日の共通設定：背景色は既存のまま、枠だけ太くする */
+.patientModule .simpleCalendar .calDay.today,
+.patientModule .calDay.today {
+  background: inherit !important;
+  color: inherit !important;
+  font-weight: 900 !important;
+  border-width: 3px !important;
+  box-shadow: none !important;
+}
+
+/* 平日の今日：グレー太枠 */
+.patientModule .simpleCalendar .calDay.today:not(.sun):not(.sat),
+.patientModule .calDay.today:not(.sun):not(.sat) {
+  border-color: #9ca3af !important;
+}
+
+/* 土曜の今日：青太枠 */
+.patientModule .simpleCalendar .calDay.today.sat,
+.patientModule .calDay.today.sat {
+  border-color: #3b82f6 !important;
+}
+
+/* 日曜の今日：赤太枠 */
+.patientModule .simpleCalendar .calDay.today.sun,
+.patientModule .calDay.today.sun {
+  border-color: #ef4444 !important;
+}
+
+/* 日付数字は背景を付けず、太字のみ */
+.patientModule .simpleCalendar .calDay.today .calDayNum,
+.patientModule .calDay.today .calDayNum {
+  background: transparent !important;
+  border: 0 !important;
+  color: inherit !important;
+  font-weight: 950 !important;
+  min-width: 0 !important;
+  height: auto !important;
+  border-radius: 0 !important;
+}
+
+/* 今日ラベルは出さない */
+.patientModule .simpleCalendar .calDay.today::after,
+.patientModule .calDay.today::after {
+  content: none !important;
+  display: none !important;
 }
