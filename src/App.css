@@ -5750,3 +5750,109 @@ th {
   content: none !important;
   display: none !important;
 }
+
+
+/* =========================
+   Patient cross highlight balance final
+   十字ハイライトの視認性調整
+   行・列は同程度の薄青、交点だけ濃青、+/-ボタンは通常色
+========================= */
+
+/* 行・列ハイライト：同程度の薄い青 */
+.patientModule .assignmentTable td.numberCell.tRowGuide,
+.patientModule .assignmentTable td.dialysisCol.tRowGuide,
+.patientModule .assignmentTable td.totalCol.tRowGuide,
+.patientModule .assignmentTable td.moveCol.tRowGuide,
+.patientModule .assignmentTable td.noteCol.tRowGuide,
+.patientModule .assignmentTable td.numberCell.tColGuide,
+.patientModule .assignmentTable td.dialysisCol.tColGuide,
+.patientModule .assignmentTable th.activeNameGuide,
+.patientModule .assignmentTable th.activeDeptGuide {
+  background: #eaf3ff !important;
+  background-color: #eaf3ff !important;
+  background-image: none !important;
+}
+
+/* 選択セル：交点だけ一段濃くする */
+.patientModule .assignmentTable td.numberCell.tActiveCell,
+.patientModule .assignmentTable td.numberCell.tRowGuide.tColGuide,
+.patientModule .assignmentTable td.dialysisCol.tActiveCell,
+.patientModule .assignmentTable td.dialysisCol.tRowGuide.tColGuide {
+  background: #9cc6ff !important;
+  background-color: #9cc6ff !important;
+  background-image: none !important;
+  outline: 0 !important;
+}
+
+/* 合計・患者移動・備考の行ハイライトも同じ薄青に統一 */
+.patientModule .assignmentTable .totalCol.tRowGuide,
+.patientModule .assignmentTable .totalCol.tRowAfterCell,
+.patientModule .assignmentTable .moveCol.tRowGuide,
+.patientModule .assignmentTable .moveCol.tRowAfterCell,
+.patientModule .assignmentTable .noteCol.tRowGuide,
+.patientModule .assignmentTable .noteCol.tRowAfterCell,
+.patientModule .assignmentTable .stickyTotal.tRowGuide,
+.patientModule .assignmentTable .stickyTotal.tRowAfterCell {
+  background: #eaf3ff !important;
+  background-color: #eaf3ff !important;
+}
+
+/* 氏名・項目ガイドは少しだけ分かりやすく */
+.patientModule .activeNameGuide,
+.patientModule .activeDeptGuide {
+  background: #dbeafe !important;
+  background-color: #dbeafe !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 0 0 2px #60a5fa !important;
+}
+
+/* +/- 操作部はハイライト背景を受けず、通常の白背景で固定 */
+.patientModule .assignmentTable .inlineAdjust,
+.patientModule .assignmentTable .outpatientAdjust,
+.patientModule .assignmentTable .dialysisAdjust {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+}
+
+/* +/- ボタン色は通常通り維持 */
+.patientModule .assignmentTable .inlineBtn {
+  background: #eaf3ff !important;
+  background-color: #eaf3ff !important;
+  color: #1e40af !important;
+}
+
+.patientModule .assignmentTable .inlineBtn.minus {
+  color: #b91c1c !important;
+}
+
+.patientModule .assignmentTable .inlineBtn.plus {
+  color: #1d4ed8 !important;
+}
+
+/* 変更済みの青文字はハイライト中も維持 */
+.patientModule .assignmentTable td.numberCell.changed input,
+.patientModule .assignmentTable td.numberCell.changed .inlineValue,
+.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTotal,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTag,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisAdjustRow b {
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+  font-weight: 900 !important;
+}
+
+/* がんリハ不可セルも十字ハイライトを優先 */
+.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide,
+.patientModule .assignmentTable td.numberCell.disabledCell.tColGuide {
+  background: #eaf3ff !important;
+  background-color: #eaf3ff !important;
+}
+
+.patientModule .assignmentTable td.numberCell.disabledCell.tActiveCell,
+.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide.tColGuide {
+  background: #9cc6ff !important;
+  background-color: #9cc6ff !important;
+}
