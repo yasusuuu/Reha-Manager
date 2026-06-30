@@ -737,6 +737,7 @@ useEffect(() => {
             role: data.role || "staff",
             active: data.active !== false,
             visible: data.visible !== false,
+            canCancerRehab: Boolean(data.canCancerRehab),
             order: Number(data.order || 999),
             staffNumber: data.staffNumber || "",
             uid: data.uid || "",
@@ -3010,25 +3011,6 @@ function PMJapaneseDateInput({ value, onChange }) {
   );
 }
 
-function PMSwitch({ checked, onChange, label, onText = "ON", offText = "OFF" }) {
-  return (
-    <button
-      type="button"
-      className={`pmSwitch ${checked ? "on" : "off"}`}
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-    >
-      <span className="pmSwitchLabel">{label}</span>
-      <span className="pmSwitchTrack">
-        <span className="pmSwitchKnob" />
-        <span className="pmSwitchText">{checked ? onText : offText}</span>
-      </span>
-    </button>
-  );
-}
-
 function FullPatientManager({ loginUser, profession, setProfession, staffSource = [] }) {
   const [view, setView] = useState("table");
 
@@ -3044,14 +3026,22 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
       ? pmEnsureSampleStaff(JSON.parse(saved).map(pmMigrateSampleStaff))
       : PM_SAMPLE_STAFF.map(pmNormalizeStaff);
   });
-  useEffect(() => {
-  if (!staffSource.length) return;
+  const staffSourceRef = useRef(staffSource);
 
-  setStaff((prevStaff) => {
-    const nextStaff = staffSource.map((person, index) => {
+  useEffect(() => {
+    staffSourceRef.current = staffSource;
+  }, [staffSource]);
+
+  function mergePatientStaffList(savedList = [], masterList = staffSourceRef.current) {
+    const saved = Array.isArray(savedList) ? savedList.map(pmNormalizeStaff) : [];
+    const master = Array.isArray(masterList) ? masterList : [];
+
+    if (!master.length) return saved;
+
+    return master.map((person, index) => {
       const existing =
-        prevStaff.find((item) => item.id === person.id) ||
-        prevStaff.find(
+        saved.find((item) => item.id === person.id) ||
+        saved.find(
           (item) =>
             item.profession === person.job &&
             item.lastName === person.lastName &&
@@ -3061,21 +3051,24 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
       return pmNormalizeStaff({
         ...existing,
         id: person.id,
-        profession: person.job || "PT",
-        lastName: person.lastName || "",
-        firstName: person.firstName || "",
+        profession: person.job || person.profession || existing?.profession || "PT",
+        lastName: person.lastName || existing?.lastName || "",
+        firstName: person.firstName || existing?.firstName || "",
         active: person.active !== false,
         visible: person.visible === false ? false : (person.visible === true ? true : existing?.visible !== false),
-        uid: person.uid || existing?.uid || "",
-        staffNumber: person.staffNumber || existing?.staffNumber || "",
+        uid: person.uid || "",
+        staffNumber: person.staffNumber || "",
         role: person.role || existing?.role || "staff",
+        canCancerRehab: person.canCancerRehab ?? existing?.canCancerRehab ?? false,
         order: Number(person.order || existing?.order || index + 1),
       });
     });
+  }
 
-    return nextStaff;
-  });
-}, [staffSource]);
+  useEffect(() => {
+    if (!staffSource.length) return;
+    setStaff((prevStaff) => mergePatientStaffList(prevStaff, staffSource));
+  }, [staffSource]);
   const [movements, setMovements] = useState(() => {
     const saved = localStorage.getItem("integratedAssignmentTableMovementsV1");
     return saved ? JSON.parse(saved) : [];
@@ -3116,6 +3109,7 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
     canCancerRehab: false,
   });
   const [settingsView, setSettingsView] = useState("register");
+  const [showStaffForm, setShowStaffForm] = useState(false);
   const [showTodayAdjustHistory, setShowTodayAdjustHistory] = useState(false);
 
 useEffect(() => {
@@ -3129,7 +3123,7 @@ useEffect(() => {
     patientRemoteApplyingRef.current = true;
 
     if (Array.isArray(data.staff)) {
-      setStaff(data.staff.map(pmNormalizeStaff));
+      setStaff(mergePatientStaffList(data.staff, staffSourceRef.current));
     }
 
     if (Array.isArray(data.movements)) {
@@ -3556,6 +3550,7 @@ function markChanged(staffId, department) {
     ]);
 
     setStaffForm({ lastName: "", firstName: "", profession, canCancerRehab: false });
+    setShowStaffForm(false);
   }
 
   function deleteStaff(id) {
@@ -3582,12 +3577,28 @@ function updateCancerPermission(id, canCancerRehab) {
   );
 }
 
-  function updateStaffVisibility(id, visible) {
+  const canManageStaff = loginUser?.role === "admin";
+
+  async function updateStaffVisibility(id, visible) {
+    if (!canManageStaff) {
+      alert("表示／非表示の変更は管理者のみ行えます。");
+      return;
+    }
+
+    const previousStaff = staff;
     setStaff((prev) =>
       prev.map((person) =>
         person.id === id ? pmNormalizeStaff({ ...person, visible }) : person
       )
     );
+
+    try {
+      await updateDoc(doc(db, "staff", id), { visible });
+    } catch (error) {
+      console.error("staff visible update failed", error);
+      setStaff(previousStaff);
+      alert("表示／非表示の保存に失敗しました。Firestoreの権限または通信状況を確認してください。");
+    }
   }
 
   function moveStaffOrder(id, direction) {
@@ -4179,72 +4190,111 @@ function updateCancerPermission(id, canCancerRehab) {
           {settingsView === "register" ? (
             <>
               <h3>{profession} スタッフ管理</h3>
-              <p className="settingHelp">新規登録、Google連携状態、がんリハ、管理表表示をみんなで管理します。visible未設定のスタッフは表示扱いです。</p>
+              <p className="settingHelp">連携状態は staff の uid の有無、管理表表示は visible で判定します。visible未設定のスタッフは表示扱いです。</p>
 
-              <form className="staffForm cancerRightForm staffRegisterForm" onSubmit={addStaff}>
-                <div className="staffFormPair">
-                  <label>
-                    <span>姓</span>
-                    <input value={staffForm.lastName} onChange={(e) => setStaffForm({ ...staffForm, lastName: e.target.value })} />
-                  </label>
-                  <label>
-                    <span>名</span>
-                    <input value={staffForm.firstName} onChange={(e) => setStaffForm({ ...staffForm, firstName: e.target.value })} />
-                  </label>
-                </div>
+              <button
+                className="staffFormToggle"
+                type="button"
+                onClick={() => setShowStaffForm((prev) => !prev)}
+              >
+                <span>{showStaffForm ? "−" : "＋"}</span>
+                <strong>新規スタッフ登録</strong>
+                <small>{showStaffForm ? "閉じる" : "姓・名・職種・がんリハ実施権を登録"}</small>
+              </button>
 
-                <div className="staffFormPair">
-                  <label>
-                    <span>職種</span>
-                    <select value={staffForm.profession} onChange={(e) => setStaffForm({ ...staffForm, profession: e.target.value })}>
-                      <option value="PT">PT</option>
-                      <option value="OT">OT</option>
-                    </select>
-                  </label>
-                  <label className="checkSetting">
-                    <span>がんリハ実施権</span>
-                    <PMSwitch
-                      checked={Boolean(staffForm.canCancerRehab)}
-                      label="がんリハ"
-                      onText="可"
-                      offText="不可"
-                      onChange={(checked) => setStaffForm({ ...staffForm, canCancerRehab: checked })}
-                    />
-                  </label>
-                </div>
+              {showStaffForm && (
+                <form className="staffForm cancerRightForm staffRegisterForm compactStaffRegisterForm" onSubmit={addStaff}>
+                  <div className="staffFormPair">
+                    <label>
+                      <span>姓</span>
+                      <input value={staffForm.lastName} onChange={(e) => setStaffForm({ ...staffForm, lastName: e.target.value })} />
+                    </label>
+                    <label>
+                      <span>名</span>
+                      <input value={staffForm.firstName} onChange={(e) => setStaffForm({ ...staffForm, firstName: e.target.value })} />
+                    </label>
+                  </div>
 
-                <button className="primaryButton" type="submit">追加</button>
-              </form>
+                  <div className="staffFormPair">
+                    <label>
+                      <span>職種</span>
+                      <select value={staffForm.profession} onChange={(e) => setStaffForm({ ...staffForm, profession: e.target.value })}>
+                        <option value="PT">PT</option>
+                        <option value="OT">OT</option>
+                      </select>
+                    </label>
+                    <label className="checkSetting">
+                      <span>がんリハ実施権</span>
+                      <div className="cancerPermissionToggle">
+                        <button
+                          type="button"
+                          className={staffForm.canCancerRehab ? "active" : ""}
+                          onClick={() => setStaffForm({ ...staffForm, canCancerRehab: true })}
+                        >
+                          可
+                        </button>
+                        <button
+                          type="button"
+                          className={!staffForm.canCancerRehab ? "active" : ""}
+                          onClick={() => setStaffForm({ ...staffForm, canCancerRehab: false })}
+                        >
+                          否
+                        </button>
+                      </div>
+                    </label>
+                  </div>
 
-              <div className="orderList staffManageList">
+                  <button className="primaryButton" type="submit">追加</button>
+                </form>
+              )}
+
+              <div className="orderList staffManageList compactStaffManageList">
                 {professionStaff.map((person) => (
-                  <div className={`orderItem staffManageItem ${person.visible === false ? "staffHiddenRow" : ""}`} key={person.id}>
-                    <div className="staffOrderName">
+                  <div className={`compactStaffCard ${person.visible === false ? "staffHiddenRow" : ""}`} key={person.id}>
+                    <div className="compactStaffMain">
                       <strong>{pmPersonName(person)} <span>{person.profession}</span></strong>
-                      <div className="staffStatusBadges">
+                      <div className="staffStatusBadges compactStaffBadges">
                         <span className={`staffLinkBadge ${person.uid ? "linked" : "unlinked"}`}>
                           {person.uid ? "連携済" : "未連携"}
                         </span>
+                        <span className={`staffVisibleBadge ${person.visible === false ? "hidden" : "shown"}`}>
+                          {person.visible === false ? "非表示" : "表示中"}
+                        </span>
+                        <span className="staffNumberBadge">
+                          ID {person.staffNumber || "----"}
+                        </span>
                       </div>
                     </div>
-                    <div className="staffSwitchGrid">
-                      <PMSwitch
-                        checked={Boolean(person.canCancerRehab)}
-                        label="がんリハ"
-                        onText="可"
-                        offText="不可"
-                        onChange={(checked) => updateCancerPermission(person.id, checked)}
-                      />
-                      <PMSwitch
-                        checked={person.visible !== false}
-                        label="管理表表示"
-                        onText="表示"
-                        offText="非表示"
-                        onChange={(checked) => updateStaffVisibility(person.id, checked)}
-                      />
-                    </div>
-                    <div className="staffCardActions">
-                      <button className="deleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
+
+                    <div className="compactStaffSwitches">
+                      <div className="compactSwitchBlock">
+                        <span>がん</span>
+                        <div className="miniCancerToggle compactToggle" aria-label={`${pmPersonName(person)} がんリハ実施権`}>
+                          <button
+                            type="button"
+                            className={person.canCancerRehab ? "active" : ""}
+                            onClick={() => updateCancerPermission(person.id, true)}
+                          >
+                            可
+                          </button>
+                          <button
+                            type="button"
+                            className={!person.canCancerRehab ? "active" : ""}
+                            onClick={() => updateCancerPermission(person.id, false)}
+                          >
+                            否
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        className={person.visible === false ? "visibilityButton show compactVisibilityButton" : "visibilityButton hide compactVisibilityButton"}
+                        type="button"
+                        onClick={() => updateStaffVisibility(person.id, person.visible === false)}
+                      >
+                        {person.visible === false ? "表示" : "非表示"}
+                      </button>
+                      <button className="deleteButton compactDeleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
                     </div>
                   </div>
                 ))}
@@ -4253,7 +4303,7 @@ function updateCancerPermission(id, canCancerRehab) {
           ) : settingsView === "order" ? (
             <>
               <h3>{profession} 表示順</h3>
-              <p className="settingHelp">表示順は誰でも調整できます。がんリハと管理表表示もこの画面から切り替えできます。</p>
+              <p className="settingHelp">連携状態はGoogleアカウント連携の有無、表示状態は患者人数管理の管理表に出すかどうかです。</p>
               <div className="orderList">
                 {professionStaff.map((person) => (
                   <div className={`orderItem ${person.visible === false ? "staffHiddenRow" : ""}`} key={person.id}>
@@ -4268,25 +4318,31 @@ function updateCancerPermission(id, canCancerRehab) {
                         </span>
                       </div>
                     </div>
-                    <div className="staffSwitchGrid orderSwitchGrid">
-                      <PMSwitch
-                        checked={Boolean(person.canCancerRehab)}
-                        label="がんリハ"
-                        onText="可"
-                        offText="不可"
-                        onChange={(checked) => updateCancerPermission(person.id, checked)}
-                      />
-                      <PMSwitch
-                        checked={person.visible !== false}
-                        label="管理表表示"
-                        onText="表示"
-                        offText="非表示"
-                        onChange={(checked) => updateStaffVisibility(person.id, checked)}
-                      />
-                    </div>
-                    <div className="staffCardActions">
+<div className="miniCancerToggle" aria-label={`${pmPersonName(person)} がんリハ実施権`}>
+  <button
+    type="button"
+    className={person.canCancerRehab ? "active" : ""}
+    onClick={() => updateCancerPermission(person.id, true)}
+  >
+    可
+  </button>
+  <button
+    type="button"
+    className={!person.canCancerRehab ? "active" : ""}
+    onClick={() => updateCancerPermission(person.id, false)}
+  >
+    否
+  </button>
+</div>                    <div>
                       <button type="button" onClick={() => moveStaffOrder(person.id, -1)}>↑</button>
                       <button type="button" onClick={() => moveStaffOrder(person.id, 1)}>↓</button>
+                      <button
+                        className={person.visible === false ? "visibilityButton show" : "visibilityButton hide"}
+                        type="button"
+                        onClick={() => updateStaffVisibility(person.id, person.visible === false)}
+                      >
+                        {person.visible === false ? "表示" : "非表示"}
+                      </button>
                       <button className="deleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
                     </div>
                   </div>
