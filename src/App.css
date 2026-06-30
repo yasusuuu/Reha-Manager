@@ -5558,301 +5558,2691 @@ th {
   color: #1d4ed8 !important;
 }
 
+
+
+
 /* =========================
-   Patient table highlight final override
-   T字ガイドを診療科セルにも合計・患者移動・備考と同じ強さで表示
+   Stopped text only final
+   中止入力：外側タップで閉じる／中止ありは数字のみ赤表示
 ========================= */
 
-.patientModule .assignmentTable td.numberCell.tRowGuide,
-.patientModule .assignmentTable td.dialysisCol.tRowGuide,
-.patientModule .assignmentTable td.totalCol.tRowGuide,
-.patientModule .assignmentTable td.moveCol.tRowGuide,
-.patientModule .assignmentTable td.noteCol.tRowGuide,
-.patientModule .assignmentTable th.activeNameGuide {
-  background: #bfdbfe !important;
-  background-color: #bfdbfe !important;
-  background-image: none !important;
+.patientModule .stoppedAdjustOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9998 !important;
+  background: transparent !important;
 }
 
-.patientModule .assignmentTable td.numberCell.tColGuide,
-.patientModule .assignmentTable td.dialysisCol.tColGuide,
-.patientModule .assignmentTable th.activeDeptGuide {
-  background: #93c5fd !important;
-  background-color: #93c5fd !important;
-  background-image: none !important;
+.patientModule .assignmentTable .stoppedAdjust {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 9999 !important;
+  width: min(92vw, 430px) !important;
+  max-height: min(70dvh, 520px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  padding: 14px !important;
+  border: 1px solid #d8e2ee !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.24) !important;
+  color: #0f172a !important;
 }
 
-.patientModule .assignmentTable td.numberCell.tActiveCell,
-.patientModule .assignmentTable td.numberCell.tRowGuide.tColGuide,
-.patientModule .assignmentTable td.dialysisCol.tActiveCell,
-.patientModule .assignmentTable td.dialysisCol.tRowGuide.tColGuide {
-  background: #60a5fa !important;
-  background-color: #60a5fa !important;
-  background-image: none !important;
-  outline: 0 !important;
+.patientModule .assignmentTable .stoppedAdjust::before {
+  content: "中止入力";
+  display: block;
+  margin: 0 0 4px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 950;
+  text-align: center;
 }
 
-/* changedの青文字はハイライト中も維持 */
+.patientModule .assignmentTable .stoppedAdjustRow {
+  display: grid !important;
+  grid-template-columns: minmax(52px, 1fr) 44px 44px 44px !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 42px !important;
+  padding: 7px 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-sizing: border-box !important;
+}
+
+.patientModule .assignmentTable .stoppedAdjustRow.disabled {
+  opacity: 0.45;
+}
+
+.patientModule .assignmentTable .stoppedAdjustRow span {
+  min-width: 0 !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+
+.patientModule .assignmentTable .stoppedAdjustRow b {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 34px !important;
+  height: 34px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  border: 1px solid #d8e2ee !important;
+  color: #0f172a !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+}
+
+.patientModule .assignmentTable .stoppedAdjustRow .inlineBtn {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  border-radius: 10px !important;
+  border: 1px solid #d8e2ee !important;
+  background: #ffffff !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+.patientModule .assignmentTable .stoppedAdjustRow .inlineBtn:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.32 !important;
+}
+
+.patientModule .assignmentTable .stoppedAdjustRow .inlineBtn.minus {
+  color: #b91c1c !important;
+}
+
+.patientModule .assignmentTable .stoppedAdjustRow .inlineBtn.plus {
+  color: #1d4ed8 !important;
+}
+
+/* 中止セル入力中：背景や枠を追加しない */
+.patientModule .assignmentTable td.dept-stopped.tActiveCell {
+  box-shadow: none !important;
+}
+
+/* 中止あり科セル：セル背景・枠は一切変えない */
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell,
+.patientModule .assignmentTable td.numberCell.hasStopped,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment {
+  box-shadow: none !important;
+}
+
+/* 中止あり科セル：数字だけ赤 */
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell input,
+.patientModule .assignmentTable td.numberCell.hasStopped input,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment input,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell .inlineValue,
+.patientModule .assignmentTable td.numberCell.hasStopped .inlineValue,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment .inlineValue,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.hasStopped .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment .plainNumberLine input {
+  color: #dc2626 !important;
+  -webkit-text-fill-color: #dc2626 !important;
+  font-weight: 950 !important;
+}
+
+/* 青表示を最優先 */
 .patientModule .assignmentTable td.numberCell.changed input,
 .patientModule .assignmentTable td.numberCell.changed .inlineValue,
-.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b,
-.patientModule .assignmentTable td.dialysisCol.changed .dialysisTotal,
-.patientModule .assignmentTable td.dialysisCol.changed .dialysisTag,
-.patientModule .assignmentTable td.dialysisCol.changed .dialysisAdjustRow b {
+.patientModule .assignmentTable td.numberCell.changed .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b {
   color: #1d4ed8 !important;
   -webkit-text-fill-color: #1d4ed8 !important;
-  font-weight: 900 !important;
+  font-weight: 950 !important;
 }
 
-/* がんリハ不可セルもT字ハイライトを優先 */
-.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide {
-  background: #bfdbfe !important;
-  background-color: #bfdbfe !important;
-}
+@media (max-width: 560px) {
+  .patientModule .assignmentTable .stoppedAdjust {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 10px !important;
+    top: auto !important;
+    transform: none !important;
+    width: auto !important;
+    max-height: 58dvh !important;
+    border-radius: 16px 16px 14px 14px !important;
+  }
 
-.patientModule .assignmentTable td.numberCell.disabledCell.tColGuide {
-  background: #93c5fd !important;
-  background-color: #93c5fd !important;
+  .patientModule .assignmentTable .stoppedAdjustRow {
+    grid-template-columns: minmax(46px, 1fr) 42px 42px 42px !important;
+    gap: 7px !important;
+  }
 }
-
-.patientModule .assignmentTable td.numberCell.disabledCell.tActiveCell,
-.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide.tColGuide {
-  background: #60a5fa !important;
-  background-color: #60a5fa !important;
-}
-
 
 
 /* =========================
-   Patient table final order: 氏名 / 合計 / 外来 ...
-   合計列を氏名の右に固定して、全体を見ながら負荷を把握しやすくする
+   Stopped background reset final
+   中止あり表示は背景・枠を変えず、数字のみ赤。
+   変更済みセル（changed）は青を最優先。
 ========================= */
-.patientModule .assignmentTable .stickyTotal {
-  position: sticky;
-  left: 86px;
-  z-index: 300;
-  width: 70px;
-  min-width: 70px;
-  background: #fff5d6 !important;
-  border-right: 1.5px solid #475569 !important;
-  border-left: 0 !important;
-}
 
-.patientModule .assignmentTable thead .stickyTotal {
-  z-index: 335;
-  background: #ffe9a8 !important;
-  color: #0f172a !important;
-  font-weight: 900;
-}
-
-.patientModule .assignmentTable .stickyName {
-  z-index: 320;
-}
-
-.patientModule .assignmentTable thead .stickyName {
-  z-index: 340;
-}
-
-.patientModule .assignmentTable .stickyTotal.tRowGuide,
-.patientModule .assignmentTable .stickyTotal.tRowAfterCell {
-  background-color: #bfdbfe !important;
-}
-
-.patientModule .assignmentTable .stickyTotal.totalNumber {
-  font-size: 20px;
-  font-weight: 900;
-  color: #0f172a;
-}
-
-/* 合計を先頭へ移動したため、外来列の区切りを少し見やすく維持 */
-.patientModule .assignmentTable .sep-outpatient {
-  border-right: 1.5px solid #475569 !important;
-}
-
-/* 患者管理画面のカレンダー：当日は白抜きにせず、日付だけ太字にする */
-.patientModule .simpleCalendar .calDay.today,
-.patientModule .calDay.today {
-  background: inherit !important;
-  color: inherit !important;
-  border-color: #e2e8f0 !important;
-  font-weight: 900 !important;
+/* 中止ありセルは背景や枠を付けない */
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell,
+.patientModule .assignmentTable td.numberCell.hasStopped,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment {
   box-shadow: none !important;
 }
 
-.patientModule .simpleCalendar .calDay.today.sun,
-.patientModule .calDay.today.sun {
-  background: #fff1f2 !important;
-  color: #b91c1c !important;
-  border-color: #fecdd3 !important;
+/* 科ごとの元背景色を優先して戻す */
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell.dept-ortho,
+.patientModule .assignmentTable td.numberCell.hasStopped.dept-ortho,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment.dept-ortho,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell.dept-brain,
+.patientModule .assignmentTable td.numberCell.hasStopped.dept-brain,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment.dept-brain,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell.dept-resp,
+.patientModule .assignmentTable td.numberCell.hasStopped.dept-resp,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment.dept-resp,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell.dept-surgery,
+.patientModule .assignmentTable td.numberCell.hasStopped.dept-surgery,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment.dept-surgery,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell.dept-cancer,
+.patientModule .assignmentTable td.numberCell.hasStopped.dept-cancer,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment.dept-cancer {
+  background-color: inherit;
 }
 
-.patientModule .simpleCalendar .calDay.today.sat,
-.patientModule .calDay.today.sat {
-  background: #eff6ff !important;
+/* 中止ありは changed でない時だけ数字を赤 */
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell:not(.changed) input,
+.patientModule .assignmentTable td.numberCell.hasStopped:not(.changed) input,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment:not(.changed) input,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell:not(.changed) .inlineValue,
+.patientModule .assignmentTable td.numberCell.hasStopped:not(.changed) .inlineValue,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment:not(.changed) .inlineValue,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell:not(.changed) .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.hasStopped:not(.changed) .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment:not(.changed) .plainNumberLine input {
+  color: #dc2626 !important;
+  -webkit-text-fill-color: #dc2626 !important;
+  font-weight: 950 !important;
+}
+
+/* changed は最優先で青 */
+.patientModule .assignmentTable td.numberCell.changed input,
+.patientModule .assignmentTable td.numberCell.changed .inlineValue,
+.patientModule .assignmentTable td.numberCell.changed .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b {
   color: #1d4ed8 !important;
-  border-color: #bfdbfe !important;
-}
-
-.patientModule .simpleCalendar .calDay.today .calDayNum,
-.patientModule .calDay.today .calDayNum {
+  -webkit-text-fill-color: #1d4ed8 !important;
   font-weight: 950 !important;
 }
 
 
 /* =========================
-   患者管理カレンダー：当日表示
-   背景やラベルは追加せず、曜日別の太枠で表示
+   Stopped source text only override
+   科別中止セルは背景を変えず、数字のみ赤。
+   changed の青表示を最優先。
 ========================= */
 
-/* 今日の共通設定：背景色は既存のまま、枠だけ太くする */
-.patientModule .simpleCalendar .calDay.today,
-.patientModule .calDay.today {
-  background: inherit !important;
-  color: inherit !important;
-  font-weight: 900 !important;
-  border-width: 3px !important;
+/* 中止あり科セル：背景・枠・影を一切付けない */
+.patientModule .assignmentTable td.numberCell.stoppedSource,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell,
+.patientModule .assignmentTable td.numberCell.hasStopped,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment {
   box-shadow: none !important;
 }
 
-/* 平日の今日：グレー太枠 */
-.patientModule .simpleCalendar .calDay.today:not(.sun):not(.sat),
-.patientModule .calDay.today:not(.sun):not(.sat) {
-  border-color: #9ca3af !important;
+/* stoppedSource の古い赤背景を完全に無効化し、元の科背景を維持 */
+.patientModule .assignmentTable td.numberCell.stoppedSource:not(.changed),
+.patientModule .assignmentTable td.numberCell.stoppedSource:not(.changed):not(.tRowGuide):not(.tColGuide):not(.tActiveCell) {
+  background-image: none !important;
 }
 
-/* 土曜の今日：青太枠 */
-.patientModule .simpleCalendar .calDay.today.sat,
-.patientModule .calDay.today.sat {
-  border-color: #3b82f6 !important;
-}
-
-/* 日曜の今日：赤太枠 */
-.patientModule .simpleCalendar .calDay.today.sun,
-.patientModule .calDay.today.sun {
-  border-color: #ef4444 !important;
-}
-
-/* 日付数字は背景を付けず、太字のみ */
-.patientModule .simpleCalendar .calDay.today .calDayNum,
-.patientModule .calDay.today .calDayNum {
-  background: transparent !important;
-  border: 0 !important;
-  color: inherit !important;
+/* 中止あり：changedでない場合だけ数字を赤 */
+.patientModule .assignmentTable td.numberCell.stoppedSource:not(.changed) input,
+.patientModule .assignmentTable td.numberCell.stoppedSource:not(.changed) .inlineValue,
+.patientModule .assignmentTable td.numberCell.stoppedSource:not(.changed) .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell:not(.changed) input,
+.patientModule .assignmentTable td.numberCell.hasStopped:not(.changed) input,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment:not(.changed) input {
+  color: #dc2626 !important;
+  -webkit-text-fill-color: #dc2626 !important;
   font-weight: 950 !important;
-  min-width: 0 !important;
-  height: auto !important;
-  border-radius: 0 !important;
 }
 
-/* 今日ラベルは出さない */
-.patientModule .simpleCalendar .calDay.today::after,
-.patientModule .calDay.today::after {
-  content: none !important;
+/* changedは最優先で青 */
+.patientModule .assignmentTable td.numberCell.changed input,
+.patientModule .assignmentTable td.numberCell.changed .inlineValue,
+.patientModule .assignmentTable td.numberCell.changed .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b {
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+  font-weight: 950 !important;
+}
+
+
+/* =========================
+   Patient manual save button
+   患者人数管理：手動保存ボタン
+========================= */
+
+.patientModule .patientSaveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid #0f766e;
+  border-radius: 10px;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.22);
+}
+
+.patientModule .patientSaveButton.dirty {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(220, 38, 38, 0.28);
+}
+
+.patientModule .patientSaveButton.saved {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #475569;
+  box-shadow: none;
+}
+
+.patientModule .patientSaveButton:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.patientModule .tableSectionTabs,
+.patientModule .tableActions,
+.patientModule .sectionActions {
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .patientModule .patientSaveButton {
+    min-width: 64px;
+    min-height: 28px;
+    padding: 4px 9px;
+    font-size: 12px;
+  }
+}
+
+
+/* =========================
+   Staff edit modal visibility fix
+   職員編集モーダル：スマホで入力文字が白くなる問題を修正
+========================= */
+
+/* 職員編集モーダル内の入力欄は白背景＋濃色文字で固定 */
+.patientModule .staffEditModal input,
+.patientModule .staffEditModal select,
+.patientModule .staffEditModal textarea,
+.patientModule .staffEditor input,
+.patientModule .staffEditor select,
+.patientModule .staffEditor textarea,
+.patientModule .staffModal input,
+.patientModule .staffModal select,
+.patientModule .staffModal textarea,
+.patientModule .settingsPanel input,
+.patientModule .settingsPanel select,
+.patientModule .settingsPanel textarea,
+.patientModule .modalCard input,
+.patientModule .modalCard select,
+.patientModule .modalCard textarea {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  border-color: #b8c7dc !important;
+}
+
+/* プレースホルダーも見える色にする */
+.patientModule .staffEditModal input::placeholder,
+.patientModule .staffEditor input::placeholder,
+.patientModule .staffModal input::placeholder,
+.patientModule .settingsPanel input::placeholder,
+.patientModule .modalCard input::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 1 !important;
+}
+
+/* ラベル・見出しも薄くなりすぎないようにする */
+.patientModule .staffEditModal label,
+.patientModule .staffEditor label,
+.patientModule .staffModal label,
+.patientModule .settingsPanel label,
+.patientModule .modalCard label,
+.patientModule .staffEditModal h2,
+.patientModule .staffEditor h2,
+.patientModule .staffModal h2,
+.patientModule .settingsPanel h2,
+.patientModule .modalCard h2 {
+  color: #0f172a !important;
+}
+
+
+/* =========================
+   Staff edit modal strong visibility fix
+   職員編集モーダル：入力文字・見出し・ボタン文字が白くなる問題の強制修正
+========================= */
+
+/* 患者人数管理の設定/職員編集系モーダル全体の文字色を強制 */
+.patientModule [class*="modal"],
+.patientModule [class*="Modal"],
+.patientModule [class*="dialog"],
+.patientModule [class*="Dialog"],
+.patientModule [class*="staff"],
+.patientModule [class*="Staff"],
+.patientModule [class*="editor"],
+.patientModule [class*="Editor"],
+.patientModule [class*="setting"],
+.patientModule [class*="Setting"] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+/* 入力欄は全て白背景＋黒文字で固定 */
+.patientModule [class*="modal"] input,
+.patientModule [class*="Modal"] input,
+.patientModule [class*="dialog"] input,
+.patientModule [class*="Dialog"] input,
+.patientModule [class*="staff"] input,
+.patientModule [class*="Staff"] input,
+.patientModule [class*="editor"] input,
+.patientModule [class*="Editor"] input,
+.patientModule [class*="setting"] input,
+.patientModule [class*="Setting"] input,
+.patientModule [class*="modal"] select,
+.patientModule [class*="Modal"] select,
+.patientModule [class*="dialog"] select,
+.patientModule [class*="Dialog"] select,
+.patientModule [class*="staff"] select,
+.patientModule [class*="Staff"] select,
+.patientModule [class*="editor"] select,
+.patientModule [class*="Editor"] select,
+.patientModule [class*="setting"] select,
+.patientModule [class*="Setting"] select,
+.patientModule [class*="modal"] textarea,
+.patientModule [class*="Modal"] textarea,
+.patientModule [class*="dialog"] textarea,
+.patientModule [class*="Dialog"] textarea,
+.patientModule [class*="staff"] textarea,
+.patientModule [class*="Staff"] textarea,
+.patientModule [class*="editor"] textarea,
+.patientModule [class*="Editor"] textarea,
+.patientModule [class*="setting"] textarea,
+.patientModule [class*="Setting"] textarea {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  opacity: 1 !important;
+  border-color: #b8c7dc !important;
+}
+
+/* ラベル・見出し・説明文も濃色で固定 */
+.patientModule [class*="modal"] h1,
+.patientModule [class*="modal"] h2,
+.patientModule [class*="modal"] h3,
+.patientModule [class*="modal"] label,
+.patientModule [class*="modal"] span,
+.patientModule [class*="modal"] p,
+.patientModule [class*="Modal"] h1,
+.patientModule [class*="Modal"] h2,
+.patientModule [class*="Modal"] h3,
+.patientModule [class*="Modal"] label,
+.patientModule [class*="Modal"] span,
+.patientModule [class*="Modal"] p,
+.patientModule [class*="dialog"] h1,
+.patientModule [class*="dialog"] h2,
+.patientModule [class*="dialog"] h3,
+.patientModule [class*="dialog"] label,
+.patientModule [class*="dialog"] span,
+.patientModule [class*="dialog"] p,
+.patientModule [class*="Dialog"] h1,
+.patientModule [class*="Dialog"] h2,
+.patientModule [class*="Dialog"] h3,
+.patientModule [class*="Dialog"] label,
+.patientModule [class*="Dialog"] span,
+.patientModule [class*="Dialog"] p {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+/* 閉じるボタンの×は見える白文字で固定 */
+.patientModule [class*="modal"] button[aria-label*="閉"],
+.patientModule [class*="Modal"] button[aria-label*="閉"],
+.patientModule [class*="dialog"] button[aria-label*="閉"],
+.patientModule [class*="Dialog"] button[aria-label*="閉"],
+.patientModule .closeButton,
+.patientModule .modalClose,
+.patientModule .closeBtn {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* 削除ボタン・追加ボタンは既存色を活かしつつ文字を見えるようにする */
+.patientModule [class*="modal"] button,
+.patientModule [class*="Modal"] button,
+.patientModule [class*="dialog"] button,
+.patientModule [class*="Dialog"] button {
+  opacity: 1 !important;
+}
+
+
+/* =========================
+   Mobile form visibility final
+   スマホChromeで入力文字が白/透明になる問題の最終補正
+========================= */
+
+@media (max-width: 760px) {
+  /* 患者管理・職員編集・設定画面内のフォームは黒文字で固定 */
+  .patientModule input,
+  .patientModule textarea,
+  .patientModule select {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+    background-color: #ffffff !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    mix-blend-mode: normal !important;
+    filter: none !important;
+  }
+
+  /* 入力中・選択中も黒文字を維持 */
+  .patientModule input:focus,
+  .patientModule input:active,
+  .patientModule textarea:focus,
+  .patientModule textarea:active,
+  .patientModule select:focus,
+  .patientModule select:active {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+    background-color: #ffffff !important;
+    opacity: 1 !important;
+  }
+
+  /* disabled / readOnly でも文字が薄くなりすぎないようにする */
+  .patientModule input:disabled,
+  .patientModule input[readonly],
+  .patientModule textarea:disabled,
+  .patientModule textarea[readonly],
+  .patientModule select:disabled {
+    color: #334155 !important;
+    -webkit-text-fill-color: #334155 !important;
+    opacity: 1 !important;
+  }
+
+  /* プレースホルダー */
+  .patientModule input::placeholder,
+  .patientModule textarea::placeholder {
+    color: #64748b !important;
+    -webkit-text-fill-color: #64748b !important;
+    opacity: 1 !important;
+  }
+
+  /* 職員編集モーダルの文字全体 */
+  .patientModule [class*="edit"],
+  .patientModule [class*="Edit"],
+  .patientModule [class*="modal"],
+  .patientModule [class*="Modal"],
+  .patientModule [class*="setting"],
+  .patientModule [class*="Setting"] {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    text-shadow: none !important;
+  }
+
+  /* ボタンだけは既存の色を壊しにくいよう、text-fillを通常化 */
+  .patientModule button {
+    -webkit-text-fill-color: currentColor !important;
+  }
+}
+
+
+/* =========================
+   Staff edit row global visibility fix
+   職員編集モーダルは patientModule 外に出ることがあるため、グローバルに補正
+========================= */
+
+.modalBackdrop .modalCard,
+.modalBackdrop .modalCard * {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.modalBackdrop .modalCard input,
+.modalBackdrop .modalCard select,
+.modalBackdrop .modalCard textarea,
+.modalBackdrop .staffEditRow input,
+.modalBackdrop .staffEditRow select,
+.modalBackdrop .staffEditRow textarea {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  opacity: 1 !important;
+  border: 1px solid #b8c7dc !important;
+}
+
+.modalBackdrop .modalCard input::placeholder,
+.modalBackdrop .modalCard textarea::placeholder,
+.modalBackdrop .staffEditRow input::placeholder,
+.modalBackdrop .staffEditRow textarea::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 1 !important;
+}
+
+.modalBackdrop .closeButton {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.modalBackdrop .staffEditRow button {
+  -webkit-text-fill-color: currentColor !important;
+}
+
+
+/* =========================
+   Staff edit header and close visibility fix
+   職員編集タイトルと×ボタンの視認性を改善
+========================= */
+
+/* 職員編集モーダルのタイトル */
+.modalBackdrop .modalCard .modalHeader h1,
+.modalBackdrop .modalCard .modalHeader h2,
+.modalBackdrop .modalCard .modalHeader h3,
+.modalBackdrop .modalHeader h1,
+.modalBackdrop .modalHeader h2,
+.modalBackdrop .modalHeader h3 {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  font-weight: 950 !important;
+}
+
+/* 閉じるボタン */
+.modalBackdrop .modalCard .closeButton,
+.modalBackdrop .closeButton {
+  background: #f1f5f9 !important;
+  background-color: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12) !important;
+}
+
+/* ×文字そのものも濃くする */
+.modalBackdrop .modalCard .closeButton *,
+.modalBackdrop .closeButton * {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+/* 職員編集モーダル内の青ボタン・削除ボタンは文字色を維持 */
+.modalBackdrop .modalCard button:not(.closeButton) {
+  -webkit-text-fill-color: currentColor !important;
+}
+
+
+/* =========================
+   Stopped modal layering final
+   スマホ中止入力パネル：固定列より前面に出し、独立モーダル化
+========================= */
+
+/* 中止入力中は固定列・sticky列より必ず前面に出す */
+.stoppedAdjustOverlay,
+.patientModule .stoppedAdjustOverlay,
+.patientModule .assignmentTable .stoppedAdjustOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  background: rgba(15, 23, 42, 0.22) !important;
+  pointer-events: auto !important;
+}
+
+/* パネル本体。表内要素ではなく画面上の独立モーダルとして見せる */
+.stoppedAdjust,
+.patientModule .stoppedAdjust,
+.patientModule .assignmentTable .stoppedAdjust {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 2147483001 !important;
+
+  width: min(92vw, 460px) !important;
+  max-width: 92vw !important;
+  max-height: min(72dvh, 560px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+
+  padding: 14px !important;
+  border: 1px solid #d8e2ee !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.35) !important;
+  color: #0f172a !important;
+  isolation: isolate !important;
+}
+
+/* 見出し */
+.stoppedAdjust::before,
+.patientModule .stoppedAdjust::before,
+.patientModule .assignmentTable .stoppedAdjust::before {
+  content: "中止入力";
+  display: block;
+  margin: 0 0 4px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 950;
+  text-align: center;
+}
+
+/* 中止入力行 */
+.stoppedAdjustRow,
+.patientModule .stoppedAdjustRow,
+.patientModule .assignmentTable .stoppedAdjustRow {
+  display: grid !important;
+  grid-template-columns: minmax(64px, 1fr) 46px 48px 46px !important;
+  align-items: center !important;
+  gap: 8px !important;
+
+  min-height: 46px !important;
+  padding: 7px 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 13px !important;
+  background: #ffffff !important;
+  box-sizing: border-box !important;
+}
+
+.stoppedAdjustRow.disabled,
+.patientModule .stoppedAdjustRow.disabled,
+.patientModule .assignmentTable .stoppedAdjustRow.disabled {
+  opacity: 0.42 !important;
+}
+
+.stoppedAdjustRow span,
+.patientModule .stoppedAdjustRow span,
+.patientModule .assignmentTable .stoppedAdjustRow span {
+  min-width: 0 !important;
+  color: #0f172a !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+
+.stoppedAdjustRow b,
+.patientModule .stoppedAdjustRow b,
+.patientModule .assignmentTable .stoppedAdjustRow b {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 38px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  border: 1px solid #d8e2ee !important;
+  color: #0f172a !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+.stoppedAdjustRow .inlineBtn,
+.patientModule .stoppedAdjustRow .inlineBtn,
+.patientModule .assignmentTable .stoppedAdjustRow .inlineBtn {
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border-radius: 10px !important;
+  border: 1px solid #d8e2ee !important;
+  background: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+.stoppedAdjustRow .inlineBtn:disabled,
+.patientModule .stoppedAdjustRow .inlineBtn:disabled,
+.patientModule .assignmentTable .stoppedAdjustRow .inlineBtn:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.32 !important;
+}
+
+.stoppedAdjustRow .inlineBtn.minus,
+.patientModule .stoppedAdjustRow .inlineBtn.minus,
+.patientModule .assignmentTable .stoppedAdjustRow .inlineBtn.minus {
+  color: #b91c1c !important;
+}
+
+.stoppedAdjustRow .inlineBtn.plus,
+.patientModule .stoppedAdjustRow .inlineBtn.plus,
+.patientModule .assignmentTable .stoppedAdjustRow .inlineBtn.plus {
+  color: #1d4ed8 !important;
+}
+
+/* 中止あり表示：背景や枠は変えず、数字だけ赤。changedは青優先 */
+.patientModule .assignmentTable td.numberCell.stoppedSource,
+.patientModule .assignmentTable td.numberCell.stoppedDeptCell,
+.patientModule .assignmentTable td.numberCell.hasStopped,
+.patientModule .assignmentTable td.numberCell.stoppedByDepartment {
+  box-shadow: none !important;
+}
+
+.patientModule .assignmentTable td.numberCell.stoppedSource:not(.changed) input,
+.patientModule .assignmentTable td.numberCell.stoppedSource:not(.changed) .inlineValue,
+.patientModule .assignmentTable td.numberCell.stoppedSource:not(.changed) .plainNumberLine input {
+  color: #dc2626 !important;
+  -webkit-text-fill-color: #dc2626 !important;
+  font-weight: 950 !important;
+}
+
+.patientModule .assignmentTable td.numberCell.changed input,
+.patientModule .assignmentTable td.numberCell.changed .inlineValue,
+.patientModule .assignmentTable td.numberCell.changed .plainNumberLine input,
+.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b {
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+  font-weight: 950 !important;
+}
+
+/* スマホでは下寄せシート風。ただし固定列には重ならない */
+@media (max-width: 560px) {
+  .stoppedAdjust,
+  .patientModule .stoppedAdjust,
+  .patientModule .assignmentTable .stoppedAdjust {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    top: auto !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: 64dvh !important;
+    border-radius: 18px !important;
+  }
+
+  .stoppedAdjustRow,
+  .patientModule .stoppedAdjustRow,
+  .patientModule .assignmentTable .stoppedAdjustRow {
+    grid-template-columns: minmax(54px, 1fr) 44px 46px 44px !important;
+    gap: 7px !important;
+  }
+}
+
+
+/* =========================
+   Stopped portal final
+   中止入力を表の外側で表示し、固定列の重なりを防ぐ
+========================= */
+
+.excelTableCard > .stoppedAdjustOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483600 !important;
+  background: rgba(15, 23, 42, 0.24) !important;
+  pointer-events: auto !important;
+}
+
+.excelTableCard > .stoppedAdjustOverlay > .stoppedAdjust {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 2147483601 !important;
+  width: min(92vw, 460px) !important;
+  max-height: min(72dvh, 560px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  background: #ffffff !important;
+}
+
+/* 旧式の表セル内パネルが残っても表示しない */
+.assignmentTable td .stoppedAdjustOverlay {
   display: none !important;
 }
 
+@media (max-width: 560px) {
+  .excelTableCard > .stoppedAdjustOverlay > .stoppedAdjust {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    top: auto !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: 64dvh !important;
+  }
+}
+
 
 /* =========================
-   Patient cross highlight balance final
-   十字ハイライトの視認性調整
-   行・列は同程度の薄青、交点だけ濃青、+/-ボタンは通常色
+   Assignment table cell background restore
+   患者人数表：スマホ用フォーム補正でセル内inputだけ白背景になる問題を修正
 ========================= */
 
-/* 行・列ハイライト：同程度の薄い青 */
-.patientModule .assignmentTable td.numberCell.tRowGuide,
-.patientModule .assignmentTable td.dialysisCol.tRowGuide,
-.patientModule .assignmentTable td.totalCol.tRowGuide,
-.patientModule .assignmentTable td.moveCol.tRowGuide,
-.patientModule .assignmentTable td.noteCol.tRowGuide,
-.patientModule .assignmentTable td.numberCell.tColGuide,
-.patientModule .assignmentTable td.dialysisCol.tColGuide,
+/* 患者人数表の数字入力欄は、セル背景をそのまま見せる */
+.patientModule .assignmentTable td.numberCell input,
+.patientModule .assignmentTable td.dialysisCol input,
+.patientModule .assignmentTable td.totalCol input,
+.patientModule .assignmentTable td.moveCol input,
+.patientModule .assignmentTable td.noteCol input,
+.patientModule .assignmentTable .plainNumberLine input {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* 数字表示用の内側要素も白背景を持たせない */
+.patientModule .assignmentTable .plainNumberLine,
+.patientModule .assignmentTable .inlineValue,
+.patientModule .assignmentTable .dialysisTotal,
+.patientModule .assignmentTable .dialysisTag {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* スマホ用のフォーム黒文字補正より、表セル背景を優先する */
+@media (max-width: 760px) {
+  .patientModule .assignmentTable td.numberCell input,
+  .patientModule .assignmentTable td.dialysisCol input,
+  .patientModule .assignmentTable .plainNumberLine input {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+
+/* =========================
+   Patient table order and internal color final
+   列順：氏名/合計/外来/整/脳外/呼外/外/がん/神内/内/泌/耳/中止/透析/患者移動/備考
+   内科系はハイライトと被りにくいラベンダー系へ変更
+========================= */
+
+/* 合計列を氏名の右に固定 */
+.patientModule .assignmentTable .stickyTotal {
+  position: sticky !important;
+  left: 86px !important;
+  z-index: 330 !important;
+  border-right: 1.5px solid #475569 !important;
+}
+
+.patientModule .assignmentTable thead .stickyTotal {
+  z-index: 360 !important;
+}
+
+/* 合計列：視認性強化 */
+.patientModule .totalCol {
+  width: 62px !important;
+  min-width: 62px !important;
+  background: #fff5d6 !important;
+}
+
+.patientModule .assignmentTable thead .totalCol {
+  background: #ffe9a8 !important;
+  color: #0f172a !important;
+  font-weight: 950 !important;
+}
+
+.patientModule .totalNumber {
+  color: #0f172a !important;
+  font-size: 18px !important;
+  font-weight: 950 !important;
+}
+
+/* 内科系：青ハイライトと被らないラベンダー系 */
+.patientModule .deptHead.neuroInternal,
+.patientModule .deptHead.internal,
+.patientModule .deptHead.urology,
+.patientModule .deptHead.ent {
+  background: #ddd6fe !important;
+  color: #312e81 !important;
+}
+
+.patientModule .numberCell.dept-neuroInternal,
+.patientModule .numberCell.dept-internal,
+.patientModule .numberCell.dept-urology,
+.patientModule .numberCell.dept-ent {
+  background: #f3f0ff !important;
+  color: #0f172a !important;
+}
+
+/* 内科系セル内inputも背景を透明にしてセル色を活かす */
+.patientModule .numberCell.dept-neuroInternal input,
+.patientModule .numberCell.dept-internal input,
+.patientModule .numberCell.dept-urology input,
+.patientModule .numberCell.dept-ent input {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 十字ハイライトは内科系色より優先 */
+.patientModule .assignmentTable td.tRowGuide,
+.patientModule .assignmentTable td.tColGuide,
 .patientModule .assignmentTable th.activeNameGuide,
 .patientModule .assignmentTable th.activeDeptGuide {
   background: #eaf3ff !important;
   background-color: #eaf3ff !important;
-  background-image: none !important;
 }
 
-/* 選択セル：交点だけ一段濃くする */
-.patientModule .assignmentTable td.numberCell.tActiveCell,
-.patientModule .assignmentTable td.numberCell.tRowGuide.tColGuide,
-.patientModule .assignmentTable td.dialysisCol.tActiveCell,
-.patientModule .assignmentTable td.dialysisCol.tRowGuide.tColGuide {
+.patientModule .assignmentTable td.tActiveCell,
+.patientModule .assignmentTable td.tRowGuide.tColGuide {
   background: #9cc6ff !important;
   background-color: #9cc6ff !important;
-  background-image: none !important;
-  outline: 0 !important;
 }
 
-/* 合計・患者移動・備考の行ハイライトも同じ薄青に統一 */
+/* 合計列のハイライトも自然に */
 .patientModule .assignmentTable .totalCol.tRowGuide,
-.patientModule .assignmentTable .totalCol.tRowAfterCell,
-.patientModule .assignmentTable .moveCol.tRowGuide,
-.patientModule .assignmentTable .moveCol.tRowAfterCell,
-.patientModule .assignmentTable .noteCol.tRowGuide,
-.patientModule .assignmentTable .noteCol.tRowAfterCell,
-.patientModule .assignmentTable .stickyTotal.tRowGuide,
-.patientModule .assignmentTable .stickyTotal.tRowAfterCell {
+.patientModule .assignmentTable .totalCol.tRowAfterCell {
   background: #eaf3ff !important;
   background-color: #eaf3ff !important;
 }
 
-/* 氏名・項目ガイドは少しだけ分かりやすく */
-.patientModule .activeNameGuide,
-.patientModule .activeDeptGuide {
-  background: #dbeafe !important;
-  background-color: #dbeafe !important;
-  color: #0f172a !important;
-  box-shadow: inset 0 0 0 2px #60a5fa !important;
+/* グループ罫線調整：合計右、外来右、がん右、耳右、中止右、透析右 */
+.patientModule .assignmentTable th.totalCol,
+.patientModule .assignmentTable td.totalCol,
+.patientModule .assignmentTable th.sep-outpatient,
+.patientModule .assignmentTable td.sep-outpatient,
+.patientModule .assignmentTable th.sep-cancer,
+.patientModule .assignmentTable td.sep-cancer,
+.patientModule .assignmentTable th.sep-ent,
+.patientModule .assignmentTable td.sep-ent,
+.patientModule .assignmentTable th.sep-stopped,
+.patientModule .assignmentTable td.sep-stopped,
+.patientModule .assignmentTable th.dialysisCol,
+.patientModule .assignmentTable td.dialysisCol {
+  border-right: 1.5px solid #475569 !important;
 }
 
-/* +/- 操作部はハイライト背景を受けず、通常の白背景で固定 */
-.patientModule .assignmentTable .inlineAdjust,
-.patientModule .assignmentTable .outpatientAdjust,
-.patientModule .assignmentTable .dialysisAdjust {
+
+
+
+/* =========================
+   Patient table layout final clean
+   レイアウトは崩さず、列順・合計固定・指定箇所の区切り線・内科系色だけを整理
+========================= */
+
+/* まず全セルの罫線を通常線へ戻す */
+.patientModule .assignmentTable th,
+.patientModule .assignmentTable td {
+  border-right: 1px solid #cbd5e1 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+/* 氏名列：元の幅を維持。文字は必ず表示 */
+.patientModule .assignmentTable .stickyName,
+.patientModule .assignmentTable th.stickyName,
+.patientModule .assignmentTable td.stickyName,
+.patientModule .assignmentTable .nameCol,
+.patientModule .assignmentTable th.nameCol,
+.patientModule .assignmentTable td.nameCol {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 320 !important;
+  width: 86px !important;
+  min-width: 86px !important;
+  max-width: 86px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border-left: 1.5px solid #475569 !important;
+  border-right: 1px solid #cbd5e1 !important;
+}
+
+.patientModule .assignmentTable thead th.stickyName,
+.patientModule .assignmentTable thead th.nameCol {
+  z-index: 360 !important;
+  background: #f8fafc !important;
+}
+
+.patientModule .assignmentTable .nameCell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.patientModule .assignmentTable .nameCell strong {
+  display: block !important;
+  max-width: 78px !important;
+  min-width: 0 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 合計列：氏名列の右に固定。幅は控えめに */
+.patientModule .assignmentTable .stickyTotal,
+.patientModule .assignmentTable th.stickyTotal,
+.patientModule .assignmentTable td.stickyTotal {
+  position: sticky !important;
+  left: 86px !important;
+  z-index: 315 !important;
+  width: 62px !important;
+  min-width: 62px !important;
+  max-width: 62px !important;
+  background: #fff5d6 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border-right: 3px double #475569 !important;
+}
+
+.patientModule .assignmentTable thead th.stickyTotal {
+  z-index: 355 !important;
+  background: #ffe9a8 !important;
+}
+
+.patientModule .totalNumber {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  font-size: 18px !important;
+  font-weight: 950 !important;
+}
+
+/* 指定箇所だけ二重線：合計右、外来右、がん右、耳右、中止右、透析右 */
+.patientModule .assignmentTable th.totalCol,
+.patientModule .assignmentTable td.totalCol,
+.patientModule .assignmentTable th.sep-outpatient,
+.patientModule .assignmentTable td.sep-outpatient,
+.patientModule .assignmentTable th.sep-cancer,
+.patientModule .assignmentTable td.sep-cancer,
+.patientModule .assignmentTable th.sep-ent,
+.patientModule .assignmentTable td.sep-ent,
+.patientModule .assignmentTable th.sep-stopped,
+.patientModule .assignmentTable td.sep-stopped,
+.patientModule .assignmentTable th.dialysisCol,
+.patientModule .assignmentTable td.dialysisCol {
+  border-right: 3px double #475569 !important;
+}
+
+/* 指定外は通常線に戻す */
+.patientModule .assignmentTable th.nameCol,
+.patientModule .assignmentTable td.nameCol,
+.patientModule .assignmentTable th.sep-neuroSurgery,
+.patientModule .assignmentTable td.sep-neuroSurgery,
+.patientModule .assignmentTable th.sep-respSurgery,
+.patientModule .assignmentTable td.sep-respSurgery,
+.patientModule .assignmentTable th.sep-surgery,
+.patientModule .assignmentTable td.sep-surgery,
+.patientModule .assignmentTable th.sep-neuroInternal,
+.patientModule .assignmentTable td.sep-neuroInternal,
+.patientModule .assignmentTable th.sep-internal,
+.patientModule .assignmentTable td.sep-internal,
+.patientModule .assignmentTable th.sep-urology,
+.patientModule .assignmentTable td.sep-urology {
+  border-right: 1px solid #cbd5e1 !important;
+}
+
+/* 外科右のみ点線を維持したい場合 */
+.patientModule .assignmentTable th.sep-surgery,
+.patientModule .assignmentTable td.sep-surgery {
+  border-right: 1px dotted #64748b !important;
+}
+
+/* ハイライト時も区切り線を維持 */
+.patientModule .assignmentTable th.totalCol.activeDeptGuide,
+.patientModule .assignmentTable td.totalCol.tRowGuide,
+.patientModule .assignmentTable td.totalCol.tRowAfterCell,
+.patientModule .assignmentTable th.sep-outpatient.activeDeptGuide,
+.patientModule .assignmentTable td.sep-outpatient.tRowGuide,
+.patientModule .assignmentTable td.sep-outpatient.tColGuide,
+.patientModule .assignmentTable th.sep-cancer.activeDeptGuide,
+.patientModule .assignmentTable td.sep-cancer.tRowGuide,
+.patientModule .assignmentTable td.sep-cancer.tColGuide,
+.patientModule .assignmentTable th.sep-ent.activeDeptGuide,
+.patientModule .assignmentTable td.sep-ent.tRowGuide,
+.patientModule .assignmentTable td.sep-ent.tColGuide,
+.patientModule .assignmentTable th.sep-stopped.activeDeptGuide,
+.patientModule .assignmentTable td.sep-stopped.tRowGuide,
+.patientModule .assignmentTable td.sep-stopped.tColGuide,
+.patientModule .assignmentTable th.dialysisCol.activeDeptGuide,
+.patientModule .assignmentTable td.dialysisCol.tRowGuide,
+.patientModule .assignmentTable td.dialysisCol.tColGuide {
+  border-right: 3px double #475569 !important;
+}
+
+/* 内科系：ハイライトと被りにくいラベンダー系 */
+.patientModule .deptHead.neuroInternal,
+.patientModule .deptHead.internal,
+.patientModule .deptHead.urology,
+.patientModule .deptHead.ent {
+  background: #ddd6fe !important;
+  color: #312e81 !important;
+}
+
+.patientModule .numberCell.dept-neuroInternal,
+.patientModule .numberCell.dept-internal,
+.patientModule .numberCell.dept-urology,
+.patientModule .numberCell.dept-ent {
+  background: #f3f0ff !important;
+}
+
+/* 十字ハイライトは色分けより優先 */
+.patientModule .assignmentTable td.tRowGuide,
+.patientModule .assignmentTable td.tColGuide,
+.patientModule .assignmentTable th.activeNameGuide,
+.patientModule .assignmentTable th.activeDeptGuide {
+  background: #eaf3ff !important;
+  background-color: #eaf3ff !important;
+}
+
+.patientModule .assignmentTable td.tActiveCell,
+.patientModule .assignmentTable td.tRowGuide.tColGuide {
+  background: #9cc6ff !important;
+  background-color: #9cc6ff !important;
+}
+
+/* 表内inputは白背景にしない */
+.patientModule .assignmentTable td.numberCell input,
+.patientModule .assignmentTable td.dialysisCol input,
+.patientModule .assignmentTable .plainNumberLine input {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* 職員編集モーダルの文字色修正を維持 */
+.modalBackdrop .modalCard,
+.modalBackdrop .modalCard * {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.modalBackdrop .modalCard input,
+.modalBackdrop .modalCard select,
+.modalBackdrop .modalCard textarea,
+.modalBackdrop .staffEditRow input,
+.modalBackdrop .staffEditRow select,
+.modalBackdrop .staffEditRow textarea {
   background: #ffffff !important;
   background-color: #ffffff !important;
   color: #0f172a !important;
-  border: 1px solid #bfdbfe;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  opacity: 1 !important;
+  border: 1px solid #b8c7dc !important;
 }
 
-/* +/- ボタン色は通常通り維持 */
-.patientModule .assignmentTable .inlineBtn {
-  background: #eaf3ff !important;
-  background-color: #eaf3ff !important;
-  color: #1e40af !important;
+.modalBackdrop .modalHeader h1,
+.modalBackdrop .modalHeader h2,
+.modalBackdrop .modalHeader h3 {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  font-weight: 950 !important;
 }
 
-.patientModule .assignmentTable .inlineBtn.minus {
-  color: #b91c1c !important;
+.modalBackdrop .closeButton {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
 }
 
-.patientModule .assignmentTable .inlineBtn.plus {
-  color: #1d4ed8 !important;
+/* スマホも同じ値で固定。幅を増やさない */
+@media (max-width: 560px) {
+  .patientModule .assignmentTable .stickyName,
+  .patientModule .assignmentTable th.stickyName,
+  .patientModule .assignmentTable td.stickyName,
+  .patientModule .assignmentTable .nameCol,
+  .patientModule .assignmentTable th.nameCol,
+  .patientModule .assignmentTable td.nameCol {
+    width: 86px !important;
+    min-width: 86px !important;
+    max-width: 86px !important;
+    left: 0 !important;
+  }
+
+  .patientModule .assignmentTable .stickyTotal,
+  .patientModule .assignmentTable th.stickyTotal,
+  .patientModule .assignmentTable td.stickyTotal {
+    left: 86px !important;
+    width: 62px !important;
+    min-width: 62px !important;
+    max-width: 62px !important;
+  }
+
+  .patientModule .assignmentTable .nameCell strong {
+    max-width: 78px !important;
+  }
 }
 
-/* 変更済みの青文字はハイライト中も維持 */
-.patientModule .assignmentTable td.numberCell.changed input,
-.patientModule .assignmentTable td.numberCell.changed .inlineValue,
-.patientModule .assignmentTable td.numberCell.changed .outpatientAdjustRow b,
-.patientModule .assignmentTable td.dialysisCol.changed .dialysisTotal,
-.patientModule .assignmentTable td.dialysisCol.changed .dialysisTag,
-.patientModule .assignmentTable td.dialysisCol.changed .dialysisAdjustRow b {
+
+/* =========================
+   Sticky name visibility final
+   スマホで氏名が合計列の下に隠れる問題を修正
+========================= */
+
+.patientModule .assignmentTable th.stickyName,
+.patientModule .assignmentTable td.stickyName,
+.patientModule .assignmentTable th.nameCol,
+.patientModule .assignmentTable td.nameCol {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 700 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  overflow: visible !important;
+}
+
+.patientModule .assignmentTable thead th.stickyName,
+.patientModule .assignmentTable thead th.nameCol {
+  z-index: 760 !important;
+  background: #f8fafc !important;
+}
+
+.patientModule .assignmentTable th.stickyTotal,
+.patientModule .assignmentTable td.stickyTotal {
+  position: sticky !important;
+  left: 86px !important;
+  z-index: 620 !important;
+}
+
+.patientModule .assignmentTable thead th.stickyTotal {
+  z-index: 680 !important;
+}
+
+.patientModule .assignmentTable .nameCell,
+.patientModule .assignmentTable .nameCell strong {
+  position: relative !important;
+  z-index: 710 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: transparent !important;
+}
+
+.patientModule .assignmentTable .nameCell {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding-left: 2px !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.patientModule .assignmentTable .nameCell strong {
+  display: block !important;
+  max-width: 78px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.patientModule .assignmentTable th.stickyName.activeNameGuide,
+.patientModule .assignmentTable td.stickyName.tRowGuide,
+.patientModule .assignmentTable th.nameCol.activeNameGuide,
+.patientModule .assignmentTable td.nameCol.tRowGuide {
+  z-index: 705 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+.patientModule .assignmentTable th.stickyName.activeNameGuide .nameCell strong,
+.patientModule .assignmentTable td.stickyName.tRowGuide .nameCell strong,
+.patientModule .assignmentTable th.nameCol.activeNameGuide .nameCell strong,
+.patientModule .assignmentTable td.nameCol.tRowGuide .nameCell strong {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+
+/* =========================
+   Name cell compact visibility fix
+   氏名セル：span非表示指定で名前が消える問題を修正
+   合計ヘッダーの▼はJSX側で削除
+========================= */
+
+/* 以前の .nameCell span { display:none!important; } を打ち消す */
+.patientModule .assignmentTable .nameCell span,
+.patientModule .assignmentTable .nameCell .fullNameDesktop,
+.patientModule .assignmentTable .nameCell .compactNameMobile,
+.patientModule .assignmentTable .nameCell .compactLastName,
+.patientModule .assignmentTable .nameCell .compactFirstChar {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* PC・通常表示はフルネーム */
+.patientModule .assignmentTable .nameCell .fullNameDesktop {
+  display: inline !important;
+  max-width: 78px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* 通常時はスマホ短縮名を隠す */
+.patientModule .assignmentTable .nameCell .compactNameMobile {
+  display: none !important;
+}
+
+/* 氏名セル本体 */
+.patientModule .assignmentTable .nameCell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding-left: 2px !important;
+  text-align: left !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+/* 氏名文字 */
+.patientModule .assignmentTable .nameCell strong {
+  display: block !important;
+  max-width: 78px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ▶は青に固定 */
+.patientModule .activeNameGuide::after,
+.patientModule .assignmentTable .activeNameGuide::after {
   color: #1d4ed8 !important;
   -webkit-text-fill-color: #1d4ed8 !important;
+}
+
+/* スマホでは短縮名を表示 */
+@media (max-width: 560px) {
+  .patientModule .assignmentTable .nameCell .fullNameDesktop {
+    display: none !important;
+  }
+
+  .patientModule .assignmentTable .nameCell .compactNameMobile {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    justify-content: flex-start !important;
+    gap: 1px !important;
+    max-width: 78px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+  }
+
+  .patientModule .assignmentTable .nameCell .compactLastName {
+    display: inline !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .patientModule .assignmentTable .nameCell .compactFirstChar {
+    display: inline !important;
+    flex: 0 0 auto !important;
+    margin-left: 1px !important;
+    font-size: 0.86em !important;
+    font-weight: 900 !important;
+  }
+
+  .patientModule .assignmentTable .nameCell .compactFirstChar.fullFirst {
+    font-size: 1em !important;
+  }
+}
+
+
+/* =========================
+   Compact name column final
+   氏名列だけを詰める。合計列のleftも同じ幅に合わせる。
+========================= */
+
+.patientModule .assignmentTable .stickyName,
+.patientModule .assignmentTable th.stickyName,
+.patientModule .assignmentTable td.stickyName,
+.patientModule .assignmentTable .nameCol,
+.patientModule .assignmentTable th.nameCol,
+.patientModule .assignmentTable td.nameCol {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+
+.patientModule .assignmentTable .stickyTotal,
+.patientModule .assignmentTable th.stickyTotal,
+.patientModule .assignmentTable td.stickyTotal {
+  left: 64px !important;
+}
+
+/* 氏名ヘッダーは中央、氏名本文は左寄せ */
+.patientModule .assignmentTable th.nameCol {
+  text-align: center !important;
+}
+
+.patientModule .assignmentTable td.nameCol {
+  text-align: left !important;
+}
+
+.patientModule .assignmentTable .nameCell {
+  padding-left: 1px !important;
+  padding-right: 12px !important; /* ▶の分 */
+  gap: 1px !important;
+}
+
+.patientModule .assignmentTable .nameCell strong,
+.patientModule .assignmentTable .nameCell .fullNameDesktop,
+.patientModule .assignmentTable .nameCell .compactNameMobile {
+  max-width: 54px !important;
+}
+
+/* ▶を右端に寄せる */
+.patientModule .activeNameGuide::after {
+  right: 2px !important;
+}
+
+/* スマホでは氏名列をさらに詰める */
+@media (max-width: 560px) {
+  .patientModule .assignmentTable .stickyName,
+  .patientModule .assignmentTable th.stickyName,
+  .patientModule .assignmentTable td.stickyName,
+  .patientModule .assignmentTable .nameCol,
+  .patientModule .assignmentTable th.nameCol,
+  .patientModule .assignmentTable td.nameCol {
+    width: 64px !important;
+    min-width: 64px !important;
+    max-width: 64px !important;
+  }
+
+  .patientModule .assignmentTable .stickyTotal,
+  .patientModule .assignmentTable th.stickyTotal,
+  .patientModule .assignmentTable td.stickyTotal {
+    left: 64px !important;
+  }
+
+  .patientModule .assignmentTable .nameCell strong,
+  .patientModule .assignmentTable .nameCell .fullNameDesktop,
+  .patientModule .assignmentTable .nameCell .compactNameMobile {
+    max-width: 50px !important;
+  }
+
+  .patientModule .assignmentTable .nameCell {
+    padding-left: 1px !important;
+    padding-right: 11px !important;
+  }
+}
+
+
+/* =========================
+   Compact name and total column final
+   氏名文字を少し大きくし、合計列を詰める
+========================= */
+
+/* 氏名列：やや詰めつつ、文字は見やすく */
+.patientModule .assignmentTable .stickyName,
+.patientModule .assignmentTable th.stickyName,
+.patientModule .assignmentTable td.stickyName,
+.patientModule .assignmentTable .nameCol,
+.patientModule .assignmentTable th.nameCol,
+.patientModule .assignmentTable td.nameCol {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+
+/* 合計列：数字中心なので詰める */
+.patientModule .assignmentTable .stickyTotal,
+.patientModule .assignmentTable th.stickyTotal,
+.patientModule .assignmentTable td.stickyTotal,
+.patientModule .assignmentTable .totalCol,
+.patientModule .assignmentTable th.totalCol,
+.patientModule .assignmentTable td.totalCol {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+}
+
+/* 合計列は氏名列の右に固定 */
+.patientModule .assignmentTable .stickyTotal,
+.patientModule .assignmentTable th.stickyTotal,
+.patientModule .assignmentTable td.stickyTotal {
+  left: 64px !important;
+}
+
+/* 氏名ヘッダーは中央、本文は左寄せ */
+.patientModule .assignmentTable th.nameCol {
+  text-align: center !important;
+}
+
+.patientModule .assignmentTable td.nameCol {
+  text-align: left !important;
+}
+
+/* 氏名文字を少し大きく */
+.patientModule .assignmentTable .nameCell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding-left: 1px !important;
+  padding-right: 11px !important; /* ▶の分 */
+  gap: 1px !important;
+  text-align: left !important;
+}
+
+.patientModule .assignmentTable .nameCell strong,
+.patientModule .assignmentTable .nameCell .fullNameDesktop,
+.patientModule .assignmentTable .nameCell .compactNameMobile {
+  max-width: 52px !important;
+  font-size: 14px !important;
+  line-height: 1.1 !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* スマホ短縮名も少し大きく */
+.patientModule .assignmentTable .nameCell .compactLastName {
+  font-size: 14px !important;
   font-weight: 900 !important;
 }
 
-/* がんリハ不可セルも十字ハイライトを優先 */
-.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide,
-.patientModule .assignmentTable td.numberCell.disabledCell.tColGuide {
-  background: #eaf3ff !important;
-  background-color: #eaf3ff !important;
+.patientModule .assignmentTable .nameCell .compactFirstChar {
+  font-size: 12px !important;
+  font-weight: 900 !important;
 }
 
-.patientModule .assignmentTable td.numberCell.disabledCell.tActiveCell,
-.patientModule .assignmentTable td.numberCell.disabledCell.tRowGuide.tColGuide {
-  background: #9cc6ff !important;
-  background-color: #9cc6ff !important;
+.patientModule .assignmentTable .nameCell .compactFirstChar.fullFirst {
+  font-size: 13px !important;
+}
+
+/* ▶を青のまま右端へ */
+.patientModule .activeNameGuide::after,
+.patientModule .assignmentTable .activeNameGuide::after {
+  right: 2px !important;
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+}
+
+/* 合計列の文字サイズ */
+.patientModule .totalNumber {
+  font-size: 17px !important;
+  font-weight: 950 !important;
+}
+
+.patientModule .assignmentTable thead .totalCol {
+  font-size: 13px !important;
+  font-weight: 950 !important;
+}
+
+/* 合計列に▼を出さない */
+.patientModule .assignmentTable th.totalCol.activeDeptGuide::after,
+.patientModule .assignmentTable th.stickyTotal.activeDeptGuide::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* スマホでも同じバランス */
+@media (max-width: 560px) {
+  .patientModule .assignmentTable .stickyName,
+  .patientModule .assignmentTable th.stickyName,
+  .patientModule .assignmentTable td.stickyName,
+  .patientModule .assignmentTable .nameCol,
+  .patientModule .assignmentTable th.nameCol,
+  .patientModule .assignmentTable td.nameCol {
+    width: 68px !important;
+    min-width: 68px !important;
+    max-width: 68px !important;
+  }
+
+  .patientModule .assignmentTable .stickyTotal,
+  .patientModule .assignmentTable th.stickyTotal,
+  .patientModule .assignmentTable td.stickyTotal {
+    left: 64px !important;
+  }
+
+  .patientModule .assignmentTable .stickyTotal,
+  .patientModule .assignmentTable th.stickyTotal,
+  .patientModule .assignmentTable td.stickyTotal,
+  .patientModule .assignmentTable .totalCol,
+  .patientModule .assignmentTable th.totalCol,
+  .patientModule .assignmentTable td.totalCol {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+  }
+
+  .patientModule .assignmentTable .nameCell strong,
+  .patientModule .assignmentTable .nameCell .fullNameDesktop,
+  .patientModule .assignmentTable .nameCell .compactNameMobile {
+    max-width: 55px !important;
+    font-size: 13px !important;
+  }
+
+  .patientModule .totalNumber {
+    font-size: 17px !important;
+  }
+}
+
+
+
+
+/* =========================
+   Dialysis compact filled final
+   透析：元の小さいサイズ感を維持し、囲いの中だけ塗りつぶす
+   月水金・火木土の両方が入っても行高が大きくなりにくい調整
+========================= */
+
+/* タグ一覧：余計な高さを出さない */
+.patientModule .dialysisTagList {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 1px !important;
+  flex-wrap: wrap !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 0表示はタグではなく数字としてコンパクトに */
+.patientModule .dialysisTotal {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+/* 月水金・火木土：文字ギリギリの高さで背景だけ塗る */
+.patientModule .dialysisTag,
+.patientModule .dialysisBadge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 3px !important;
+  margin: 0 !important;
+
+  border-radius: 4px !important;
+  border: 1px solid #7dd3fc !important;
+  background: #e0f2fe !important;
+
+  color: #075985 !important;
+  -webkit-text-fill-color: #075985 !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+/* 月水金 */
+.patientModule .dialysisTag.dialysis-mwf,
+.patientModule .dialysisTag.mwf,
+.patientModule .dialysisBadge.dialysis-mwf,
+.patientModule .dialysisBadge.mwf {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1e40af !important;
+  -webkit-text-fill-color: #1e40af !important;
+}
+
+/* 火木土 */
+.patientModule .dialysisTag.dialysis-tts,
+.patientModule .dialysisTag.tts,
+.patientModule .dialysisBadge.dialysis-tts,
+.patientModule .dialysisBadge.tts {
+  background: #ede9fe !important;
+  border-color: #c4b5fd !important;
+  color: #5b21b6 !important;
+  -webkit-text-fill-color: #5b21b6 !important;
+}
+
+/* 透析列のセル自体も縦方向の余白を抑える */
+.patientModule .assignmentTable td.dialysisCol {
+  padding-top: 1px !important;
+  padding-bottom: 1px !important;
+  line-height: 1 !important;
+}
+
+/* 透析セルが変更済みでもタグサイズは変えない */
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTag,
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTotal {
+  font-size: inherit;
+}
+
+.patientModule .assignmentTable td.dialysisCol.changed .dialysisTag {
+  font-size: 9px !important;
+}
+
+/* =========================
+   Main header final layout
+   1段目：休暇・出勤管理 / 患者人数管理
+   2段目：表示・氏名職種・PT/OT・ログアウト
+========================= */
+
+.appHeader.mainHeaderFinal {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  padding: 12px 14px !important;
+  margin-bottom: 12px !important;
+  background: #ffffff !important;
+  border: 1px solid #d8e2ee !important;
+  border-top: 4px solid #0f766e !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07) !important;
+}
+
+/* 1段目：画面切替 */
+.appHeader.mainHeaderFinal .headerTopTabs {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 5px !important;
+  border: 1px solid #d8e2ee !important;
+  border-radius: 14px !important;
+  background: #f1f5f9 !important;
+}
+
+.appHeader.mainHeaderFinal .headerTopTabs button {
+  width: 100% !important;
+  min-height: 42px !important;
+  padding: 8px 8px !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: #334155 !important;
+  -webkit-text-fill-color: currentColor !important;
+  font-size: clamp(14px, 4.1vw, 18px) !important;
+  font-weight: 820 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+.appHeader.mainHeaderFinal .headerTopTabs button.active {
+  background: #0f766e !important;
+  color: #ffffff !important;
+  border-color: #0f766e !important;
+  font-weight: 950 !important;
+}
+
+/* 2段目：表示・PT/OT・ログアウト */
+.appHeader.mainHeaderFinal .headerControlRow {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 7px !important;
+  align-items: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.appHeader.mainHeaderFinal.patientsHeader .headerControlRow {
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+}
+
+.appHeader.mainHeaderFinal .headerLoginSelect {
+  min-width: 0 !important;
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  gap: 7px !important;
+  align-items: center !important;
+}
+
+.appHeader.mainHeaderFinal .headerLoginSelect span {
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+
+.appHeader.mainHeaderFinal .headerLoginSelect select {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 6px 34px 6px 10px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  box-shadow: none !important;
+}
+
+.appHeader.mainHeaderFinal .headerProfessionTabs {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 3px !important;
+  border: 1px solid #d8e2ee !important;
+  border-radius: 12px !important;
+  background: #edf4f3 !important;
+  flex: 0 0 auto !important;
+}
+
+.appHeader.mainHeaderFinal .headerProfessionTabs button {
+  min-width: 34px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 4px 8px !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  color: #334155 !important;
+  -webkit-text-fill-color: currentColor !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+.appHeader.mainHeaderFinal .headerProfessionTabs button.active {
+  background: #0f766e !important;
+  color: #ffffff !important;
+  border-color: #0f766e !important;
+}
+
+.appHeader.mainHeaderFinal .headerLogoutButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 12px !important;
+  border: 1px solid #94a3b8 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: currentColor !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+/* 旧ヘッダー要素が残っても干渉させない */
+.appHeader.mainHeaderFinal .authStatus {
+  display: none !important;
+}
+
+/* スマホ：指定レイアウトを維持しながら圧縮 */
+@media (max-width: 560px) {
+  .appHeader.mainHeaderFinal {
+    gap: 9px !important;
+    padding: 10px !important;
+    border-radius: 14px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerTopTabs {
+    gap: 5px !important;
+    padding: 5px !important;
+    border-radius: 13px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerTopTabs button {
+    min-height: 40px !important;
+    padding: 7px 5px !important;
+    font-size: 15px !important;
+    border-radius: 11px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerControlRow {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 6px !important;
+  }
+
+  .appHeader.mainHeaderFinal.patientsHeader .headerControlRow {
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect {
+    gap: 6px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect span {
+    font-size: 14px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect select {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 5px 28px 5px 9px !important;
+    font-size: 13px !important;
+    border-radius: 9px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerProfessionTabs {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerProfessionTabs button {
+    min-width: 31px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 3px 6px !important;
+    font-size: 11px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLogoutButton {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 5px 9px !important;
+    font-size: 12px !important;
+    border-radius: 9px !important;
+  }
+}
+
+/* 極小幅では2段目だけ自然に折り返す */
+@media (max-width: 390px) {
+  .appHeader.mainHeaderFinal.patientsHeader .headerControlRow {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "login logout"
+      "prof prof" !important;
+  }
+
+  .appHeader.mainHeaderFinal.patientsHeader .headerLoginSelect {
+    grid-area: login !important;
+  }
+
+  .appHeader.mainHeaderFinal.patientsHeader .headerProfessionTabs {
+    grid-area: prof !important;
+    justify-self: start !important;
+  }
+
+  .appHeader.mainHeaderFinal.patientsHeader .headerLogoutButton {
+    grid-area: logout !important;
+  }
+}
+
+/* =========================
+   Mobile header no-wrap fix
+   スマホでPT/OTが下段に落ちる問題を修正
+========================= */
+
+@media (max-width: 560px) {
+  .appHeader.mainHeaderFinal {
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  /* 2段目を必ず1行に収める */
+  .appHeader.mainHeaderFinal .headerControlRow,
+  .appHeader.mainHeaderFinal.patientsHeader .headerControlRow {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 66px 74px !important;
+    grid-template-areas: "login prof logout" !important;
+    gap: 5px !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect {
+    grid-area: login !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: 5px !important;
+    align-items: center !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect span {
+    font-size: 14px !important;
+    font-weight: 950 !important;
+    white-space: nowrap !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect select {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 5px 24px 5px 8px !important;
+    font-size: 13px !important;
+    font-weight: 850 !important;
+    border-radius: 9px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerProfessionTabs {
+    grid-area: prof !important;
+    width: 66px !important;
+    min-width: 66px !important;
+    max-width: 66px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+    justify-self: stretch !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerProfessionTabs button {
+    min-width: 0 !important;
+    width: 29px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 2px 5px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLogoutButton {
+    grid-area: logout !important;
+    width: 74px !important;
+    min-width: 74px !important;
+    max-width: 74px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 5px 6px !important;
+    font-size: 12px !important;
+    border-radius: 9px !important;
+    justify-self: stretch !important;
+  }
+
+  /* 休暇画面ではPT/OTがないため、表示とログアウトだけ */
+  .appHeader.mainHeaderFinal.leaveHeader .headerControlRow {
+    grid-template-columns: minmax(0, 1fr) 74px !important;
+    grid-template-areas: "login logout" !important;
+  }
+
+  .appHeader.mainHeaderFinal.leaveHeader .headerProfessionTabs {
+    display: none !important;
+  }
+}
+
+/* さらに狭い端末でもPT/OTを下に落とさない */
+@media (max-width: 390px) {
+  .appHeader.mainHeaderFinal.patientsHeader .headerControlRow {
+    grid-template-columns: minmax(0, 1fr) 62px 68px !important;
+    grid-template-areas: "login prof logout" !important;
+    gap: 4px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect {
+    gap: 4px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect span {
+    font-size: 13px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLoginSelect select {
+    height: 34px !important;
+    min-height: 34px !important;
+    padding-right: 22px !important;
+    font-size: 12px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerProfessionTabs {
+    width: 62px !important;
+    min-width: 62px !important;
+    max-width: 62px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerProfessionTabs button {
+    width: 27px !important;
+    height: 26px !important;
+    min-height: 26px !important;
+    font-size: 10px !important;
+    padding: 2px 4px !important;
+  }
+
+  .appHeader.mainHeaderFinal .headerLogoutButton {
+    width: 68px !important;
+    min-width: 68px !important;
+    max-width: 68px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    font-size: 11px !important;
+    padding: 4px 5px !important;
+  }
+
+  .appHeader.mainHeaderFinal.leaveHeader .headerControlRow {
+    grid-template-columns: minmax(0, 1fr) 68px !important;
+    grid-template-areas: "login logout" !important;
+  }
+}
+
+/* =========================
+   Stopped column red final
+   中止列：ヘッダー #ff5e5e、セル全体 #ff7878、数字 #222222
+========================= */
+
+/* 中止ヘッダー */
+.patientModule .assignmentTable th.deptHead.stopped,
+.patientModule .assignmentTable thead th.deptHead.stopped,
+.patientModule .assignmentTable th.stoppedCol,
+.patientModule .assignmentTable thead th.stoppedCol,
+.patientModule .assignmentTable th.sep-stopped,
+.patientModule .assignmentTable thead th.sep-stopped {
+  background: #ff5e5e !important;
+  background-color: #ff5e5e !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 950 !important;
+}
+
+/* 中止列セル全体 */
+.patientModule .assignmentTable td.numberCell.dept-stopped,
+.patientModule .assignmentTable td.dept-stopped,
+.patientModule .assignmentTable td.stoppedCol,
+.patientModule .assignmentTable td.sep-stopped {
+  background: #ff7878 !important;
+  background-color: #ff7878 !important;
+  color: #222222 !important;
+  -webkit-text-fill-color: #222222 !important;
+}
+
+/* 中止列セル内の数字・入力欄 */
+.patientModule .assignmentTable td.numberCell.dept-stopped input,
+.patientModule .assignmentTable td.dept-stopped input,
+.patientModule .assignmentTable td.stoppedCol input,
+.patientModule .assignmentTable td.sep-stopped input,
+.patientModule .assignmentTable td.numberCell.dept-stopped .inlineValue,
+.patientModule .assignmentTable td.dept-stopped .inlineValue,
+.patientModule .assignmentTable td.stoppedCol .inlineValue,
+.patientModule .assignmentTable td.sep-stopped .inlineValue,
+.patientModule .assignmentTable td.numberCell.dept-stopped .plainNumberLine input,
+.patientModule .assignmentTable td.dept-stopped .plainNumberLine input,
+.patientModule .assignmentTable td.stoppedCol .plainNumberLine input,
+.patientModule .assignmentTable td.sep-stopped .plainNumberLine input {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #222222 !important;
+  -webkit-text-fill-color: #222222 !important;
+  font-weight: 950 !important;
+}
+
+/* 中止列で +/- 操作中も見やすくする */
+.patientModule .assignmentTable td.numberCell.dept-stopped .inlineAdjust,
+.patientModule .assignmentTable td.dept-stopped .inlineAdjust,
+.patientModule .assignmentTable td.stoppedCol .inlineAdjust,
+.patientModule .assignmentTable td.sep-stopped .inlineAdjust {
+  background: rgba(255, 255, 255, 0.92) !important;
+}
+
+.patientModule .assignmentTable td.numberCell.dept-stopped .inlineValue,
+.patientModule .assignmentTable td.dept-stopped .inlineValue,
+.patientModule .assignmentTable td.stoppedCol .inlineValue,
+.patientModule .assignmentTable td.sep-stopped .inlineValue {
+  color: #222222 !important;
+  -webkit-text-fill-color: #222222 !important;
+}
+
+/* changed青表示より、中止列は黒数字を優先 */
+.patientModule .assignmentTable td.numberCell.dept-stopped.changed input,
+.patientModule .assignmentTable td.dept-stopped.changed input,
+.patientModule .assignmentTable td.stoppedCol.changed input,
+.patientModule .assignmentTable td.sep-stopped.changed input,
+.patientModule .assignmentTable td.numberCell.dept-stopped.changed .inlineValue,
+.patientModule .assignmentTable td.dept-stopped.changed .inlineValue,
+.patientModule .assignmentTable td.stoppedCol.changed .inlineValue,
+.patientModule .assignmentTable td.sep-stopped.changed .inlineValue,
+.patientModule .assignmentTable td.numberCell.dept-stopped.changed .plainNumberLine input,
+.patientModule .assignmentTable td.dept-stopped.changed .plainNumberLine input,
+.patientModule .assignmentTable td.stoppedCol.changed .plainNumberLine input,
+.patientModule .assignmentTable td.sep-stopped.changed .plainNumberLine input {
+  color: #222222 !important;
+  -webkit-text-fill-color: #222222 !important;
+  font-weight: 950 !important;
+}
+
+/* T字ハイライト時も中止列は赤背景を維持 */
+.patientModule .assignmentTable td.numberCell.dept-stopped.tRowGuide,
+.patientModule .assignmentTable td.numberCell.dept-stopped.tColGuide,
+.patientModule .assignmentTable td.numberCell.dept-stopped.tActiveCell,
+.patientModule .assignmentTable td.dept-stopped.tRowGuide,
+.patientModule .assignmentTable td.dept-stopped.tColGuide,
+.patientModule .assignmentTable td.dept-stopped.tActiveCell,
+.patientModule .assignmentTable td.stoppedCol.tRowGuide,
+.patientModule .assignmentTable td.stoppedCol.tColGuide,
+.patientModule .assignmentTable td.stoppedCol.tActiveCell,
+.patientModule .assignmentTable td.sep-stopped.tRowGuide,
+.patientModule .assignmentTable td.sep-stopped.tColGuide,
+.patientModule .assignmentTable td.sep-stopped.tActiveCell {
+  background: #ff7878 !important;
+  background-color: #ff7878 !important;
+  color: #222222 !important;
+  -webkit-text-fill-color: #222222 !important;
+}
+
+/* 区切り線を維持 */
+.patientModule .assignmentTable th.sep-stopped,
+.patientModule .assignmentTable td.sep-stopped,
+.patientModule .assignmentTable th.stoppedCol,
+.patientModule .assignmentTable td.stoppedCol,
+.patientModule .assignmentTable th.deptHead.stopped,
+.patientModule .assignmentTable td.numberCell.dept-stopped {
+  border-right: 3px double #475569 !important;
+}
+
+
+/* =========================
+   Staff link / visibility badges
+   スタッフ連携状態と患者人数管理の表示・非表示
+========================= */
+.patientModule .staffOrderName {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.patientModule .staffStatusBadges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.patientModule .staffLinkBadge,
+.patientModule .staffVisibleBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.patientModule .staffLinkBadge.linked {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.patientModule .staffLinkBadge.unlinked {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.patientModule .staffVisibleBadge.shown {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  color: #1e40af;
+}
+
+.patientModule .staffVisibleBadge.hidden {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.patientModule .orderItem.staffHiddenRow {
+  background: #f8fafc;
+  opacity: 0.82;
+}
+
+.patientModule .visibilityButton {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.patientModule .visibilityButton.hide {
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.patientModule .visibilityButton.show {
+  background: #dcfce7;
+  color: #166534;
+}
+
+@media (max-width: 900px) {
+  .patientModule .orderItem {
+    grid-template-columns: minmax(0, 1fr) minmax(66px, 0.45fr) auto !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .patientModule .staffStatusBadges {
+    gap: 3px;
+  }
+
+  .patientModule .staffLinkBadge,
+  .patientModule .staffVisibleBadge {
+    min-height: 18px;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  .patientModule .visibilityButton {
+    min-width: 44px;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 11px;
+  }
+}
+
+/* =========================
+   Patient settings / staff management v2
+   患者人数管理設定：スタッフ管理カード
+========================= */
+.patientModule .staffManageList {
+  margin-top: 16px;
+}
+
+.patientModule .staffManageItem {
+  grid-template-columns: minmax(160px, 1fr) minmax(92px, 0.5fr) auto !important;
+}
+
+.patientModule .staffOrderName strong span {
+  margin-left: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.patientModule .staffNumberBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.patientModule .settingsContentPanel > h3:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .patientModule .staffManageItem {
+    grid-template-columns: minmax(0, 1fr) minmax(72px, 0.45fr) auto !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .patientModule .staffManageItem {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .patientModule .staffManageItem .miniCancerToggle {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .patientModule .staffManageItem > div:last-child {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .patientModule .staffNumberBadge {
+    min-height: 18px;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+}
+
+/* =========================
+   Staff management personal switch final
+   スタッフ管理：ID非表示・がんリハ/管理表表示をスイッチ化
+========================= */
+.patientModule .staffNumberBadge {
+  display: none !important;
+}
+
+.patientModule .pmSwitch {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  box-shadow: none;
+}
+
+.patientModule .pmSwitchLabel {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.patientModule .pmSwitchTrack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #cbd5e1;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.patientModule .pmSwitchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+  transition: transform 0.16s ease;
+}
+
+.patientModule .pmSwitchText {
+  position: relative;
+  z-index: 1;
+  padding-left: 20px;
+  color: inherit;
+}
+
+.patientModule .pmSwitch.on .pmSwitchTrack {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #ffffff;
+}
+
+.patientModule .pmSwitch.on .pmSwitchKnob {
+  transform: translateX(38px);
+}
+
+.patientModule .pmSwitch.on .pmSwitchText {
+  padding-left: 0;
+  padding-right: 20px;
+}
+
+.patientModule .staffSwitchGrid {
+  display: grid;
+  gap: 7px;
+  align-content: center;
+  justify-items: end;
+}
+
+.patientModule .staffCardActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.patientModule .staffManageItem {
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, auto) auto !important;
+  align-items: center;
+}
+
+.patientModule .orderSwitchGrid {
+  min-width: 150px;
+}
+
+.patientModule .staffHiddenRow .pmSwitchLabel,
+.patientModule .staffHiddenRow .staffOrderName strong {
+  color: #64748b !important;
+}
+
+.patientModule .cancerPermissionToggle {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .patientModule .staffManageItem,
+  .patientModule .orderItem {
+    grid-template-columns: minmax(0, 1fr) minmax(145px, auto) auto !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .patientModule .staffManageItem,
+  .patientModule .orderItem {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .patientModule .staffSwitchGrid,
+  .patientModule .orderSwitchGrid {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .patientModule .pmSwitch {
+    width: 100%;
+    grid-template-columns: minmax(78px, 1fr) auto;
+  }
+
+  .patientModule .pmSwitchLabel {
+    text-align: left;
+  }
+
+  .patientModule .staffCardActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }

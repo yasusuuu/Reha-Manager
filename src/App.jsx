@@ -614,13 +614,15 @@ useEffect(() => {
         id: staffDoc.id,
         ...staffData,
       });
-    } catch (error) {
-      console.error("Staff load failed", error);
-      setLoginStaff(null);
-      setStaffAuthError("職員情報の取得に失敗しました。");
-    } finally {
-      setStaffAuthLoading(false);
-    }
+} catch (error) {
+  const code = error?.code || "unknown";
+  const message = error?.message || "unknown";
+
+  console.error("Staff link failed", { code, message, error });
+  setStaffAuthError(`職員連携に失敗しました。code: ${code} / message: ${message}`);
+} finally {
+  setStaffAuthLoading(false);
+}
   }
 
   loadLoginStaff();
@@ -685,9 +687,10 @@ async function handleStaffLink() {
       return;
     }
 
+    // Firestoreにはメールアドレスを保存しない。
+    // 本人識別はFirebase Authのuidだけで行う。
     await updateDoc(doc(db, "staff", staffDoc.id), {
       uid: firebaseUser.uid,
-      email: firebaseUser.email || "",
       linkedAt: serverTimestamp(),
     });
 
@@ -695,11 +698,13 @@ async function handleStaffLink() {
       id: staffDoc.id,
       ...staffData,
       uid: firebaseUser.uid,
-      email: firebaseUser.email || "",
     });
   } catch (error) {
-    console.error("Staff link failed", error);
-    setStaffAuthError("職員連携に失敗しました。");
+    const code = error?.code || "unknown";
+    const message = error?.message || "unknown";
+
+    console.error("Staff link failed", { code, message, error });
+    setStaffAuthError(`職員連携に失敗しました。code: ${code} / message: ${message}`);
   } finally {
     setStaffAuthLoading(false);
   }
@@ -731,6 +736,7 @@ useEffect(() => {
             job: data.job || "PT",
             role: data.role || "staff",
             active: data.active !== false,
+            visible: data.visible !== false,
             order: Number(data.order || 999),
             staffNumber: data.staffNumber || "",
             uid: data.uid || "",
@@ -1733,8 +1739,8 @@ if (!loginStaff) {
 }
   return (
     <div className="appShell">
-      <header className="appHeader">
-        <div className="appTitleTabs" aria-label="機能切替">
+      <header className={`appHeader mainHeaderFinal ${appSection === "patients" ? "patientsHeader" : "leaveHeader"}`}>
+        <div className="appTitleTabs headerTopTabs" aria-label="機能切替">
           <button
             type="button"
             className={appSection === "leave" ? "active" : ""}
@@ -1751,8 +1757,8 @@ if (!loginStaff) {
           </button>
         </div>
 
-        <div className={`loginRow ${appSection === "patients" ? "patientLoginRow" : ""}`}>
-          <label className="loginSelect">
+        <div className={`loginRow headerControlRow ${appSection === "patients" ? "patientLoginRow" : ""}`}>
+          <label className="loginSelect headerLoginSelect">
             <span>表示</span>
             <select value={loginId} onChange={(e) => setLoginId(e.target.value)}>
               {activeStaff.map((s) => (
@@ -1762,8 +1768,9 @@ if (!loginStaff) {
               ))}
             </select>
           </label>
+
           {appSection === "patients" && (
-            <div className="patientMiniProfessionTabs" aria-label="患者人数管理 PT OT 切替">
+            <div className="patientMiniProfessionTabs headerProfessionTabs" aria-label="患者人数管理 PT OT 切替">
               {PM_PROFESSIONS.map((item) => (
                 <button
                   key={item}
@@ -1776,18 +1783,11 @@ if (!loginStaff) {
               ))}
             </div>
           )}
-        </div>
 
-        <div className="authStatus">
-<span>
-  {loginStaff
-    ? `${loginStaff.lastName || ""} ${loginStaff.firstName || ""}`.trim()
-    : firebaseUser.displayName || firebaseUser.email}
-</span>
-  <button type="button" onClick={handleLogout}>
-    ログアウト
-  </button>
-</div>
+          <button type="button" className="headerLogoutButton" onClick={handleLogout}>
+            ログアウト
+          </button>
+        </div>
       </header>
 
       {appSection === "patients" ? (
@@ -2603,6 +2603,8 @@ const PM_MOVE_TYPES = [
 ];
 
 const PM_EMPTY_COUNTS = Object.fromEntries(PM_DEPARTMENTS.map((d) => [d.key, 0]));
+const PM_STOPPED_DEPARTMENTS = PM_DEPARTMENTS.filter((dept) => !["outpatient", "stopped"].includes(dept.key));
+const PM_EMPTY_STOPPED_DETAIL = Object.fromEntries(PM_STOPPED_DEPARTMENTS.map((dept) => [dept.key, 0]));
 const PM_EMPTY_OUTPATIENT_DETAIL = { general: 0, student: 0 };
 const PM_EMPTY_DIALYSIS = { mwf: 0, tts: 0 };
 const PM_DIALYSIS_TYPES = [
@@ -2719,6 +2721,43 @@ function pmPersonName(staff) {
   return `${staff.lastName || ""} ${staff.firstName || ""}`.trim() || "未設定";
 }
 
+function pmFirstChar(value) {
+  return Array.from(String(value || "").trim())[0] || "";
+}
+
+function pmLastName(staff) {
+  return String(staff?.lastName || "").trim() || String(staff?.name || "").trim() || "未設定";
+}
+
+function pmNormalizeFamilyNameForCompact(value) {
+  const name = String(value || "").trim();
+  if (!name) return "";
+  // 渡辺・渡邊・渡邉は同姓として扱う。表示名は元の漢字を維持する。
+  return name.replace(/[邊邉]/g, "辺");
+}
+
+function pmCompactNameInfo(staff, lastNameCounts, lastInitialCounts) {
+  const lastName = pmLastName(staff);
+  const familyKey = pmNormalizeFamilyNameForCompact(lastName);
+  const firstName = String(staff?.firstName || "").trim();
+  const firstInitial = pmFirstChar(firstName);
+
+  if ((lastNameCounts[familyKey] || 0) <= 1) {
+    return { lastName, small: "", fullFirst: false };
+  }
+
+  if (!firstInitial) {
+    return { lastName, small: "", fullFirst: false };
+  }
+
+  const initialKey = `${familyKey}::${firstInitial}`;
+  if ((lastInitialCounts[initialKey] || 0) <= 1) {
+    return { lastName, small: firstInitial, fullFirst: false };
+  }
+
+  return { lastName, small: firstName, fullFirst: true };
+}
+
 function pmDepartmentShort(key) {
   return PM_DEPARTMENTS.find((item) => item.key === key)?.short || key;
 }
@@ -2754,11 +2793,17 @@ function pmNormalizeStaff(staff, index = 0) {
     profession: staff.profession || "PT",
     type: staff.type || "main",
     canCancerRehab: Boolean(staff.canCancerRehab),
+    active: staff.active !== false,
+    visible: staff.visible !== false,
+    uid: staff.uid || "",
+    staffNumber: staff.staffNumber || "",
+    role: staff.role || "staff",
     lastName: staff.lastName || "",
     firstName: staff.firstName || "",
     order: Number(staff.order || index + 1),
     counts,
     outpatientDetail,
+    stoppedDetail: { ...PM_EMPTY_STOPPED_DETAIL, ...(staff.stoppedDetail || {}) },
     dialysis: { ...PM_EMPTY_DIALYSIS, ...(staff.dialysis || {}) },
     note: staff.note || "",
   };
@@ -2804,11 +2849,29 @@ function pmEnsureSampleStaff(list) {
   return [...list, ...additions];
 }
 
+function pmStoppedDetail(staff) {
+  return {
+    ...PM_EMPTY_STOPPED_DETAIL,
+    ...(staff.stoppedDetail || {}),
+  };
+}
+
+function pmStoppedTotal(staff) {
+  const detailTotal = PM_STOPPED_DEPARTMENTS.reduce(
+    (sum, dept) => sum + Number(pmStoppedDetail(staff)[dept.key] || 0),
+    0
+  );
+
+  if (detailTotal > 0) return detailTotal;
+  return Number(staff.counts?.stopped || 0);
+}
+
 function pmCountTotal(staff) {
-  return PM_DEPARTMENTS.filter((dept) => dept.key !== "stopped" && dept.key !== "outpatient").reduce(
+  const scheduledTotal = PM_DEPARTMENTS.filter((dept) => dept.key !== "stopped" && dept.key !== "outpatient").reduce(
     (sum, dept) => sum + Number(staff.counts?.[dept.key] || 0),
     0
   );
+  return Math.max(0, scheduledTotal - pmStoppedTotal(staff));
 }
 
 function pmOutpatientDetail(staff) {
@@ -2947,6 +3010,25 @@ function PMJapaneseDateInput({ value, onChange }) {
   );
 }
 
+function PMSwitch({ checked, onChange, label, onText = "ON", offText = "OFF" }) {
+  return (
+    <button
+      type="button"
+      className={`pmSwitch ${checked ? "on" : "off"}`}
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="pmSwitchLabel">{label}</span>
+      <span className="pmSwitchTrack">
+        <span className="pmSwitchKnob" />
+        <span className="pmSwitchText">{checked ? onText : offText}</span>
+      </span>
+    </button>
+  );
+}
+
 function FullPatientManager({ loginUser, profession, setProfession, staffSource = [] }) {
   const [view, setView] = useState("table");
 
@@ -2954,6 +3036,8 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
     if (loginUser?.job) setProfession(loginUser.job);
   }, [loginUser?.id, loginUser?.job, setProfession]);
   const [fullTable, setFullTable] = useState(false);
+  const [patientSaveStatus, setPatientSaveStatus] = useState("saved");
+  const [patientSaving, setPatientSaving] = useState(false);
   const [staff, setStaff] = useState(() => {
     const saved = localStorage.getItem("integratedAssignmentTableStaffV1");
     return saved
@@ -2980,7 +3064,12 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
         profession: person.job || "PT",
         lastName: person.lastName || "",
         firstName: person.firstName || "",
-        order: Number(person.order || index + 1),
+        active: person.active !== false,
+        visible: person.visible === false ? false : (person.visible === true ? true : existing?.visible !== false),
+        uid: person.uid || existing?.uid || "",
+        staffNumber: person.staffNumber || existing?.staffNumber || "",
+        role: person.role || existing?.role || "staff",
+        order: Number(person.order || existing?.order || index + 1),
       });
     });
 
@@ -3078,31 +3167,50 @@ if (data.recentChanges) {
   return () => unsubscribe();
 }, []);
 
-useEffect(() => {
-if (!patientDataReady || patientRemoteApplyingRef.current) return;
+async function savePatientManagerData() {
+  if (!patientDataReady || patientRemoteApplyingRef.current || patientSaving) return;
 
-  setDoc(doc(db, "settings", "patientManager"), {
-    staff,
-    movements,
-    history,
-    recentChanges,
-    fiscalSnapshots,
-    updatedAt: Date.now(),
-    updatedBy: loginUser?.id || "",
-    updatedByName: loginUser ? personName(loginUser) : "",
-  });
-}, [patientDataReady, staff, movements, history, recentChanges, fiscalSnapshots, loginUser]);
+  setPatientSaving(true);
+  try {
+    await setDoc(doc(db, "settings", "patientManager"), {
+      staff,
+      movements,
+      history,
+      recentChanges,
+      fiscalSnapshots,
+      updatedAt: Date.now(),
+      updatedBy: loginUser?.id || "",
+      updatedByName: loginUser ? personName(loginUser) : "",
+    });
+    setPatientSaveStatus("saved");
+  } catch (error) {
+    console.error("patientManager save failed", error);
+    alert("患者人数管理の保存に失敗しました。通信状況を確認してください。");
+    setPatientSaveStatus("dirty");
+  } finally {
+    setPatientSaving(false);
+  }
+}
+
+useEffect(() => {
+  if (!patientDataReady || patientRemoteApplyingRef.current) return;
+  setPatientSaveStatus((prev) => (prev === "saving" ? prev : "dirty"));
+}, [staff, movements, history, recentChanges, fiscalSnapshots, patientDataReady]);
 
   useEffect(() => {
     applyDueMovements();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const visibleStaff = useMemo(() => {
+  const professionStaff = useMemo(() => {
     return staff
-      .filter((person) => person.profession === profession)
+      .filter((person) => person.profession === profession && person.active !== false)
       .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
   }, [staff, profession]);
+
+  const visibleStaff = useMemo(() => {
+    return professionStaff.filter((person) => person.visible !== false);
+  }, [professionStaff]);
 
   const pendingMovements = useMemo(() => {
     return movements
@@ -3126,7 +3234,11 @@ if (!patientDataReady || patientRemoteApplyingRef.current) return;
   const tableDensity = visibleStaff.length >= 14 ? "dense3" : visibleStaff.length >= 10 ? "dense2" : "dense1";
 
   function staffOptionsForDepartment(department) {
-    const base = staff.filter((person) => person.profession === profession);
+    const base = staff.filter((person) => (
+      person.profession === profession
+      && person.active !== false
+      && person.visible !== false
+    ));
     if (department === "cancer") {
       return base.filter((person) => person.canCancerRehab);
     }
@@ -3175,25 +3287,11 @@ function isChangedToday(staffId, department) {
 function markChanged(staffId, department) {
   const today = pmTodayKey();
   const key = `${staffId}:${department}`;
-  const nextRecentChanges = {
-    ...recentChanges,
+
+  setRecentChanges((prev) => ({
+    ...prev,
     [key]: today,
-  };
-
-  setRecentChanges(nextRecentChanges);
-
-  setDoc(
-    doc(db, "settings", "patientManager"),
-    {
-      recentChanges: nextRecentChanges,
-      updatedAt: Date.now(),
-      updatedBy: loginUser?.id || "",
-      updatedByName: loginUser ? personName(loginUser) : "",
-    },
-    { merge: true }
-  ).catch((error) => {
-    console.error("Patient recent changes save failed", error);
-  });
+  }));
 }
 
   function updateCount(staffId, department, value) {
@@ -3253,6 +3351,41 @@ function markChanged(staffId, department) {
     if (!target) return;
     const detail = pmOutpatientDetail(target);
     updateOutpatientDetail(staffId, key, Math.max(0, Number(detail[key] || 0) + diff));
+  }
+
+  function updateStoppedDetail(staffId, department, value) {
+    const nextValue = Math.max(0, Number(value || 0));
+
+    setStaff((prev) =>
+      prev.map((person) => {
+        if (person.id !== staffId) return person;
+        const nextStoppedDetail = {
+          ...pmStoppedDetail(person),
+          [department]: nextValue,
+        };
+
+        return {
+          ...person,
+          stoppedDetail: nextStoppedDetail,
+          counts: {
+            ...person.counts,
+            stopped: PM_STOPPED_DEPARTMENTS.reduce(
+              (sum, dept) => sum + Number(nextStoppedDetail[dept.key] || 0),
+              0
+            ),
+          },
+        };
+      })
+    );
+
+    markChanged(staffId, "stopped");
+  }
+
+  function quickAdjustStopped(staffId, department, diff) {
+    const target = staff.find((person) => person.id === staffId);
+    if (!target) return;
+    const detail = pmStoppedDetail(target);
+    updateStoppedDetail(staffId, department, Math.max(0, Number(detail[department] || 0) + diff));
   }
 
   function updateDialysisDetail(staffId, key, value) {
@@ -3415,6 +3548,9 @@ function markChanged(staffId, department) {
       pmNormalizeStaff({
         ...staffForm,
         id: makeId(),
+        active: true,
+        visible: true,
+        uid: "",
         order: maxOrder + 1,
       }),
     ]);
@@ -3446,8 +3582,16 @@ function updateCancerPermission(id, canCancerRehab) {
   );
 }
 
+  function updateStaffVisibility(id, visible) {
+    setStaff((prev) =>
+      prev.map((person) =>
+        person.id === id ? pmNormalizeStaff({ ...person, visible }) : person
+      )
+    );
+  }
+
   function moveStaffOrder(id, direction) {
-    const list = visibleStaff;
+    const list = professionStaff;
     const index = list.findIndex((person) => person.id === id);
     const targetIndex = index + direction;
     if (index < 0 || targetIndex < 0 || targetIndex >= list.length) return;
@@ -3585,19 +3729,29 @@ function updateCancerPermission(id, canCancerRehab) {
       quickAdjust={quickAdjust}
       quickAdjustOutpatient={quickAdjustOutpatient}
       quickAdjustDialysis={quickAdjustDialysis}
+      quickAdjustStopped={quickAdjustStopped}
       activeCell={activeCell}
       setActiveCell={setActiveCell}
       onEditMovement={setEditMovement}
       onClearDueMovements={applyDueMovements}
       sectionActions={!fullTable && (
         <>
+          <button
+            className={`patientSaveButton ${patientSaveStatus === "dirty" ? "dirty" : "saved"}`}
+            type="button"
+            onClick={savePatientManagerData}
+            disabled={patientSaving || patientSaveStatus !== "dirty"}
+            title={patientSaveStatus === "dirty" ? "変更を保存します" : "保存済みです"}
+          >
+            {patientSaving ? "保存中..." : patientSaveStatus === "dirty" ? "保存" : "保存済"}
+          </button>
           <button className="tabExpandBtn iconOnly" type="button" onClick={() => setFullTable(true)} aria-label="拡大表示" title="拡大表示">⛶</button>
           <button
             className={`adjustHistoryButton ${showTodayAdjustHistory ? "active" : ""}`}
             type="button"
             onClick={() => setShowTodayAdjustHistory((prev) => !prev)}
           >
-            -+履歴
+            -/+履歴
           </button>
         </>
       )}
@@ -3744,7 +3898,7 @@ function updateCancerPermission(id, canCancerRehab) {
           <button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>管理表</button>
           <button className={view === "move" ? "active" : ""} onClick={() => setView("move")}>患者移動</button>
         </div>
-        <button className={view === "settings" ? "active settingsTabButton" : "settingsTabButton"} aria-label="設定" title="設定" onClick={() => setView("settings")}>
+        <button className={view === "settings" ? "active settingsTabButton" : "settingsTabButton"} aria-label="患者人数管理設定" title="患者人数管理設定" onClick={() => setView("settings")}>
           <img alt="" src="data:image/png;base64,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" />
         </button>
       </nav>
@@ -3990,16 +4144,16 @@ function updateCancerPermission(id, canCancerRehab) {
 
       {view === "settings" && (
         <section className="card">
-          <h2>設定</h2>
-          <p className="settingLead">スタッフ登録時に「がんリハ実施権」を付けると、管理表のがん列が入力可能になります。</p>
+          <h2>患者人数管理設定</h2>
+          <p className="settingLead">患者人数管理で使用するスタッフ、表示順、集計を管理します。</p>
 
           <div className="settingsLayout">
             <div className="settingsMenuList" aria-label="設定メニュー">
               <button className={settingsView === "register" ? "active" : ""} type="button" onClick={() => setSettingsView("register")}>
                 <span className="settingsMenuIcon">＋</span>
                 <span className="settingsMenuText">
-                  <strong>スタッフ登録</strong>
-                  <small>名前・職種・実施権を登録</small>
+                  <strong>スタッフ管理</strong>
+                  <small>登録・連携状態・表示を管理</small>
                 </span>
                 <span className="settingsMenuArrow">›</span>
               </button>
@@ -4023,72 +4177,114 @@ function updateCancerPermission(id, canCancerRehab) {
 
             <div className="settingsContentPanel">
           {settingsView === "register" ? (
-            <form className="staffForm cancerRightForm staffRegisterForm" onSubmit={addStaff}>
-              <div className="staffFormPair">
-                <label>
-                  <span>姓</span>
-                  <input value={staffForm.lastName} onChange={(e) => setStaffForm({ ...staffForm, lastName: e.target.value })} />
-                </label>
-                <label>
-                  <span>名</span>
-                  <input value={staffForm.firstName} onChange={(e) => setStaffForm({ ...staffForm, firstName: e.target.value })} />
-                </label>
-              </div>
+            <>
+              <h3>{profession} スタッフ管理</h3>
+              <p className="settingHelp">新規登録、Google連携状態、がんリハ、管理表表示をみんなで管理します。visible未設定のスタッフは表示扱いです。</p>
 
-              <div className="staffFormPair">
-                <label>
-                  <span>職種</span>
-                  <select value={staffForm.profession} onChange={(e) => setStaffForm({ ...staffForm, profession: e.target.value })}>
-                    <option value="PT">PT</option>
-                    <option value="OT">OT</option>
-                  </select>
-                </label>
-                <label className="checkSetting">
-                  <span>がんリハ実施権</span>
-                  <div className="cancerPermissionToggle">
-                    <button
-                      type="button"
-                      className={staffForm.canCancerRehab ? "active" : ""}
-                      onClick={() => setStaffForm({ ...staffForm, canCancerRehab: true })}
-                    >
-                      可
-                    </button>
-                    <button
-                      type="button"
-                      className={!staffForm.canCancerRehab ? "active" : ""}
-                      onClick={() => setStaffForm({ ...staffForm, canCancerRehab: false })}
-                    >
-                      否
-                    </button>
+              <form className="staffForm cancerRightForm staffRegisterForm" onSubmit={addStaff}>
+                <div className="staffFormPair">
+                  <label>
+                    <span>姓</span>
+                    <input value={staffForm.lastName} onChange={(e) => setStaffForm({ ...staffForm, lastName: e.target.value })} />
+                  </label>
+                  <label>
+                    <span>名</span>
+                    <input value={staffForm.firstName} onChange={(e) => setStaffForm({ ...staffForm, firstName: e.target.value })} />
+                  </label>
+                </div>
+
+                <div className="staffFormPair">
+                  <label>
+                    <span>職種</span>
+                    <select value={staffForm.profession} onChange={(e) => setStaffForm({ ...staffForm, profession: e.target.value })}>
+                      <option value="PT">PT</option>
+                      <option value="OT">OT</option>
+                    </select>
+                  </label>
+                  <label className="checkSetting">
+                    <span>がんリハ実施権</span>
+                    <PMSwitch
+                      checked={Boolean(staffForm.canCancerRehab)}
+                      label="がんリハ"
+                      onText="可"
+                      offText="不可"
+                      onChange={(checked) => setStaffForm({ ...staffForm, canCancerRehab: checked })}
+                    />
+                  </label>
+                </div>
+
+                <button className="primaryButton" type="submit">追加</button>
+              </form>
+
+              <div className="orderList staffManageList">
+                {professionStaff.map((person) => (
+                  <div className={`orderItem staffManageItem ${person.visible === false ? "staffHiddenRow" : ""}`} key={person.id}>
+                    <div className="staffOrderName">
+                      <strong>{pmPersonName(person)} <span>{person.profession}</span></strong>
+                      <div className="staffStatusBadges">
+                        <span className={`staffLinkBadge ${person.uid ? "linked" : "unlinked"}`}>
+                          {person.uid ? "連携済" : "未連携"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="staffSwitchGrid">
+                      <PMSwitch
+                        checked={Boolean(person.canCancerRehab)}
+                        label="がんリハ"
+                        onText="可"
+                        offText="不可"
+                        onChange={(checked) => updateCancerPermission(person.id, checked)}
+                      />
+                      <PMSwitch
+                        checked={person.visible !== false}
+                        label="管理表表示"
+                        onText="表示"
+                        offText="非表示"
+                        onChange={(checked) => updateStaffVisibility(person.id, checked)}
+                      />
+                    </div>
+                    <div className="staffCardActions">
+                      <button className="deleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
+                    </div>
                   </div>
-                </label>
+                ))}
               </div>
-
-              <button className="primaryButton" type="submit">追加</button>
-            </form>
+            </>
           ) : settingsView === "order" ? (
             <>
               <h3>{profession} 表示順</h3>
+              <p className="settingHelp">表示順は誰でも調整できます。がんリハと管理表表示もこの画面から切り替えできます。</p>
               <div className="orderList">
-                {visibleStaff.map((person) => (
-                  <div className="orderItem" key={person.id}>
-                    <strong>{pmPersonName(person)}</strong>
-<div className="miniCancerToggle" aria-label={`${pmPersonName(person)} がんリハ実施権`}>
-  <button
-    type="button"
-    className={person.canCancerRehab ? "active" : ""}
-    onClick={() => updateCancerPermission(person.id, true)}
-  >
-    可
-  </button>
-  <button
-    type="button"
-    className={!person.canCancerRehab ? "active" : ""}
-    onClick={() => updateCancerPermission(person.id, false)}
-  >
-    否
-  </button>
-</div>                    <div>
+                {professionStaff.map((person) => (
+                  <div className={`orderItem ${person.visible === false ? "staffHiddenRow" : ""}`} key={person.id}>
+                    <div className="staffOrderName">
+                      <strong>{pmPersonName(person)}</strong>
+                      <div className="staffStatusBadges">
+                        <span className={`staffLinkBadge ${person.uid ? "linked" : "unlinked"}`}>
+                          {person.uid ? "連携済" : "未連携"}
+                        </span>
+                        <span className={`staffVisibleBadge ${person.visible === false ? "hidden" : "shown"}`}>
+                          {person.visible === false ? "非表示" : "表示中"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="staffSwitchGrid orderSwitchGrid">
+                      <PMSwitch
+                        checked={Boolean(person.canCancerRehab)}
+                        label="がんリハ"
+                        onText="可"
+                        offText="不可"
+                        onChange={(checked) => updateCancerPermission(person.id, checked)}
+                      />
+                      <PMSwitch
+                        checked={person.visible !== false}
+                        label="管理表表示"
+                        onText="表示"
+                        offText="非表示"
+                        onChange={(checked) => updateStaffVisibility(person.id, checked)}
+                      />
+                    </div>
+                    <div className="staffCardActions">
                       <button type="button" onClick={() => moveStaffOrder(person.id, -1)}>↑</button>
                       <button type="button" onClick={() => moveStaffOrder(person.id, 1)}>↓</button>
                       <button className="deleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
@@ -4169,6 +4365,7 @@ function PMAssignmentTable({
   quickAdjust,
   quickAdjustOutpatient,
   quickAdjustDialysis,
+  quickAdjustStopped,
   activeCell,
   setActiveCell,
   onEditMovement,
@@ -4177,9 +4374,46 @@ function PMAssignmentTable({
 }) {
   const [activeStaffId, activeDeptKey] = activeCell ? activeCell.split(":") : [null, null];
   const activeRowIndex = staffList.findIndex((person) => person.id === activeStaffId);
+  const activeStoppedPerson = activeDeptKey === "stopped"
+    ? staffList.find((person) => person.id === activeStaffId)
+    : null;
+  const activeStoppedDetail = activeStoppedPerson ? pmStoppedDetail(activeStoppedPerson) : {};
   const [notePopup, setNotePopup] = useState(null); // staffId or null
   const [noteEditMode, setNoteEditMode] = useState(false);
   const [noteEditValue, setNoteEditValue] = useState("");
+
+  const compactNameMeta = useMemo(() => {
+    const lastNameCounts = {};
+    const lastInitialCounts = {};
+
+    staffList.forEach((person) => {
+      const lastName = pmLastName(person);
+      const familyKey = pmNormalizeFamilyNameForCompact(lastName);
+      const firstInitial = pmFirstChar(person.firstName);
+      lastNameCounts[familyKey] = (lastNameCounts[familyKey] || 0) + 1;
+      if (firstInitial) {
+        const initialKey = `${familyKey}::${firstInitial}`;
+        lastInitialCounts[initialKey] = (lastInitialCounts[initialKey] || 0) + 1;
+      }
+    });
+
+    return { lastNameCounts, lastInitialCounts };
+  }, [staffList]);
+
+  function renderNameCell(person) {
+    const compact = pmCompactNameInfo(person, compactNameMeta.lastNameCounts, compactNameMeta.lastInitialCounts);
+    return (
+      <>
+        <span className="fullNameDesktop">{pmPersonName(person)}</span>
+        <span className="compactNameMobile">
+          <span className="compactLastName">{compact.lastName}</span>
+          {compact.small && (
+            <span className={`compactFirstChar ${compact.fullFirst ? "fullFirst" : ""}`}>{compact.small}</span>
+          )}
+        </span>
+      </>
+    );
+  }
   function showOutpatientSummary() {
     const lines = staffList.map((person) => {
       const detail = pmOutpatientDetail(person);
@@ -4204,7 +4438,7 @@ function PMAssignmentTable({
           <thead>
             <tr>
               <th className="stickyName nameCol">氏名</th>
-              <th className="stickyTotal totalCol">合計</th>
+              <th className="totalCol stickyTotal">合計</th>
               {PM_DEPARTMENTS.map((dept) => (
                 <th key={dept.key} className={`deptHead ${dept.key} sep-${dept.key} ${activeDeptKey === dept.key ? "activeDeptGuide" : ""}`}>
                   <span>{dept.short}</span>
@@ -4249,24 +4483,27 @@ function PMAssignmentTable({
                 <tr key={person.id} className={person.canCancerRehab ? "cancerRehabRow" : ""}>
                   <th className={`stickyName nameCol ${activeStaffId === person.id ? "activeNameGuide" : ""}`}>
                     <div className="nameCell">
-                      <strong>{pmPersonName(person)}</strong>
+                      <strong>{renderNameCell(person)}</strong>
                     </div>
                   </th>
-                  <td className={`stickyTotal totalCol totalNumber ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>{pmCountTotal(person)}</td>
+                  <td className={`totalCol stickyTotal totalNumber ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>{pmCountTotal(person)}</td>
 
                   {PM_DEPARTMENTS.map((dept) => {
                     const disabled = dept.key === "cancer" ? !person.canCancerRehab : false;
                     const outpatientDetail = pmOutpatientDetail(person);
-                    const value = dept.key === "outpatient" ? pmOutpatientTotal(person) : Number(person.counts?.[dept.key] || 0);
+                    const stoppedDetail = pmStoppedDetail(person);
+                    const stoppedTotal = pmStoppedTotal(person);
+                    const value = dept.key === "outpatient" ? pmOutpatientTotal(person) : dept.key === "stopped" ? stoppedTotal : Number(person.counts?.[dept.key] || 0);
                     const changed = isChangedToday(person.id, dept.key);
                     const cellKey = `${person.id}:${dept.key}`;
                     const isActive = activeCell === cellKey;
                     const hasStudent = dept.key === "outpatient" && outpatientDetail.student > 0;
+                    const stoppedSource = dept.key !== "stopped" && Number(stoppedDetail[dept.key] || 0) > 0 && !changed;
 
                     return (
                       <td
                         key={dept.key}
-                        className={`numberCell dept-${dept.key} sep-${dept.key} ${changed ? "changed" : ""} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === dept.key ? "tColGuide" : ""} ${isActive ? "tActiveCell" : ""}`}
+                        className={`numberCell dept-${dept.key} sep-${dept.key} ${changed ? "changed" : ""} ${stoppedSource ? "stoppedSource" : ""} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === dept.key ? "tColGuide" : ""} ${isActive ? "tActiveCell" : ""}`}
                         onClick={() => {
                           if (!disabled) setActiveCell(isActive ? null : cellKey);
                         }}
@@ -4288,6 +4525,20 @@ function PMAssignmentTable({
                               <button type="button" className="inlineBtn plus" onClick={() => quickAdjustOutpatient(person.id, "student", 1)}>＋</button>
                             </div>
                           </div>
+                        ) : isActive && dept.key === "stopped" ? (
+                          <div className="plainNumberLine">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={value}
+                              readOnly
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveCell(cellKey);
+                              }}
+                            />
+                          </div>
                         ) : isActive && !disabled ? (
                           <div className="inlineAdjust" onClick={(e) => e.stopPropagation()}>
                             <button type="button" className="inlineBtn minus" onClick={() => quickAdjust(person.id, dept.key, -1)}>−</button>
@@ -4302,11 +4553,17 @@ function PMAssignmentTable({
                               pattern="[0-9]*"
                               value={value}
                               disabled={disabled}
-                              onClick={(e) => e.stopPropagation()}
+                              readOnly={dept.key === "stopped"}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!disabled) setActiveCell(cellKey);
+                              }}
                               onFocus={() => {
                                 if (!disabled) setActiveCell(cellKey);
                               }}
-                              onChange={(e) => updateCount(person.id, dept.key, e.target.value.replace(/[^0-9]/g, ""))}
+                              onChange={(e) => {
+                                if (dept.key !== "stopped") updateCount(person.id, dept.key, e.target.value.replace(/[^0-9]/g, ""));
+                              }}
                             />
                             {hasStudent && <span className="studentMark">夕</span>}
                           </div>
@@ -4316,7 +4573,7 @@ function PMAssignmentTable({
                   })}
 
                   <td
-                  className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === "dialysis" ? "tColGuide" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
+                  className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
                     onClick={() => setActiveCell(activeCell === `${person.id}:dialysis` ? null : `${person.id}:dialysis`)}
                   >
                     {activeCell === `${person.id}:dialysis` ? (
@@ -4375,6 +4632,39 @@ function PMAssignmentTable({
           </tbody>
         </table>
       </div>
+
+      {activeStoppedPerson && (
+        <div className="stoppedAdjustOverlay" onClick={() => setActiveCell(null)}>
+          <div className="stoppedAdjust" onClick={(e) => e.stopPropagation()}>
+            {PM_STOPPED_DEPARTMENTS.map((targetDept) => {
+              const targetCount = Number(activeStoppedPerson.counts?.[targetDept.key] || 0);
+              const stoppedCount = Number(activeStoppedDetail[targetDept.key] || 0);
+              const noPatient = targetCount <= 0;
+              const canMinusStopped = stoppedCount > 0;
+              const canPlusStopped = !noPatient && stoppedCount < targetCount;
+
+              return (
+                <div className={`stoppedAdjustRow ${noPatient ? "disabled" : ""}`} key={targetDept.key}>
+                  <span>{targetDept.short}</span>
+                  <button
+                    type="button"
+                    className="inlineBtn minus"
+                    disabled={!canMinusStopped}
+                    onClick={() => quickAdjustStopped(activeStoppedPerson.id, targetDept.key, -1)}
+                  >−</button>
+                  <b>{stoppedCount}</b>
+                  <button
+                    type="button"
+                    className="inlineBtn plus"
+                    disabled={!canPlusStopped}
+                    onClick={() => quickAdjustStopped(activeStoppedPerson.id, targetDept.key, 1)}
+                  >＋</button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {staffList.length === 0 && <p className="emptyText">設定から担当者を追加してください。</p>}
 
