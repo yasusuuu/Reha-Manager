@@ -405,6 +405,7 @@ function normalizeStaffMember(member) {
     ...member,
     lastName,
     firstName,
+    displayNameMode: member.displayNameMode === "first" ? "first" : "last",
     name: `${lastName || ""} ${firstName || ""}`.trim() || member.name || "",
   };
 }
@@ -738,6 +739,7 @@ useEffect(() => {
             active: data.active !== false,
             visible: data.visible !== false,
             canCancerRehab: Boolean(data.canCancerRehab),
+            displayNameMode: data.displayNameMode === "first" ? "first" : "last",
             order: Number(data.order || 999),
             staffNumber: data.staffNumber || "",
             uid: data.uid || "",
@@ -916,6 +918,18 @@ useEffect(() => {
   }, []);
 
   const activeStaff = useMemo(() => sortStaff(staff), [staff]);
+  const saturdayEligibleStaff = useMemo(
+    () => activeStaff.filter((person) => Boolean(person.uid)),
+    [activeStaff]
+  );
+  const saturdayEligibleIdSet = useMemo(
+    () => new Set(saturdayEligibleStaff.map((person) => person.id)),
+    [saturdayEligibleStaff]
+  );
+
+  function pruneSaturdayStaffIds(staffIds) {
+    return Array.from(new Set(staffIds || [])).filter((id) => saturdayEligibleIdSet.has(id));
+  }
 const loginUser = loginStaff
   ? {
       id: loginStaff.id,
@@ -985,6 +999,19 @@ const loginUser = loginStaff
     return scopedRecordsForDate(date).filter((r) => isLeaveLike(r));
   }
 
+  useEffect(() => {
+    setSaturdayForm((prev) => {
+      const nextStaffIds = pruneSaturdayStaffIds(prev.staffIds);
+      if (arraysEqualByValue(prev.staffIds || [], nextStaffIds)) return prev;
+      return { ...prev, staffIds: nextStaffIds };
+    });
+
+    setSwapCandidateStaffIds((prev) => {
+      const nextStaffIds = pruneSaturdayStaffIds(prev);
+      return arraysEqualByValue(prev || [], nextStaffIds) ? prev : nextStaffIds;
+    });
+  }, [saturdayEligibleIdSet]);
+
   function saturdayNthForDate(date) {
     const d = new Date(`${date}T00:00:00`);
     if (d.getDay() !== 6) return null;
@@ -1013,7 +1040,7 @@ const loginUser = loginStaff
       return {
         date,
         groupKey,
-        staffIds: override.staffIds || [],
+        staffIds: pruneSaturdayStaffIds(override.staffIds),
         note: override.note || "",
         isOverride: true,
       };
@@ -1022,7 +1049,7 @@ const loginUser = loginStaff
     return {
       date,
       groupKey,
-      staffIds: saturdayGroups[groupKey] || [],
+      staffIds: pruneSaturdayStaffIds(saturdayGroups[groupKey]),
       note: "",
       isOverride: false,
     };
@@ -1031,7 +1058,9 @@ const loginUser = loginStaff
   function saturdayStaffForDate(date) {
     const schedule = saturdayScheduleForDate(date);
     if (!schedule) return [];
-    const people = (schedule.staffIds || []).map((id) => staff.find((s) => s.id === id)).filter(Boolean);
+    const people = pruneSaturdayStaffIds(schedule.staffIds)
+      .map((id) => staff.find((s) => s.id === id && Boolean(s.uid)))
+      .filter(Boolean);
     if (displayScope === "mine") return people.filter((person) => person.id === loginId);
     return people;
   }
@@ -1039,7 +1068,9 @@ const loginUser = loginStaff
   function saturdayBaseStaffForDate(date) {
     const groupKey = saturdayBaseGroupKeyForDate(date);
     if (!groupKey) return [];
-    const people = (saturdayGroups[groupKey] || []).map((id) => staff.find((s) => s.id === id)).filter(Boolean);
+    const people = pruneSaturdayStaffIds(saturdayGroups[groupKey])
+      .map((id) => staff.find((s) => s.id === id && Boolean(s.uid)))
+      .filter(Boolean);
     if (displayScope === "mine") return people.filter((person) => person.id === loginId);
     return people;
   }
@@ -1097,8 +1128,9 @@ const loginUser = loginStaff
   function canShowSaturdayForDate(date) {
     const schedule = saturdayScheduleForDate(date);
     if (!schedule) return false;
-    if (displayScope === "mine") return (schedule.staffIds || []).includes(loginId);
-    return (schedule.staffIds || []).length > 0;
+    const staffIds = pruneSaturdayStaffIds(schedule.staffIds);
+    if (displayScope === "mine") return staffIds.includes(loginId);
+    return staffIds.length > 0;
   }
 
   function countByJob(date) {
@@ -1395,28 +1427,32 @@ async function deleteAnnouncement(id) {
     setSwapCandidateStaffIds([]);
     setSaturdayForm({
       date,
-      staffIds: existing?.staffIds || [],
+      staffIds: pruneSaturdayStaffIds(existing?.staffIds),
       note: existing?.note || "",
     });
     setShowSaturdayEdit(true);
   }
 
   function toggleSaturdayStaff(staffId) {
+    if (!saturdayEligibleIdSet.has(staffId)) return;
     setSaturdayForm((prev) => {
-      const exists = prev.staffIds.includes(staffId);
+      const currentIds = pruneSaturdayStaffIds(prev.staffIds);
+      const exists = currentIds.includes(staffId);
       return {
         ...prev,
-        staffIds: exists ? prev.staffIds.filter((id) => id !== staffId) : [...prev.staffIds, staffId],
+        staffIds: exists ? currentIds.filter((id) => id !== staffId) : [...currentIds, staffId],
       };
     });
   }
 
   function setSaturdayStaffAttendance(staffId, shouldAttend) {
+    if (!saturdayEligibleIdSet.has(staffId)) return;
     setSaturdayForm((prev) => {
-      const exists = prev.staffIds.includes(staffId);
-      if (shouldAttend && !exists) return { ...prev, staffIds: [...prev.staffIds, staffId] };
-      if (!shouldAttend && exists) return { ...prev, staffIds: prev.staffIds.filter((id) => id !== staffId) };
-      return prev;
+      const currentIds = pruneSaturdayStaffIds(prev.staffIds);
+      const exists = currentIds.includes(staffId);
+      if (shouldAttend && !exists) return { ...prev, staffIds: [...currentIds, staffId] };
+      if (!shouldAttend && exists) return { ...prev, staffIds: currentIds.filter((id) => id !== staffId) };
+      return { ...prev, staffIds: currentIds };
     });
   }
 
@@ -1552,9 +1588,19 @@ async function deleteAnnouncement(id) {
 async function saveSaturdaySettings(nextGroups, nextOverrides, nextRotation) {
   if (!isAdmin) return;
 
+  const cleanGroups = SATURDAY_GROUP_KEYS.reduce((acc, groupKey) => {
+    acc[groupKey] = pruneSaturdayStaffIds(nextGroups?.[groupKey]);
+    return acc;
+  }, {});
+
+  const cleanOverrides = (nextOverrides || []).map((item) => ({
+    ...item,
+    staffIds: pruneSaturdayStaffIds(item.staffIds),
+  }));
+
   await setDoc(doc(db, "settings", "saturdayDuty"), {
-    groups: nextGroups,
-    overrides: nextOverrides,
+    groups: cleanGroups,
+    overrides: cleanOverrides,
     rotation: nextRotation,
     updatedAt: Date.now(),
     updatedBy: loginUser?.id || "",
@@ -1564,7 +1610,8 @@ async function saveSaturdaySettings(nextGroups, nextOverrides, nextRotation) {
 
 function toggleSaturdayGroupStaff(groupKey, staffId) {
   setSaturdayGroups((prev) => {
-    const current = prev[groupKey] || [];
+    if (!saturdayEligibleIdSet.has(staffId)) return prev;
+    const current = pruneSaturdayStaffIds(prev[groupKey]);
     const exists = current.includes(staffId);
     const nextGroups = {
       ...prev,
@@ -1589,7 +1636,7 @@ setSaturdayOverrides((prev) => {
       const groupKey = saturdayBaseGroupKeyForDate(date);
       return {
         ...prev,
-        staffIds: groupKey ? saturdayGroups[groupKey] || [] : [],
+        staffIds: groupKey ? pruneSaturdayStaffIds(saturdayGroups[groupKey]) : [],
         note: "",
       };
     });
@@ -1605,7 +1652,7 @@ setSaturdayOverrides((prev) => {
 
     const weekday = new Date(`${saturdayForm.date}T00:00:00`).getDay();
     if (weekday !== 6 && !confirm("選択日が土曜日ではありません。この日で登録しますか？")) return;
-if (saturdayForm.staffIds.length === 0 && !swapCandidateDate) {
+if (pruneSaturdayStaffIds(saturdayForm.staffIds).length === 0 && !swapCandidateDate) {
   alert("土曜出勤者を1名以上選択してください。");
   return;
 }
@@ -1618,7 +1665,7 @@ if (saturdayForm.staffIds.length === 0 && !swapCandidateDate) {
 
       let nextList = upsert(prev, {
         date: saturdayForm.date,
-        staffIds: saturdayForm.staffIds,
+        staffIds: pruneSaturdayStaffIds(saturdayForm.staffIds),
         note: (saturdayForm.note || "").trim(),
         updatedAt: Date.now(),
       });
@@ -1628,7 +1675,7 @@ if (saturdayForm.staffIds.length === 0 && !swapCandidateDate) {
         if (!arraysEqualByValue(originalCandidateIds, swapCandidateStaffIds)) {
           nextList = upsert(nextList, {
             date: swapCandidateDate,
-            staffIds: swapCandidateStaffIds,
+            staffIds: pruneSaturdayStaffIds(swapCandidateStaffIds),
             note: saturdayScheduleForDate(swapCandidateDate)?.note || "",
             updatedAt: Date.now(),
           });
@@ -1808,22 +1855,14 @@ if (!loginStaff) {
       />
 
       <section className={`card leaveEntryCard ${showLeaveForm ? "open" : ""}`}>
-        <div className="cardTitleRow leaveEntryHeader">
-          <button
-            className="leaveEntryTitleButton"
-            type="button"
-            onClick={() => setShowLeaveForm((prev) => !prev)}
-            aria-expanded={showLeaveForm}
-          >
-            <span>
-              <span className="leaveEntryTitle">休暇・勤務登録</span>
-              <span className="leaveEntryHint">
-                {showLeaveForm ? "入力欄を閉じる" : "タップして登録画面を開く"}
-              </span>
-            </span>
-            <span className="leaveEntryStatus">{showLeaveForm ? "閉じる" : "開く"}</span>
-          </button>
-        </div>
+        <button
+          className="leaveEntryTitleButton"
+          type="button"
+          onClick={() => setShowLeaveForm((prev) => !prev)}
+          aria-expanded={showLeaveForm}
+        >
+          ＋ 休暇・勤務登録
+        </button>
 
         {showLeaveForm && (
           <>
@@ -2349,7 +2388,7 @@ if (!loginStaff) {
                   <div className="groupBox" key={groupKey}>
                     <h4>{groupKey}</h4>
                     <div className="staffCheckGrid compactChecks">
-                      {activeStaff.map((s) => (
+                      {saturdayEligibleStaff.map((s) => (
                         <label key={`${groupKey}-${s.id}`} className="staffCheckItem">
                           <input
                             type="checkbox"
@@ -2395,10 +2434,10 @@ if (!loginStaff) {
                         <div>
                           <span className="saturdaySwapLabel">現在の出勤者</span>
                           <div className="saturdayPuzzleList">
-                            {saturdayForm.staffIds.length === 0 ? (
+                            {pruneSaturdayStaffIds(saturdayForm.staffIds).length === 0 ? (
                               <p className="saturdayPuzzleEmpty">出勤者が未設定です</p>
                             ) : (
-                              saturdayForm.staffIds.map((staffId) => {
+                              pruneSaturdayStaffIds(saturdayForm.staffIds).map((staffId) => {
                                 const person = staff.find((s) => s.id === staffId);
                                 if (!person) return null;
                                 return (
@@ -2425,8 +2464,8 @@ if (!loginStaff) {
                         <div className="saturdayCandidateList">
                           {saturdayCandidateDates(saturdayForm.date).filter((date) => date !== saturdayForm.date).map((date) => {
                             const schedule = saturdayScheduleForDate(date);
-                            const people = (date === swapCandidateDate ? swapCandidateStaffIds : schedule?.staffIds || [])
-                              .map((staffId) => staff.find((s) => s.id === staffId))
+                            const people = pruneSaturdayStaffIds(date === swapCandidateDate ? swapCandidateStaffIds : schedule?.staffIds || [])
+                              .map((staffId) => staff.find((s) => s.id === staffId && Boolean(s.uid)))
                               .filter(Boolean);
                             return (
                               <button
@@ -2475,10 +2514,10 @@ if (!loginStaff) {
       <span>移動</span>
     </button>
 
-    {swapCandidateStaffIds.length === 0 ? (
+    {pruneSaturdayStaffIds(swapCandidateStaffIds).length === 0 ? (
       <p className="saturdayPuzzleEmpty">出勤者が未設定です</p>
     ) : (
-      swapCandidateStaffIds.map((staffId) => {
+      pruneSaturdayStaffIds(swapCandidateStaffIds).map((staffId) => {
         const person = staff.find((s) => s.id === staffId);
         if (!person) return null;
         return (
@@ -2722,6 +2761,15 @@ function pmPersonName(staff) {
   return `${staff.lastName || ""} ${staff.firstName || ""}`.trim() || "未設定";
 }
 
+function pmTableDisplayName(staff) {
+  const lastName = String(staff?.lastName || "").trim();
+  const firstName = String(staff?.firstName || "").trim();
+  if (staff?.displayNameMode === "first") {
+    return firstName || lastName || pmPersonName(staff);
+  }
+  return lastName || firstName || pmPersonName(staff);
+}
+
 function pmFirstChar(value) {
   return Array.from(String(value || "").trim())[0] || "";
 }
@@ -2801,6 +2849,7 @@ function pmNormalizeStaff(staff, index = 0) {
     role: staff.role || "staff",
     lastName: staff.lastName || "",
     firstName: staff.firstName || "",
+    displayNameMode: staff.displayNameMode === "first" ? "first" : "last",
     order: Number(staff.order || index + 1),
     counts,
     outpatientDetail,
@@ -3060,6 +3109,7 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
         staffNumber: person.staffNumber || "",
         role: person.role || existing?.role || "staff",
         canCancerRehab: person.canCancerRehab ?? existing?.canCancerRehab ?? false,
+        displayNameMode: person.displayNameMode === "first" ? "first" : (existing?.displayNameMode === "first" ? "first" : "last"),
         order: Number(person.order || existing?.order || index + 1),
       });
     });
@@ -3524,10 +3574,13 @@ function markChanged(staffId, department) {
     alert(`${fy}年度（${profession}）のデータを保存しました。`);
   }
 
-  function addStaff(e) {
+  async function addStaff(e) {
     e.preventDefault();
 
-    if (!staffForm.lastName.trim() || !staffForm.firstName.trim()) {
+    const lastName = staffForm.lastName.trim();
+    const firstName = staffForm.firstName.trim();
+
+    if (!lastName || !firstName) {
       alert("姓・名を入力してください。");
       return;
     }
@@ -3537,54 +3590,109 @@ function markChanged(staffId, department) {
       ...staff.filter((person) => person.profession === staffForm.profession).map((person) => Number(person.order || 0))
     );
 
-    setStaff((prev) => [
-      ...prev,
-      pmNormalizeStaff({
-        ...staffForm,
-        id: makeId(),
-        active: true,
-        visible: true,
-        uid: "",
-        order: maxOrder + 1,
-      }),
-    ]);
+    const staffData = {
+      lastName,
+      firstName,
+      name: `${lastName} ${firstName}`.trim(),
+      job: staffForm.profession,
+      profession: staffForm.profession,
+      role: "staff",
+      active: true,
+      visible: true,
+      uid: "",
+      order: maxOrder + 1,
+      canCancerRehab: Boolean(staffForm.canCancerRehab),
+      displayNameMode: "last",
+      createdAt: serverTimestamp(),
+    };
 
+    const temporaryId = makeId();
+    const optimisticStaff = pmNormalizeStaff({ ...staffData, id: temporaryId });
+    const previousStaff = staff;
+
+    setStaff((prev) => [...prev, optimisticStaff]);
     setStaffForm({ lastName: "", firstName: "", profession, canCancerRehab: false });
     setShowStaffForm(false);
+
+    try {
+      const staffDoc = await addDoc(collection(db, "staff"), staffData);
+      setStaff((prev) =>
+        prev.map((person) =>
+          person.id === temporaryId ? pmNormalizeStaff({ ...staffData, id: staffDoc.id }) : person
+        )
+      );
+    } catch (error) {
+      console.error("staff add failed", error);
+      setStaff(previousStaff);
+      alert("スタッフ登録の保存に失敗しました。Firestoreの権限または通信状況を確認してください。");
+    }
   }
 
-  function deleteStaff(id) {
+  async function deleteStaff(id) {
     if (!confirm("担当者を削除しますか？履歴は残ります。")) return;
+
+    const previousStaff = staff;
+    const previousMovements = movements;
+
     setStaff((prev) => prev.filter((person) => person.id !== id));
     setMovements((prev) => prev.filter((movement) => movement.staffId !== id));
+
+    try {
+      await deleteDoc(doc(db, "staff", id));
+    } catch (error) {
+      console.error("staff delete failed", error);
+      setStaff(previousStaff);
+      setMovements(previousMovements);
+      alert("スタッフ削除の保存に失敗しました。Firestoreの権限または通信状況を確認してください。");
+    }
   }
 
   function updateNote(staffId, note) {
     setStaff((prev) => prev.map((person) => (person.id === staffId ? { ...person, note } : person)));
   }
 
-function updateCancerPermission(id, canCancerRehab) {
-  if (!canCancerRehab && activeCell === `${id}:cancer`) {
-    setActiveCell(null);
+  async function updateStaffDisplayNameMode(id, displayNameMode) {
+    const nextMode = displayNameMode === "first" ? "first" : "last";
+    const previousStaff = staff;
+    setStaff((prev) =>
+      prev.map((person) =>
+        person.id === id ? pmNormalizeStaff({ ...person, displayNameMode: nextMode }) : person
+      )
+    );
+
+    try {
+      await updateDoc(doc(db, "staff", id), { displayNameMode: nextMode });
+    } catch (error) {
+      console.error("staff display name mode update failed", error);
+      setStaff(previousStaff);
+      alert("表示名設定の保存に失敗しました。Firestoreの権限または通信状況を確認してください。");
+    }
   }
 
-  setStaff((prev) =>
-    prev.map((person) =>
-      person.id === id
-        ? pmNormalizeStaff({ ...person, canCancerRehab })
-        : person
-    )
-  );
-}
-
-  const canManageStaff = loginUser?.role === "admin";
-
-  async function updateStaffVisibility(id, visible) {
-    if (!canManageStaff) {
-      alert("表示／非表示の変更は管理者のみ行えます。");
-      return;
+  async function updateCancerPermission(id, canCancerRehab) {
+    if (!canCancerRehab && activeCell === `${id}:cancer`) {
+      setActiveCell(null);
     }
 
+    const previousStaff = staff;
+    setStaff((prev) =>
+      prev.map((person) =>
+        person.id === id
+          ? pmNormalizeStaff({ ...person, canCancerRehab })
+          : person
+      )
+    );
+
+    try {
+      await updateDoc(doc(db, "staff", id), { canCancerRehab });
+    } catch (error) {
+      console.error("staff cancer permission update failed", error);
+      setStaff(previousStaff);
+      alert("がんリハ設定の保存に失敗しました。Firestoreの権限または通信状況を確認してください。");
+    }
+  }
+
+  async function updateStaffVisibility(id, visible) {
     const previousStaff = staff;
     setStaff((prev) =>
       prev.map((person) =>
@@ -3601,7 +3709,7 @@ function updateCancerPermission(id, canCancerRehab) {
     }
   }
 
-  function moveStaffOrder(id, direction) {
+  async function moveStaffOrder(id, direction) {
     const list = professionStaff;
     const index = list.findIndex((person) => person.id === id);
     const targetIndex = index + direction;
@@ -3609,14 +3717,28 @@ function updateCancerPermission(id, canCancerRehab) {
 
     const a = list[index];
     const b = list[targetIndex];
+    const aOrder = Number(a.order || index + 1);
+    const bOrder = Number(b.order || targetIndex + 1);
+    const previousStaff = staff;
 
     setStaff((prev) =>
       prev.map((person) => {
-        if (person.id === a.id) return { ...person, order: b.order };
-        if (person.id === b.id) return { ...person, order: a.order };
+        if (person.id === a.id) return { ...person, order: bOrder };
+        if (person.id === b.id) return { ...person, order: aOrder };
         return person;
       })
     );
+
+    try {
+      await Promise.all([
+        updateDoc(doc(db, "staff", a.id), { order: bOrder }),
+        updateDoc(doc(db, "staff", b.id), { order: aOrder }),
+      ]);
+    } catch (error) {
+      console.error("staff order update failed", error);
+      setStaff(previousStaff);
+      alert("表示順の保存に失敗しました。Firestoreの権限または通信状況を確認してください。");
+    }
   }
 
   function staffMovements(staffId) {
@@ -4250,52 +4372,50 @@ function updateCancerPermission(id, canCancerRehab) {
 
               <div className="orderList staffManageList compactStaffManageList">
                 {professionStaff.map((person) => (
-                  <div className={`compactStaffCard ${person.visible === false ? "staffHiddenRow" : ""}`} key={person.id}>
-                    <div className="compactStaffMain">
-                      <strong>{pmPersonName(person)} <span>{person.profession}</span></strong>
-                      <div className="staffStatusBadges compactStaffBadges">
-                        <span className={`staffLinkBadge ${person.uid ? "linked" : "unlinked"}`}>
-                          {person.uid ? "連携済" : "未連携"}
-                        </span>
-                        <span className={`staffVisibleBadge ${person.visible === false ? "hidden" : "shown"}`}>
-                          {person.visible === false ? "非表示" : "表示中"}
-                        </span>
-                        <span className="staffNumberBadge">
-                          ID {person.staffNumber || "----"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="compactStaffSwitches">
-                      <div className="compactSwitchBlock">
-                        <span>がん</span>
-                        <div className="miniCancerToggle compactToggle" aria-label={`${pmPersonName(person)} がんリハ実施権`}>
-                          <button
-                            type="button"
-                            className={person.canCancerRehab ? "active" : ""}
-                            onClick={() => updateCancerPermission(person.id, true)}
-                          >
-                            可
-                          </button>
-                          <button
-                            type="button"
-                            className={!person.canCancerRehab ? "active" : ""}
-                            onClick={() => updateCancerPermission(person.id, false)}
-                          >
-                            否
-                          </button>
-                        </div>
-                      </div>
-
+                  <div className={`compactStaffCard oneLineStaffCard ${person.visible === false ? "staffHiddenRow" : ""}`} key={person.id}>
+                    <div className="oneLineStaffName displayNameChoiceGroup" aria-label={`${pmPersonName(person)}の管理表表示名`}>
                       <button
-                        className={person.visible === false ? "visibilityButton show compactVisibilityButton" : "visibilityButton hide compactVisibilityButton"}
+                        className={`displayNameChoice ${person.displayNameMode === "first" ? "" : "active"}`}
                         type="button"
-                        onClick={() => updateStaffVisibility(person.id, person.visible === false)}
+                        onClick={() => updateStaffDisplayNameMode(person.id, "last")}
+                        title="管理表に名字を表示"
                       >
-                        {person.visible === false ? "表示" : "非表示"}
+                        {person.lastName || splitDisplayName(person.name).lastName || "姓"}
                       </button>
-                      <button className="deleteButton compactDeleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
+                      <button
+                        className={`displayNameChoice ${person.displayNameMode === "first" ? "active" : ""}`}
+                        type="button"
+                        onClick={() => updateStaffDisplayNameMode(person.id, "first")}
+                        title="管理表に名前を表示"
+                      >
+                        {person.firstName || splitDisplayName(person.name).firstName || "名"}
+                      </button>
+                      <span className="staffProfessionBadge">{person.profession}</span>
                     </div>
+
+                    <span className={`staffLinkBadge ${person.uid ? "linked" : "unlinked"}`}>
+                      {person.uid ? "連携済" : "未連携"}
+                    </span>
+
+                    <button
+                      className={`staffVisibleBadge badgeAction ${person.visible === false ? "hidden" : "shown"}`}
+                      type="button"
+                      onClick={() => updateStaffVisibility(person.id, person.visible === false)}
+                      aria-label={`${pmPersonName(person)}の管理表表示を切り替え`}
+                    >
+                      {person.visible === false ? "非表示中" : "表示中"}
+                    </button>
+
+                    <button
+                      className={`staffCancerBadge badgeAction ${person.canCancerRehab ? "allowed" : "denied"}`}
+                      type="button"
+                      onClick={() => updateCancerPermission(person.id, !person.canCancerRehab)}
+                      aria-label={`${pmPersonName(person)}のがんリハ可否を切り替え`}
+                    >
+                      {person.canCancerRehab ? "がん可" : "がん不可"}
+                    </button>
+
+                    <button className="deleteButton compactDeleteButton oneLineDeleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
                   </div>
                 ))}
               </div>
@@ -4313,36 +4433,25 @@ function updateCancerPermission(id, canCancerRehab) {
                         <span className={`staffLinkBadge ${person.uid ? "linked" : "unlinked"}`}>
                           {person.uid ? "連携済" : "未連携"}
                         </span>
-                        <span className={`staffVisibleBadge ${person.visible === false ? "hidden" : "shown"}`}>
-                          {person.visible === false ? "非表示" : "表示中"}
-                        </span>
+                        <button
+                          className={`staffVisibleBadge badgeAction ${person.visible === false ? "hidden" : "shown"}`}
+                          type="button"
+                          onClick={() => updateStaffVisibility(person.id, person.visible === false)}
+                        >
+                          {person.visible === false ? "非表示中" : "表示中"}
+                        </button>
+                        <button
+                          className={`staffCancerBadge badgeAction ${person.canCancerRehab ? "allowed" : "denied"}`}
+                          type="button"
+                          onClick={() => updateCancerPermission(person.id, !person.canCancerRehab)}
+                        >
+                          {person.canCancerRehab ? "がん可" : "がん不可"}
+                        </button>
                       </div>
                     </div>
-<div className="miniCancerToggle" aria-label={`${pmPersonName(person)} がんリハ実施権`}>
-  <button
-    type="button"
-    className={person.canCancerRehab ? "active" : ""}
-    onClick={() => updateCancerPermission(person.id, true)}
-  >
-    可
-  </button>
-  <button
-    type="button"
-    className={!person.canCancerRehab ? "active" : ""}
-    onClick={() => updateCancerPermission(person.id, false)}
-  >
-    否
-  </button>
-</div>                    <div>
+                    <div>
                       <button type="button" onClick={() => moveStaffOrder(person.id, -1)}>↑</button>
                       <button type="button" onClick={() => moveStaffOrder(person.id, 1)}>↓</button>
-                      <button
-                        className={person.visible === false ? "visibilityButton show" : "visibilityButton hide"}
-                        type="button"
-                        onClick={() => updateStaffVisibility(person.id, person.visible === false)}
-                      >
-                        {person.visible === false ? "表示" : "非表示"}
-                      </button>
                       <button className="deleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
                     </div>
                   </div>
@@ -4457,15 +4566,12 @@ function PMAssignmentTable({
   }, [staffList]);
 
   function renderNameCell(person) {
-    const compact = pmCompactNameInfo(person, compactNameMeta.lastNameCounts, compactNameMeta.lastInitialCounts);
+    const displayName = pmTableDisplayName(person);
     return (
       <>
-        <span className="fullNameDesktop">{pmPersonName(person)}</span>
+        <span className="fullNameDesktop">{displayName}</span>
         <span className="compactNameMobile">
-          <span className="compactLastName">{compact.lastName}</span>
-          {compact.small && (
-            <span className={`compactFirstChar ${compact.fullFirst ? "fullFirst" : ""}`}>{compact.small}</span>
-          )}
+          <span className="compactLastName">{displayName}</span>
         </span>
       </>
     );

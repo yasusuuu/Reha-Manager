@@ -3517,6 +3517,7 @@ th {
 .leaveEntryCard {
   border-color: #d8e4ef;
   background: #fbfdff;
+  padding: 10px 12px;
 }
 
 .leaveEntryCard.open {
@@ -3524,51 +3525,43 @@ th {
 }
 
 .leaveEntryHeader {
-  display: block;
+  display: none;
 }
 
 .leaveEntryTitleButton {
   width: 100%;
-  border: 1px solid #d7e2ee;
+  min-height: 44px;
+  border: 0;
   border-radius: 12px;
-  background: #f7fafc;
-  color: #0f172a;
-  padding: 14px 16px;
+  background: #0f766e;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  text-align: left;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
   cursor: pointer;
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1.2;
+  box-shadow: 0 6px 14px rgba(15, 118, 110, 0.16);
 }
 
-.leaveEntryTitle {
-  display: block;
-  font-size: 18px;
-  font-weight: 900;
+.leaveEntryTitleButton:active {
+  transform: scale(0.99);
 }
 
-.leaveEntryHint {
-  display: block;
-  margin-top: 4px;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
-}
-
+.leaveEntryTitle,
+.leaveEntryHint,
 .leaveEntryStatus {
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: #0f766e;
-  color: #fff;
-  padding: 7px 12px;
-  font-size: 13px;
-  font-weight: 900;
+  display: none;
 }
 
 .leaveEntryActions {
   justify-content: flex-end;
-  margin: 12px 0 14px;
+  margin: 10px 0 12px;
 }
 
 .appTitleTabs,
@@ -8100,149 +8093,524 @@ th {
 }
 
 /* =========================
-   Staff management personal switch final
-   スタッフ管理：ID非表示・がんリハ/管理表表示をスイッチ化
+   Staff management compact v3
+   患者人数管理設定：スタッフ管理をスマホ向けに圧縮
 ========================= */
-.patientModule .staffNumberBadge {
-  display: none !important;
-}
-
-.patientModule .pmSwitch {
+.patientModule .staffFormToggle {
+  width: 100%;
   display: grid;
-  grid-template-columns: minmax(72px, auto) auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  gap: 10px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  background: #f8fbff;
   color: #0f172a;
+  text-align: left;
   box-shadow: none;
 }
 
-.patientModule .pmSwitchLabel {
-  color: #334155;
-  font-size: 12px;
-  font-weight: 950;
-  white-space: nowrap;
-  text-align: right;
-}
-
-.patientModule .pmSwitchTrack {
-  position: relative;
+.patientModule .staffFormToggle span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 70px;
-  height: 32px;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  background: #cbd5e1;
-  color: #334155;
-  font-size: 11px;
-  font-weight: 950;
-  line-height: 1;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
-}
-
-.patientModule .pmSwitchKnob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: #ffffff;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
-  transition: transform 0.16s ease;
-}
-
-.patientModule .pmSwitchText {
-  position: relative;
-  z-index: 1;
-  padding-left: 20px;
-  color: inherit;
-}
-
-.patientModule .pmSwitch.on .pmSwitchTrack {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
   background: #0f766e;
-  border-color: #0f766e;
   color: #ffffff;
+  font-size: 18px;
+  font-weight: 950;
 }
 
-.patientModule .pmSwitch.on .pmSwitchKnob {
-  transform: translateX(38px);
+.patientModule .staffFormToggle strong {
+  min-width: 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
 }
 
-.patientModule .pmSwitch.on .pmSwitchText {
-  padding-left: 0;
-  padding-right: 20px;
+.patientModule .staffFormToggle small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-.patientModule .staffSwitchGrid {
+.patientModule .compactStaffRegisterForm {
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.patientModule .compactStaffManageList {
   display: grid;
-  gap: 7px;
-  align-content: center;
-  justify-items: end;
+  gap: 8px;
+  margin-top: 10px;
 }
 
-.patientModule .staffCardActions {
-  display: inline-flex;
+.patientModule .compactStaffCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 62px;
+  padding: 9px 10px;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.patientModule .compactStaffCard.staffHiddenRow {
+  background: #f8fafc;
+  opacity: 0.86;
+}
+
+.patientModule .compactStaffMain {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.patientModule .compactStaffMain strong {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patientModule .compactStaffMain strong span {
+  flex: 0 0 auto;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.patientModule .compactStaffBadges {
+  gap: 3px;
+}
+
+.patientModule .compactStaffSwitches {
+  display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: nowrap;
 }
 
-.patientModule .staffManageItem {
-  grid-template-columns: minmax(150px, 1fr) minmax(150px, auto) auto !important;
+.patientModule .compactSwitchBlock {
+  display: grid;
+  grid-template-columns: auto auto;
   align-items: center;
+  gap: 4px;
 }
 
-.patientModule .orderSwitchGrid {
-  min-width: 150px;
+.patientModule .compactSwitchBlock > span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
 }
 
-.patientModule .staffHiddenRow .pmSwitchLabel,
-.patientModule .staffHiddenRow .staffOrderName strong {
-  color: #64748b !important;
+.patientModule .compactToggle {
+  display: inline-grid !important;
+  grid-template-columns: repeat(2, 26px);
+  gap: 2px;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 2px !important;
+  border: 1px solid #d8e2ee;
+  border-radius: 9px;
+  background: #eef2f7;
 }
 
-.patientModule .cancerPermissionToggle {
-  display: none !important;
+.patientModule .compactToggle button {
+  min-width: 0 !important;
+  width: 26px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 !important;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 950;
 }
 
-@media (max-width: 900px) {
-  .patientModule .staffManageItem,
-  .patientModule .orderItem {
-    grid-template-columns: minmax(0, 1fr) minmax(145px, auto) auto !important;
+.patientModule .compactVisibilityButton,
+.patientModule .compactDeleteButton {
+  min-width: 42px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px !important;
+  border-radius: 9px !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+.patientModule .compactDeleteButton {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+.patientModule .compactStaffCard .staffLinkBadge,
+.patientModule .compactStaffCard .staffVisibleBadge,
+.patientModule .compactStaffCard .staffNumberBadge {
+  min-height: 18px;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .patientModule .settingsLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .patientModule .settingsMenuList button {
+    min-height: 46px;
+  }
+
+  .patientModule .settingsContentPanel {
+    padding: 10px;
   }
 }
 
 @media (max-width: 560px) {
-  .patientModule .staffManageItem,
-  .patientModule .orderItem {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 8px !important;
+  .patientModule .staffFormToggle {
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 8px;
+    padding: 9px 10px;
   }
 
-  .patientModule .staffSwitchGrid,
-  .patientModule .orderSwitchGrid {
-    width: 100%;
-    justify-items: stretch;
+  .patientModule .staffFormToggle small {
+    grid-column: 2;
+    white-space: normal;
   }
 
-  .patientModule .pmSwitch {
-    width: 100%;
-    grid-template-columns: minmax(78px, 1fr) auto;
+  .patientModule .compactStaffCard {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    min-height: 0;
+    padding: 8px 9px;
   }
 
-  .patientModule .pmSwitchLabel {
-    text-align: left;
+  .patientModule .compactStaffMain strong {
+    font-size: 14px;
   }
 
-  .patientModule .staffCardActions {
-    width: 100%;
+  .patientModule .compactStaffSwitches {
     justify-content: flex-end;
+    gap: 5px;
+  }
+
+  .patientModule .compactSwitchBlock > span {
+    font-size: 10px;
+  }
+
+  .patientModule .compactToggle {
+    grid-template-columns: repeat(2, 24px);
+  }
+
+  .patientModule .compactToggle button {
+    width: 24px !important;
+    height: 23px !important;
+    min-height: 23px !important;
+    font-size: 10px;
+  }
+
+  .patientModule .compactVisibilityButton,
+  .patientModule .compactDeleteButton {
+    min-width: 40px;
+    height: 26px;
+    min-height: 26px;
+    padding: 0 7px !important;
+  }
+}
+
+/* =========================
+   Staff badge one-line final
+   スタッフ管理：1行表示、ID非表示、バッジタップで切替
+========================= */
+.patientModule .oneLineStaffCard {
+  display: grid !important;
+  grid-template-columns: minmax(92px, 1fr) auto auto auto auto !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-height: 40px !important;
+  padding: 7px 8px !important;
+  border-radius: 12px !important;
+}
+
+.patientModule .oneLineStaffName {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  color: #0f172a !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.patientModule .oneLineStaffName span {
+  flex: 0 0 auto !important;
+  color: #475569 !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+}
+
+.patientModule .badgeAction {
+  border-radius: 999px !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+.patientModule .badgeAction:active {
+  transform: translateY(1px);
+}
+
+.patientModule .staffCancerBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.patientModule .staffCancerBadge.allowed {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.patientModule .staffCancerBadge.denied {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.patientModule .oneLineStaffCard .staffLinkBadge,
+.patientModule .oneLineStaffCard .staffVisibleBadge,
+.patientModule .oneLineStaffCard .staffCancerBadge {
+  min-height: 20px !important;
+  padding: 2px 7px !important;
+  font-size: 10.5px !important;
+}
+
+.patientModule .oneLineDeleteButton {
+  min-width: 38px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 7px !important;
+  border-radius: 8px !important;
+  font-size: 10.5px !important;
+}
+
+.patientModule .staffNumberBadge {
+  display: none !important;
+}
+
+.patientModule .orderItem .badgeAction,
+.patientModule .orderItem .staffCancerBadge {
+  border-radius: 999px !important;
+  min-height: 20px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+@media (max-width: 560px) {
+  .patientModule .oneLineStaffCard {
+    grid-template-columns: minmax(76px, 1fr) auto auto auto auto !important;
+    gap: 3px !important;
+    min-height: 36px !important;
+    padding: 6px 6px !important;
+  }
+
+  .patientModule .oneLineStaffName {
+    font-size: 12.5px !important;
+  }
+
+  .patientModule .oneLineStaffName span {
+    font-size: 10px !important;
+  }
+
+  .patientModule .oneLineStaffCard .staffLinkBadge,
+  .patientModule .oneLineStaffCard .staffVisibleBadge,
+  .patientModule .oneLineStaffCard .staffCancerBadge {
+    min-height: 18px !important;
+    padding: 1px 5px !important;
+    font-size: 9.5px !important;
+  }
+
+  .patientModule .oneLineDeleteButton {
+    min-width: 32px !important;
+    height: 22px !important;
+    min-height: 22px !important;
+    padding: 0 5px !important;
+    font-size: 9.5px !important;
+  }
+}
+
+/* =========================
+   Staff display name mode
+   スタッフ管理：名字／名前をタップして管理表表示名を選択
+========================= */
+.patientModule .displayNameChoiceGroup {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+}
+
+.patientModule .displayNameChoice {
+  min-width: 0 !important;
+  max-width: 72px !important;
+  height: 24px !important;
+  padding: 2px 7px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  -webkit-text-fill-color: currentColor !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+.patientModule .displayNameChoice.active {
+  background: #0f766e !important;
+  border-color: #0f766e !important;
+  color: #ffffff !important;
+}
+
+.patientModule .staffProfessionBadge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 24px !important;
+  min-width: 28px !important;
+  padding: 2px 6px !important;
+  border-radius: 999px !important;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+@media (max-width: 560px) {
+  .patientModule .displayNameChoice {
+    max-width: 54px !important;
+    height: 22px !important;
+    padding: 2px 5px !important;
+    font-size: 11px !important;
+  }
+
+  .patientModule .staffProfessionBadge {
+    height: 22px !important;
+    min-width: 26px !important;
+    padding: 2px 5px !important;
+    font-size: 10px !important;
+  }
+}
+
+/* =========================
+   Leave form select visibility fix
+   休暇・勤務登録：iPhone/Safariで「種別」「取得方法」が白くなる問題を修正
+========================= */
+.leaveEntryCard,
+.leaveEntryCard .formGrid,
+.leaveEntryCard .formGrid label,
+.leaveEntryCard .formGrid label span,
+.leaveEntryCard .checkRow,
+.leaveEntryCard .checkRow span,
+.leaveEntryCard .previewBox,
+.leaveEntryCard .notice {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+.leaveEntryCard .formGrid input,
+.leaveEntryCard .formGrid select,
+.leaveEntryCard .formGrid textarea,
+.card .formGrid input,
+.card .formGrid select,
+.card .formGrid textarea,
+.modalBackdrop .formGrid input,
+.modalBackdrop .formGrid select,
+.modalBackdrop .formGrid textarea {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  opacity: 1 !important;
+  border-color: #b8c7dc !important;
+  text-shadow: none !important;
+}
+
+.leaveEntryCard .formGrid select option,
+.card .formGrid select option,
+.modalBackdrop .formGrid select option {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+.leaveEntryCard .formGrid input::placeholder,
+.leaveEntryCard .formGrid textarea::placeholder,
+.card .formGrid input::placeholder,
+.card .formGrid textarea::placeholder,
+.modalBackdrop .formGrid input::placeholder,
+.modalBackdrop .formGrid textarea::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 760px) {
+  .leaveEntryCard .formGrid input,
+  .leaveEntryCard .formGrid select,
+  .leaveEntryCard .formGrid textarea,
+  .card .formGrid input,
+  .card .formGrid select,
+  .card .formGrid textarea,
+  .modalBackdrop .formGrid input,
+  .modalBackdrop .formGrid select,
+  .modalBackdrop .formGrid textarea {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+    opacity: 1 !important;
   }
 }
