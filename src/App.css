@@ -8614,3 +8614,113 @@ th {
     opacity: 1 !important;
   }
 }
+
+
+/* =========================
+   Leave select Android/iOS force visible final
+   種別・取得方法のselectだけ強制的に濃色表示
+========================= */
+.leaveSelectControl,
+select.leaveSelectControl,
+.leaveEntryCard select.leaveSelectControl,
+.card .formGrid select.leaveSelectControl {
+  appearance: auto !important;
+  -webkit-appearance: menulist !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.leaveSelectControl option,
+select.leaveSelectControl option {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background-color: #ffffff !important;
+}
+
+.leaveSelectControl:disabled,
+select.leaveSelectControl:disabled {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+
+/* =========================
+   Leave register select text visibility final fix
+   Android/iPhoneで種別・取得方法の文字が白くなる問題を強制修正
+========================= */
+.leaveEntryCard select,
+.leaveEntryCard select option,
+.leaveEntryCard .formGrid select,
+.leaveEntryCard .formGrid select option,
+select.leaveSelectControl,
+select.leaveSelectControl option {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.leaveEntryCard select:disabled,
+select.leaveSelectControl:disabled {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  background-color: #f8fafc !important;
+  opacity: 1 !important;
+}
+
+.primaryButton:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+
+/* =========================
+   Patient assignment name/title final
+   患者振り分け：氏名中央揃え・職種非表示・タイトル名変更対応
+========================= */
+.patientModule .assignmentTable th.nameCol,
+.patientModule .assignmentTable td.nameCol,
+.patientModule .assignmentTable th.stickyName,
+.patientModule .assignmentTable td.stickyName {
+  text-align: center !important;
+}
+
+.patientModule .assignmentTable .nameCell {
+  justify-content: center !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.patientModule .assignmentTable .nameCell strong,
+.patientModule .assignmentTable .nameCell .fullNameDesktop,
+.patientModule .assignmentTable .nameCell .compactNameMobile,
+.patientModule .assignmentTable .nameCell .compactLastName,
+.patientModule .assignmentTable .nameCell .compactFirstChar {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+/* 万一氏名セル内に職種表示が残っても非表示にする */
+.patientModule .assignmentTable .nameCell .job,
+.patientModule .assignmentTable .nameCell .jobBadge,
+.patientModule .assignmentTable .nameCell .profession,
+.patientModule .assignmentTable .nameCell .professionBadge,
+.patientModule .assignmentTable .nameCell .staffJob {
+  display: none !important;
+}
+
+/* 中央揃え時はガイド矢印が氏名に重ならないように少し小さく右寄せ */
+.patientModule .activeNameGuide::after,
+.patientModule .assignmentTable .activeNameGuide::after {
+  right: 1px !important;
+}

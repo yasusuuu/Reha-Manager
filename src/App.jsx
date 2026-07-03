@@ -88,6 +88,15 @@ const ANNOUNCEMENT_TYPES = {
 };
 
 const SATURDAY_GROUP_KEYS = ["A", "B", "C", "D"];
+const LEAVE_SELECT_VISIBLE_STYLE = {
+  color: "#0f172a",
+  WebkitTextFillColor: "#0f172a",
+  backgroundColor: "#ffffff",
+  opacity: 1,
+  appearance: "auto",
+  WebkitAppearance: "menulist",
+};
+
 
 function makeId(prefix = "id") {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -832,6 +841,7 @@ const [saturdayRotation, setSaturdayRotation] = useState({
   const [showAnnouncementEdit, setShowAnnouncementEdit] = useState(false);
   const [showSaturdayEdit, setShowSaturdayEdit] = useState(false);
   const [showLeaveForm, setShowLeaveForm] = useState(false);
+  const [recordSubmitting, setRecordSubmitting] = useState(false);
   const [showSaturdayGroupSettings, setShowSaturdayGroupSettings] = useState(false);
   const [swapTargetStaffId, setSwapTargetStaffId] = useState(null);
   const [swapCandidateDate, setSwapCandidateDate] = useState(null);
@@ -1157,6 +1167,19 @@ const loginUser = loginStaff
 
   function validateRecord(nextRecord) {
     const sameDay = records.filter((r) => r.staffId === nextRecord.staffId && r.date === nextRecord.date);
+    const exactDuplicate = sameDay.some((r) => {
+      if (r.type !== nextRecord.type) return false;
+      if ((r.method || "full") !== (nextRecord.method || "full")) return false;
+      if (nextRecord.method === "time") {
+        return r.start === nextRecord.start && r.end === nextRecord.end;
+      }
+      return true;
+    });
+
+    if (exactDuplicate) {
+      return "同じ内容が既に登録されています。";
+    }
+
     const nextIsFull = isFullDayRecord(nextRecord);
 
     if (sameDay.some((r) => isFullDayRecord(r))) {
@@ -1198,6 +1221,9 @@ const loginUser = loginStaff
   }
 
   async function addRecord() {
+    if (recordSubmitting) return;
+    setRecordSubmitting(true);
+
     let nextRecord = {
       ...form,
       id: makeId(),
@@ -1212,6 +1238,7 @@ if (!isAdmin || !validStaffIds.has(nextRecord.staffId)) {
 
 if (!nextRecord.staffId) {
   alert("職員を選択してください。");
+  setRecordSubmitting(false);
   return;
 }
 
@@ -1227,24 +1254,36 @@ if (!nextRecord.staffId) {
 
     if (error) {
       alert(error);
+      setRecordSubmitting(false);
       return;
     }
 
 try {
   const { id, ...recordData } = nextRecord;
-await addDoc(collection(db, "leaveRecords"), {
-  ...recordData,
-  createdBy: loginUser?.id || "",
-  createdByName: loginUser ? personName(loginUser) : "",
-});
+  const docRef = await addDoc(collection(db, "leaveRecords"), {
+    ...recordData,
+    createdBy: loginUser?.id || "",
+    createdByName: loginUser ? personName(loginUser) : "",
+  });
 
+  setRecords((prev) => {
+    if (prev.some((item) => item.id === docRef.id)) return prev;
+    return [...prev, { id: docRef.id, ...recordData, createdBy: loginUser?.id || "", createdByName: loginUser ? personName(loginUser) : "" }]
+      .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+  });
 } catch (error) {
-  console.error("Leave record add failed", error);
-  alert("休暇・勤務登録に失敗しました。");
+  const code = error?.code || "unknown";
+  const message = error?.message || "unknown";
+  console.error("Leave record add failed", { code, message, error });
+  alert(`休暇・勤務登録に失敗しました。
+code: ${code}
+message: ${message}`);
+  setRecordSubmitting(false);
   return;
 }
 setSelectedDate(nextRecord.date);
 setForm((prev) => ({ ...prev, note: "" }));
+setRecordSubmitting(false);
 }
 
   async function removeRecord(id, record) {
@@ -1586,8 +1625,6 @@ async function deleteAnnouncement(id) {
   }
 
 async function saveSaturdaySettings(nextGroups, nextOverrides, nextRotation) {
-  if (!isAdmin) return;
-
   const cleanGroups = SATURDAY_GROUP_KEYS.reduce((acc, groupKey) => {
     acc[groupKey] = pruneSaturdayStaffIds(nextGroups?.[groupKey]);
     return acc;
@@ -1598,14 +1635,23 @@ async function saveSaturdaySettings(nextGroups, nextOverrides, nextRotation) {
     staffIds: pruneSaturdayStaffIds(item.staffIds),
   }));
 
-  await setDoc(doc(db, "settings", "saturdayDuty"), {
-    groups: cleanGroups,
+  const payload = {
     overrides: cleanOverrides,
-    rotation: nextRotation,
     updatedAt: Date.now(),
     updatedBy: loginUser?.id || "",
     updatedByName: loginUser ? personName(loginUser) : "",
-  });
+  };
+
+  if (isAdmin) {
+    await setDoc(doc(db, "settings", "saturdayDuty"), {
+      groups: cleanGroups,
+      ...payload,
+      rotation: nextRotation,
+    });
+    return;
+  }
+
+  await updateDoc(doc(db, "settings", "saturdayDuty"), payload);
 }
 
 function toggleSaturdayGroupStaff(groupKey, staffId) {
@@ -1624,7 +1670,6 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
 }
 
   function resetSaturdayOverride(date) {
-    if (!isAdmin) return;
     if (!saturdayOverrideForDate(date)) return;
     if (!confirm("この日の個別変更を解除して、基本グループに戻しますか？")) return;
 setSaturdayOverrides((prev) => {
@@ -1644,7 +1689,6 @@ setSaturdayOverrides((prev) => {
 
   function saveSaturdaySchedule(e) {
     e.preventDefault();
-    if (!isAdmin) return;
     if (!saturdayForm.date) {
       alert("日付を入力してください。");
       return;
@@ -1691,7 +1735,6 @@ saveSaturdaySettings(saturdayGroups, nextList, saturdayRotation);
   }
 
 function deleteSaturdaySchedule(date) {
-  if (!isAdmin) return;
   if (!confirm("この日の土曜出勤を削除しますか？")) return;
 
   setSaturdayOverrides((prev) => {
@@ -1801,7 +1844,7 @@ if (!loginStaff) {
             className={appSection === "patients" ? "active" : ""}
             onClick={() => setAppSection("patients")}
           >
-            患者人数管理
+            患者振り分け
           </button>
         </div>
 
@@ -1811,14 +1854,14 @@ if (!loginStaff) {
             <select value={loginId} onChange={(e) => setLoginId(e.target.value)}>
               {activeStaff.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {personName(s)} {s.job}
+                  {personName(s)}
                 </option>
               ))}
             </select>
           </label>
 
           {appSection === "patients" && (
-            <div className="patientMiniProfessionTabs headerProfessionTabs" aria-label="患者人数管理 PT OT 切替">
+            <div className="patientMiniProfessionTabs headerProfessionTabs" aria-label="患者振り分け PT OT 切替">
               {PM_PROFESSIONS.map((item) => (
                 <button
                   key={item}
@@ -1867,11 +1910,9 @@ if (!loginStaff) {
         {showLeaveForm && (
           <>
         <div className="actionButtons leaveEntryActions">
-          {isAdmin && (
-            <button className="softButton" type="button" onClick={() => openSaturdayEdit(form.date)}>
-              土曜出勤設定
-            </button>
-          )}
+          <button className="softButton" type="button" onClick={() => openSaturdayEdit(form.date)}>
+            土曜出勤設定
+          </button>
           <button className="softButton" type="button" onClick={() => setShowStaffEdit(true)}>
             職員編集
           </button>
@@ -1881,13 +1922,15 @@ if (!loginStaff) {
           <label>
             <span>職員</span>
             <select
+              className="leaveSelectControl"
+              style={LEAVE_SELECT_VISIBLE_STYLE}
               value={isAdmin ? form.staffId : loginId}
               disabled={!isAdmin}
               onChange={(e) => setForm({ ...form, staffId: e.target.value })}
             >
               {activeStaff.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {personName(s)} {s.job}
+                  {personName(s)}
                 </option>
               ))}
             </select>
@@ -1901,6 +1944,8 @@ if (!loginStaff) {
           <label>
             <span>種別</span>
             <select
+              className="leaveSelectControl"
+              style={LEAVE_SELECT_VISIBLE_STYLE}
               value={form.type}
               onChange={(e) =>
                 setForm({
@@ -1925,7 +1970,12 @@ if (!loginStaff) {
           {showMethod && (
             <label>
               <span>取得方法</span>
-              <select value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
+              <select
+                className="leaveSelectControl"
+                style={LEAVE_SELECT_VISIBLE_STYLE}
+                value={form.method}
+                onChange={(e) => setForm({ ...form, method: e.target.value })}
+              >
                 {methodOptions.map(([key, value]) => (
                   <option key={key} value={key}>
                     {value}
@@ -1966,8 +2016,8 @@ if (!loginStaff) {
         </div>
 
         <div className="previewBox">{previewText()}</div>
-        <button className="primaryButton" type="button" onClick={addRecord}>
-          登録する
+        <button className="primaryButton" type="button" onClick={addRecord} disabled={recordSubmitting}>
+          {recordSubmitting ? "登録中..." : "登録する"}
         </button>
           </>
         )}
@@ -2119,18 +2169,16 @@ if (!loginStaff) {
                           <strong>土曜出勤</strong>
                           {saturdayScheduleForDate(selectedDate)?.isOverride && <small>この日のみ個別変更</small>}
                         </div>
-                        {isAdmin && (
-                          <div className="detailActions">
-                            <button type="button" className="softMiniButton" onClick={() => openSaturdayEdit(selectedDate)}>
-                              出勤日を変更
+                        <div className="detailActions">
+                          <button type="button" className="softMiniButton" onClick={() => openSaturdayEdit(selectedDate)}>
+                            出勤日を変更
+                          </button>
+                          {saturdayScheduleForDate(selectedDate)?.isOverride && (
+                            <button type="button" className="deleteButton compactAction" onClick={() => deleteSaturdaySchedule(selectedDate)}>
+                              個別変更解除
                             </button>
-                            {saturdayScheduleForDate(selectedDate)?.isOverride && (
-                              <button type="button" className="deleteButton compactAction" onClick={() => deleteSaturdaySchedule(selectedDate)}>
-                                個別変更解除
-                              </button>
-                            )}
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                       <div className="saturdayJobColumns">
                         {["PT", "OT"].map((job) => {
@@ -2174,7 +2222,7 @@ if (!loginStaff) {
                   <div key={r.id} className={`detailItem ${r.type}`}>
                     <div>
                       <strong>
-                        {personName(r.staff)}　{r.staff.job}
+                        {personName(r.staff)}
                       </strong>
                       <p>{recordDisplay(r)}</p>
                       {r.note && <small>{r.note}</small>}
@@ -2315,7 +2363,7 @@ if (!loginStaff) {
         </div>
       )}
 
-      {showSaturdayEdit && isAdmin && (
+      {showSaturdayEdit && (
         <div className="modalBackdrop" onClick={() => setShowSaturdayEdit(false)}>
           <form className="staffModal saturdaySettingsModal" onSubmit={saveSaturdaySchedule} onClick={(e) => e.stopPropagation()}>
             <div className="modalHeader">
@@ -2328,19 +2376,21 @@ if (!loginStaff) {
               </button>
             </div>
 
-            <button
-              className="groupSettingsToggle"
-              type="button"
-              onClick={() => setShowSaturdayGroupSettings((prev) => !prev)}
-            >
-              <span>
-                <strong>グループ設定</strong>
-                <small>基本グループとローテーション開始日の設定</small>
-              </span>
-              <b>{showSaturdayGroupSettings ? "閉じる" : "開く"}</b>
-            </button>
+            {isAdmin && (
+              <button
+                className="groupSettingsToggle"
+                type="button"
+                onClick={() => setShowSaturdayGroupSettings((prev) => !prev)}
+              >
+                <span>
+                  <strong>グループ設定</strong>
+                  <small>基本グループとローテーション開始日の設定</small>
+                </span>
+                <b>{showSaturdayGroupSettings ? "閉じる" : "開く"}</b>
+              </button>
+            )}
 
-            {showSaturdayGroupSettings && (
+            {isAdmin && showSaturdayGroupSettings && (
               <>
             <section className="groupSettings">
               <h3>ローテーション開始設定</h3>
@@ -3229,7 +3279,7 @@ async function savePatientManagerData() {
     setPatientSaveStatus("saved");
   } catch (error) {
     console.error("patientManager save failed", error);
-    alert("患者人数管理の保存に失敗しました。通信状況を確認してください。");
+    alert("患者振り分けの保存に失敗しました。通信状況を確認してください。");
     setPatientSaveStatus("dirty");
   } finally {
     setPatientSaving(false);
@@ -4031,7 +4081,7 @@ function markChanged(staffId, department) {
           <button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>管理表</button>
           <button className={view === "move" ? "active" : ""} onClick={() => setView("move")}>患者移動</button>
         </div>
-        <button className={view === "settings" ? "active settingsTabButton" : "settingsTabButton"} aria-label="患者人数管理設定" title="患者人数管理設定" onClick={() => setView("settings")}>
+        <button className={view === "settings" ? "active settingsTabButton" : "settingsTabButton"} aria-label="患者振り分け設定" title="患者振り分け設定" onClick={() => setView("settings")}>
           <img alt="" src="data:image/png;base64,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" />
         </button>
       </nav>
@@ -4277,8 +4327,8 @@ function markChanged(staffId, department) {
 
       {view === "settings" && (
         <section className="card">
-          <h2>患者人数管理設定</h2>
-          <p className="settingLead">患者人数管理で使用するスタッフ、表示順、集計を管理します。</p>
+          <h2>患者振り分け設定</h2>
+          <p className="settingLead">患者振り分けで使用するスタッフ、表示順、集計を管理します。</p>
 
           <div className="settingsLayout">
             <div className="settingsMenuList" aria-label="設定メニュー">
@@ -4423,7 +4473,7 @@ function markChanged(staffId, department) {
           ) : settingsView === "order" ? (
             <>
               <h3>{profession} 表示順</h3>
-              <p className="settingHelp">連携状態はGoogleアカウント連携の有無、表示状態は患者人数管理の管理表に出すかどうかです。</p>
+              <p className="settingHelp">連携状態はGoogleアカウント連携の有無、表示状態は患者振り分けの管理表に出すかどうかです。</p>
               <div className="orderList">
                 {professionStaff.map((person) => (
                   <div className={`orderItem ${person.visible === false ? "staffHiddenRow" : ""}`} key={person.id}>
