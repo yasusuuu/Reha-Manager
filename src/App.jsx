@@ -14,7 +14,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { auth, provider, db } from "./firebase";
+import { auth, provider, db } from "./firebase/firebase";
 import "./App.css";
 
 const FULL_DAY_HOURS = 7.75;
@@ -658,7 +658,8 @@ async function handleLogout() {
 async function handleStaffLink() {
   if (!firebaseUser) return;
 
-  const staffNumber = linkForm.staffNumber.trim();
+  const staffNumber = String(linkForm.staffNumber || "").trim();
+  const selectedJob = String(linkForm.job || "PT").trim();
 
   if (!staffNumber) {
     alert("職員番号を入力してください。");
@@ -670,21 +671,38 @@ async function handleStaffLink() {
 
   try {
     const staffRef = collection(db, "staff");
-    const staffSnapshot = await getDocs(
+
+    // まず通常検索。staffNumber が文字列で保存されている場合はこちらでヒットする。
+    let staffSnapshot = await getDocs(
       query(
         staffRef,
-        where("job", "==", linkForm.job),
+        where("job", "==", selectedJob),
         where("staffNumber", "==", staffNumber),
         limit(1)
       )
     );
 
-    if (staffSnapshot.empty) {
-      setStaffAuthError("職種と職員番号が一致する職員が見つかりません。");
+    let staffDoc = staffSnapshot.empty ? null : staffSnapshot.docs[0];
+
+    // Firestore側の staffNumber が数値保存・前後空白ありの場合に備えて、職種で絞ってから文字列比較する。
+    if (!staffDoc) {
+      const sameJobSnapshot = await getDocs(
+        query(staffRef, where("job", "==", selectedJob))
+      );
+
+      staffDoc = sameJobSnapshot.docs.find((candidateDoc) => {
+        const candidate = candidateDoc.data();
+        return String(candidate.staffNumber ?? "").trim() === staffNumber;
+      }) || null;
+    }
+
+    if (!staffDoc) {
+      setStaffAuthError(
+        `職種と職員番号が一致する職員が見つかりません。入力: ${selectedJob} / ${staffNumber}`
+      );
       return;
     }
 
-    const staffDoc = staffSnapshot.docs[0];
     const staffData = staffDoc.data();
 
     if (staffData.active === false) {
@@ -721,20 +739,21 @@ async function handleStaffLink() {
 }
   const today = new Date();
 
-  const [staff, setStaff] = useState(() => {
-    const saved = localStorage.getItem("leaveStaffV4");
-    if (saved) return JSON.parse(saved).map(migrateSampleStaffName);
-
-    const oldSaved = localStorage.getItem("leaveStaffV3");
-    if (oldSaved) return JSON.parse(oldSaved).map(migrateSampleStaffName);
-
-    return DEFAULT_STAFF.map(normalizeStaffMember);
-  });
+  // Firestoreのスタッフ読み込み完了前にデモスタッフを表示しない。
+  // iPhoneのPWAではリロードしにくいため、初期値は必ず空にして読み込み完了まで待機する。
+  const [staff, setStaff] = useState([]);
+  const [staffLoaded, setStaffLoaded] = useState(false);
 
 useEffect(() => {
+  let cancelled = false;
+
   async function loadStaffFromFirestore() {
+    setStaffLoaded(false);
+
     try {
       const staffSnapshot = await getDocs(collection(db, "staff"));
+      if (cancelled) return;
+
       const firestoreStaff = staffSnapshot.docs
         .map((staffDoc) => {
           const data = staffDoc.data();
@@ -758,15 +777,21 @@ useEffect(() => {
         .filter((person) => person.active)
         .sort((a, b) => (a.order || 999) - (b.order || 999));
 
-      if (firestoreStaff.length > 0) {
-        setStaff(firestoreStaff);
-      }
+      // デモスタッフへのフォールバックはしない。Firestoreの実データだけを表示する。
+      setStaff(firestoreStaff);
     } catch (error) {
       console.error("Staff list load failed", error);
+      if (!cancelled) setStaff([]);
+    } finally {
+      if (!cancelled) setStaffLoaded(true);
     }
   }
 
   loadStaffFromFirestore();
+
+  return () => {
+    cancelled = true;
+  };
 }, []);
 
 const [records, setRecords] = useState([]);
@@ -829,10 +854,10 @@ const [saturdayRotation, setSaturdayRotation] = useState({
     }
   });
 
-  const [loginId, setLoginId] = useState(staff[0]?.id || "s1");
+  const [loginId, setLoginId] = useState("");
   const [view, setView] = useState("calendar");
   const [appSection, setAppSection] = useState("leave");
-  const [patientProfession, setPatientProfession] = useState(staff[0]?.job || "PT");
+  const [patientProfession, setPatientProfession] = useState("PT");
   const [displayScope, setDisplayScope] = useState("all");
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -878,8 +903,10 @@ const [saturdayRotation, setSaturdayRotation] = useState({
   });
 
   useEffect(() => {
+    // Firestoreから読み込めた実スタッフだけを保存する。初期空配列やデモスタッフは保存しない。
+    if (!staffLoaded || staff.length === 0) return;
     localStorage.setItem("leaveStaffV4", JSON.stringify(staff));
-  }, [staff]);
+  }, [staff, staffLoaded]);
 
 useEffect(() => {
   const unsubscribe = onSnapshot(doc(db, "settings", "saturdayDuty"), (snapshot) => {
@@ -1828,6 +1855,35 @@ if (!loginStaff) {
     </div>
   );
 }
+
+if (!staffLoaded) {
+  return (
+    <div className="loginGate">
+      <div className="loginCard">
+        <h1>スタッフ情報を読み込み中</h1>
+        <p>最新の職員マスタを取得しています。</p>
+      </div>
+    </div>
+  );
+}
+
+if (staffLoaded && staff.length === 0) {
+  return (
+    <div className="loginGate">
+      <div className="loginCard">
+        <h1>スタッフ情報を取得できません</h1>
+        <p>通信状況を確認してから、アプリを開き直してください。</p>
+        <button type="button" onClick={() => window.location.reload()}>
+          再読み込み
+        </button>
+        <button type="button" className="loginSubButton" onClick={handleLogout}>
+          ログアウト
+        </button>
+      </div>
+    </div>
+  );
+}
+
   return (
     <div className="appShell">
       <header className={`appHeader mainHeaderFinal ${appSection === "patients" ? "patientsHeader" : "leaveHeader"}`}>
@@ -3119,13 +3175,11 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
   const [fullTable, setFullTable] = useState(false);
   const [patientSaveStatus, setPatientSaveStatus] = useState("saved");
   const [patientSaving, setPatientSaving] = useState(false);
-  const [staff, setStaff] = useState(() => {
-    const saved = localStorage.getItem("integratedAssignmentTableStaffV1");
-    return saved
-      ? pmEnsureSampleStaff(JSON.parse(saved).map(pmMigrateSampleStaff))
-      : PM_SAMPLE_STAFF.map(pmNormalizeStaff);
-  });
+  // 患者振り分け用スタッフは、デモスタッフやlocalStorageを初期表示に使わない。
+  // Firestoreのstaffコレクションを読み込んでから、settings/patientManagerの保存値と安全に合成する。
+  const [staff, setStaff] = useState([]);
   const staffSourceRef = useRef(staffSource);
+  const patientManagerDataRef = useRef(null);
 
   useEffect(() => {
     staffSourceRef.current = staffSource;
@@ -3135,7 +3189,9 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
     const saved = Array.isArray(savedList) ? savedList.map(pmNormalizeStaff) : [];
     const master = Array.isArray(masterList) ? masterList : [];
 
-    if (!master.length) return saved;
+    // Firestoreの職員マスタが未読込の間は、保存済みstaffをそのまま表示しない。
+    // 旧デモスタッフがPWA初回表示に出るのを防ぐため、マスタ読込後にだけ合成する。
+    if (!master.length) return [];
 
     return master.map((person, index) => {
       const existing =
@@ -3167,26 +3223,17 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
 
   useEffect(() => {
     if (!staffSource.length) return;
-    setStaff((prevStaff) => mergePatientStaffList(prevStaff, staffSource));
+    const savedPatientStaff = patientManagerDataRef.current?.staff;
+    setStaff((prevStaff) => mergePatientStaffList(savedPatientStaff || prevStaff, staffSource));
   }, [staffSource]);
-  const [movements, setMovements] = useState(() => {
-    const saved = localStorage.getItem("integratedAssignmentTableMovementsV1");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem("integratedAssignmentTableHistoryV1");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [recentChanges, setRecentChanges] = useState(() => {
-    const saved = localStorage.getItem("integratedAssignmentTableRecentChangesV1");
-    return saved ? JSON.parse(saved) : {};
-  });
+  // 患者振り分けの本体データはFirestoreだけを正とする。
+  // iPhone PWAやChrome/Safariで古いlocalStorageが残っていても、初期表示に使わない。
+  const [movements, setMovements] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [recentChanges, setRecentChanges] = useState({});
   const [activeCell, setActiveCell] = useState(null);
   const [editMovement, setEditMovement] = useState(null);
-  const [fiscalSnapshots, setFiscalSnapshots] = useState(() => {
-    const saved = localStorage.getItem("integratedAssignmentTableFiscalSnapshotsV1");
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [fiscalSnapshots, setFiscalSnapshots] = useState({});
   const [selectedFiscal, setSelectedFiscal] = useState(null); // null = 今年度
   const [patientDataReady, setPatientDataReady] = useState(false);
   const patientRemoteApplyingRef = useRef(false);
@@ -3220,6 +3267,7 @@ useEffect(() => {
     }
 
     const data = snapshot.data();
+    patientManagerDataRef.current = data;
     patientRemoteApplyingRef.current = true;
 
     if (Array.isArray(data.staff)) {
@@ -3261,26 +3309,225 @@ if (data.recentChanges) {
   return () => unsubscribe();
 }, []);
 
+function buildPatientManagerPayload(extra = {}) {
+  return {
+    staff,
+    movements,
+    history,
+    recentChanges,
+    fiscalSnapshots,
+    updatedAt: Date.now(),
+    updatedBy: loginUser?.id || "",
+    updatedByName: loginUser ? personName(loginUser) : "",
+    ...extra,
+  };
+}
+
+function buildPatientManagerSnapshot(reason = "manual") {
+  const source = patientManagerDataRef.current;
+  if (!source) return null;
+
+  return {
+    reason,
+    createdAt: new Date().toISOString(),
+    createdBy: loginUser?.id || "",
+    createdByName: loginUser ? personName(loginUser) : "",
+    data: {
+      staff: Array.isArray(source.staff) ? source.staff : [],
+      movements: Array.isArray(source.movements) ? source.movements : [],
+      history: Array.isArray(source.history) ? source.history : [],
+      recentChanges: source.recentChanges || {},
+      fiscalSnapshots: source.fiscalSnapshots || {},
+    },
+  };
+}
+
+function limitedPatientManagerSnapshots(nextSnapshot = null) {
+  const existing = Array.isArray(patientManagerDataRef.current?.snapshots)
+    ? patientManagerDataRef.current.snapshots
+    : [];
+
+  return nextSnapshot ? [nextSnapshot, ...existing].slice(0, 20) : existing.slice(0, 20);
+}
+
 async function savePatientManagerData() {
   if (!patientDataReady || patientRemoteApplyingRef.current || patientSaving) return;
 
   setPatientSaving(true);
   try {
-    await setDoc(doc(db, "settings", "patientManager"), {
-      staff,
-      movements,
-      history,
-      recentChanges,
-      fiscalSnapshots,
-      updatedAt: Date.now(),
-      updatedBy: loginUser?.id || "",
-      updatedByName: loginUser ? personName(loginUser) : "",
+    const beforeSaveSnapshot = buildPatientManagerSnapshot("beforeSave");
+    const payload = buildPatientManagerPayload({
+      snapshots: limitedPatientManagerSnapshots(beforeSaveSnapshot),
     });
+
+    await setDoc(doc(db, "settings", "patientManager"), payload);
+    patientManagerDataRef.current = payload;
     setPatientSaveStatus("saved");
   } catch (error) {
     console.error("patientManager save failed", error);
     alert("患者振り分けの保存に失敗しました。通信状況を確認してください。");
     setPatientSaveStatus("dirty");
+  } finally {
+    setPatientSaving(false);
+  }
+}
+
+function downloadPatientManagerBackup() {
+  const backup = {
+    app: "REHA Manager",
+    type: "patientManagerBackup",
+    version: 1,
+    createdAt: new Date().toISOString(),
+    createdBy: loginUser?.id || "",
+    createdByName: loginUser ? personName(loginUser) : "",
+    data: buildPatientManagerPayload({
+      snapshots: limitedPatientManagerSnapshots(),
+    }),
+  };
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  link.href = url;
+  link.download = `reha_patientManager_backup_${stamp}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+async function restorePatientManagerFromFile(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const source = parsed?.data || parsed?.patientManager || parsed;
+
+    const nextStaff = Array.isArray(source.staff) ? source.staff.map(pmNormalizeStaff) : [];
+    const nextMovements = Array.isArray(source.movements) ? source.movements : [];
+    const nextHistory = Array.isArray(source.history) ? source.history : [];
+    const nextRecentChanges = source.recentChanges && typeof source.recentChanges === "object" ? source.recentChanges : {};
+    const nextFiscalSnapshots = source.fiscalSnapshots && typeof source.fiscalSnapshots === "object" ? source.fiscalSnapshots : {};
+
+    if (!nextStaff.length && !nextMovements.length && !nextHistory.length) {
+      alert("復元できる患者振り分けデータが見つかりませんでした。");
+      return;
+    }
+
+const ok = window.confirm(
+  `患者振り分けデータをこのJSONの内容で復元します。
+
+現在の患者振り分けデータは上書きされます。
+
+復元前の状態は直近スナップショットとして20件まで保持します。
+
+続行しますか？`
+);
+
+if (!ok) return;
+
+    setPatientSaving(true);
+    patientRemoteApplyingRef.current = true;
+
+    const beforeRestoreSnapshot = buildPatientManagerSnapshot("beforeRestore");
+    const payload = buildPatientManagerPayload({
+      staff: nextStaff,
+      movements: nextMovements,
+      history: nextHistory,
+      recentChanges: nextRecentChanges,
+      fiscalSnapshots: nextFiscalSnapshots,
+      restoredAt: Date.now(),
+      restoredBy: loginUser?.id || "",
+      restoredByName: loginUser ? personName(loginUser) : "",
+      snapshots: limitedPatientManagerSnapshots(beforeRestoreSnapshot),
+    });
+
+    await setDoc(doc(db, "settings", "patientManager"), payload);
+    patientManagerDataRef.current = payload;
+
+    setStaff(mergePatientStaffList(nextStaff, staffSourceRef.current));
+    setMovements(nextMovements);
+    setHistory(nextHistory);
+    setRecentChanges(nextRecentChanges);
+    setFiscalSnapshots(nextFiscalSnapshots);
+    setPatientSaveStatus("saved");
+
+    setTimeout(() => {
+      patientRemoteApplyingRef.current = false;
+    }, 0);
+
+    alert("患者振り分けデータを復元しました。");
+  } catch (error) {
+    console.error("patientManager restore failed", error);
+    alert("復元に失敗しました。JSONファイルの内容を確認してください。");
+    patientRemoteApplyingRef.current = false;
+  } finally {
+    setPatientSaving(false);
+  }
+}
+
+async function restorePatientManagerSnapshot(snapshot) {
+  if (!snapshot?.data) return;
+
+const ok = window.confirm(
+  `このスナップショットへ戻します。
+
+日時：
+${snapshot.createdAt || "日時不明"}
+
+理由：
+${snapshot.reason || "snapshot"}
+
+現在の患者振り分けデータは上書きされます。
+
+続行しますか？`
+);
+
+if (!ok) return;
+
+  setPatientSaving(true);
+  patientRemoteApplyingRef.current = true;
+
+  try {
+    const nextStaff = Array.isArray(snapshot.data.staff) ? snapshot.data.staff.map(pmNormalizeStaff) : [];
+    const nextMovements = Array.isArray(snapshot.data.movements) ? snapshot.data.movements : [];
+    const nextHistory = Array.isArray(snapshot.data.history) ? snapshot.data.history : [];
+    const nextRecentChanges = snapshot.data.recentChanges || {};
+    const nextFiscalSnapshots = snapshot.data.fiscalSnapshots || {};
+    const beforeRollbackSnapshot = buildPatientManagerSnapshot("beforeRollback");
+
+    const payload = buildPatientManagerPayload({
+      staff: nextStaff,
+      movements: nextMovements,
+      history: nextHistory,
+      recentChanges: nextRecentChanges,
+      fiscalSnapshots: nextFiscalSnapshots,
+      restoredAt: Date.now(),
+      restoredBy: loginUser?.id || "",
+      restoredByName: loginUser ? personName(loginUser) : "",
+      snapshots: limitedPatientManagerSnapshots(beforeRollbackSnapshot),
+    });
+
+    await setDoc(doc(db, "settings", "patientManager"), payload);
+    patientManagerDataRef.current = payload;
+    setStaff(mergePatientStaffList(nextStaff, staffSourceRef.current));
+    setMovements(nextMovements);
+    setHistory(nextHistory);
+    setRecentChanges(nextRecentChanges);
+    setFiscalSnapshots(nextFiscalSnapshots);
+    setPatientSaveStatus("saved");
+
+    setTimeout(() => {
+      patientRemoteApplyingRef.current = false;
+    }, 0);
+  } catch (error) {
+    console.error("patientManager snapshot restore failed", error);
+    alert("スナップショット復元に失敗しました。");
+    patientRemoteApplyingRef.current = false;
   } finally {
     setPatientSaving(false);
   }
@@ -4356,6 +4603,14 @@ function markChanged(staffId, department) {
                 </span>
                 <span className="settingsMenuArrow">›</span>
               </button>
+              <button className={settingsView === "backup" ? "active" : ""} type="button" onClick={() => setSettingsView("backup")}>
+                <span className="settingsMenuIcon">⤓</span>
+                <span className="settingsMenuText">
+                  <strong>バックアップ</strong>
+                  <small>JSON保存・復元・直近20件</small>
+                </span>
+                <span className="settingsMenuArrow">›</span>
+              </button>
             </div>
 
             <div className="settingsContentPanel">
@@ -4508,13 +4763,56 @@ function markChanged(staffId, department) {
                 ))}
               </div>
             </>
-          ) : (
+          ) : settingsView === "summary" ? (
             <>
               <div className="cardHeader settingsSummaryHeader">
                 <h3>集計</h3>
                 <button className="softButton" type="button" onClick={saveFiscalSnapshot}>今年度を保存</button>
               </div>
               {annualSummaryTable}
+            </>
+          ) : (
+            <>
+              <div className="cardHeader settingsSummaryHeader">
+                <h3>バックアップ・復元</h3>
+                <button className="softButton" type="button" onClick={downloadPatientManagerBackup}>JSONを保存</button>
+              </div>
+              <p className="settingHelp">
+                患者振り分けの現在データをJSONで保存できます。復元は選択したJSONで現在データを上書きします。
+                復元前の状態は直近スナップショットとして最大20件まで保持します。
+              </p>
+
+              <div className="backupActionGrid">
+                <button className="primaryButton backupMainButton" type="button" onClick={downloadPatientManagerBackup}>
+                  バックアップをダウンロード
+                </button>
+                <label className="restoreFileButton">
+                  <span>JSONから復元</span>
+                  <input type="file" accept="application/json,.json" onChange={restorePatientManagerFromFile} />
+                </label>
+              </div>
+
+              <div className="backupSnapshotBox">
+                <h4>直近スナップショット</h4>
+                <p className="settingHelp">患者振り分け保存・復元・ロールバック前の状態を最大20件保持します。</p>
+                {Array.isArray(patientManagerDataRef.current?.snapshots) && patientManagerDataRef.current.snapshots.length > 0 ? (
+                  <div className="backupSnapshotList">
+                    {patientManagerDataRef.current.snapshots.slice(0, 20).map((snapshot, index) => (
+                      <div className="backupSnapshotItem" key={`${snapshot.createdAt || "snapshot"}-${index}`}>
+                        <div>
+                          <strong>{snapshot.createdAt ? new Date(snapshot.createdAt).toLocaleString("ja-JP") : "日時不明"}</strong>
+                          <small>{snapshot.reason || "snapshot"} ／ {snapshot.createdByName || "記録なし"}</small>
+                        </div>
+                        <button className="softButton" type="button" onClick={() => restorePatientManagerSnapshot(snapshot)}>
+                          戻す
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="emptyText left">まだスナップショットはありません。次回の患者振り分け保存時から作成されます。</p>
+                )}
+              </div>
             </>
           )}
             </div>

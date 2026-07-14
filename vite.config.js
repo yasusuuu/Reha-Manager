@@ -13,7 +13,7 @@ export default defineConfig({
         "favicon.ico",
         "apple-touch-icon.png",
         "icon-192.png",
-        "icon-512.png"
+        "icon-512.png",
       ],
 
       manifest: {
@@ -34,20 +34,32 @@ export default defineConfig({
           {
             src: "icon-192.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "icon-512.png",
             sizes: "512x512",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "apple-touch-icon.png",
             sizes: "180x180",
-            type: "image/png"
-          }
-        ]
-      }
-    })
-  ]
+            type: "image/png",
+          },
+        ],
+      },
+
+      workbox: {
+        cleanupOutdatedCaches: true,
+        navigateFallback: "/index.html",
+
+        // Firestoreはキャッシュしない
+        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+      },
+
+      devOptions: {
+        enabled: false,
+      },
+    }),
+  ],
 });

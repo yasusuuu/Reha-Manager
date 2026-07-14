@@ -8724,3 +8724,88 @@ select.leaveSelectControl:disabled {
 .patientModule .assignmentTable .activeNameGuide::after {
   right: 1px !important;
 }
+
+/* =========================
+   Patient backup / restore panel
+========================= */
+.patientModule .backupActionGrid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
+.patientModule .backupMainButton {
+  margin-top: 0;
+}
+
+.patientModule .restoreFileButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid #0f766e;
+  border-radius: 11px;
+  background: #ecfdf5;
+  color: #0f766e;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.patientModule .restoreFileButton input {
+  display: none;
+}
+
+.patientModule .backupSnapshotBox {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #d8e2ee;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.patientModule .backupSnapshotBox h4 {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.patientModule .backupSnapshotList {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.patientModule .backupSnapshotItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.patientModule .backupSnapshotItem strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.patientModule .backupSnapshotItem small {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+@media (max-width: 560px) {
+  .patientModule .backupActionGrid,
+  .patientModule .backupSnapshotItem {
+    grid-template-columns: 1fr;
+  }
+}
