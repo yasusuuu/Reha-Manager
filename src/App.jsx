@@ -597,76 +597,117 @@ useEffect(() => {
     return;
   }
 
+  let cancelled = false;
+
   async function loadLoginStaff() {
     setStaffAuthLoading(true);
     setStaffAuthError("");
 
     try {
-      const staffRef = collection(db, "staff");
-      const uidSnapshot = await getDocs(
-        query(staffRef, where("uid", "==", firebaseUser.uid), limit(1))
-      );
+      const uid = firebaseUser.uid;
+      const staffByUidRef = doc(db, "staffByUid", uid);
+      const staffByUidSnapshot = await getDoc(staffByUidRef);
 
-      if (uidSnapshot.empty) {
-        setLoginStaff(null);
-        return;
+      let staffDoc = null;
+      let staffData = null;
+
+      // 1. まず staffByUid/{uid} から正規ルートで職員を特定する。
+      if (staffByUidSnapshot.exists()) {
+        const linkData = staffByUidSnapshot.data();
+        const linkedStaffId = String(linkData.staffId || "").trim();
+
+        if (linkedStaffId) {
+          const linkedStaffSnapshot = await getDoc(doc(db, "staff", linkedStaffId));
+
+          if (linkedStaffSnapshot.exists()) {
+            staffDoc = linkedStaffSnapshot;
+            staffData = linkedStaffSnapshot.data();
+          }
+        }
       }
 
-      const staffDoc = uidSnapshot.docs[0];
-      const staffData = staffDoc.data();
+      // 2. staffByUid が無い・壊れている場合は、旧方式の staff.uid から探して自動修復する。
+      if (!staffDoc) {
+        const uidSnapshot = await getDocs(
+          query(collection(db, "staff"), where("uid", "==", uid), limit(1))
+        );
+
+        if (!uidSnapshot.empty) {
+          staffDoc = uidSnapshot.docs[0];
+          staffData = staffDoc.data();
+
+          await setDoc(
+            staffByUidRef,
+            {
+              staffId: staffDoc.id,
+              uid,
+              job: staffData.job || "PT",
+              role: staffData.role || "staff",
+              active: staffData.active !== false,
+              repairedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+        }
+      }
+
+      // 3. どちらにも存在しなければ初回連携画面へ。
+      if (!staffDoc || !staffData) {
+        if (!cancelled) setLoginStaff(null);
+        return;
+      }
 
       if (staffData.active === false) {
-        setLoginStaff(null);
-        setStaffAuthError("この職員アカウントは無効です。");
+        if (!cancelled) {
+          setLoginStaff(null);
+          setStaffAuthError("この職員アカウントは無効です。");
+        }
         return;
       }
 
-      // staffにはUIDがあるのにstaffByUidが欠けている場合、自動で修復する。
-      // FirestoreルールのisStaff()がstaffByUid/{uid}を参照するため、
-      // 初回連携済みの既存職員でもログイン時に不足分を補完する。
-      const staffByUidRef = doc(db, "staffByUid", firebaseUser.uid);
-      const staffByUidSnapshot = await getDoc(staffByUidRef);
-      const staffByUidData = staffByUidSnapshot.exists()
-        ? staffByUidSnapshot.data()
-        : null;
+      // 4. staffByUid の内容を常に正しい状態へ同期する。
+      await setDoc(
+        staffByUidRef,
+        {
+          staffId: staffDoc.id,
+          uid,
+          job: staffData.job || "PT",
+          role: staffData.role || "staff",
+          active: true,
+          syncedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
 
-      const needsStaffByUidRepair =
-        !staffByUidData
-        || staffByUidData.staffId !== staffDoc.id
-        || staffByUidData.uid !== firebaseUser.uid
-        || staffByUidData.active !== true
-        || staffByUidData.job !== (staffData.job || "PT");
+      if (!cancelled) {
+        setLoginStaff({
+          id: staffDoc.id,
+          ...staffData,
+          uid,
+        });
+      }
+    } catch (error) {
+      const code = error?.code || "unknown";
+      const message = error?.message || "unknown";
 
-      if (needsStaffByUidRepair) {
-        await setDoc(
-          staffByUidRef,
-          {
-            staffId: staffDoc.id,
-            uid: firebaseUser.uid,
-            job: staffData.job || "PT",
-            active: true,
-            repairedAt: serverTimestamp(),
-          },
-          { merge: true }
+      console.error("Staff authentication bootstrap failed", { code, message, error });
+
+      if (!cancelled) {
+        setLoginStaff(null);
+        setStaffAuthError(
+          `職員情報の確認に失敗しました。code: ${code} / message: ${message}`
         );
       }
-
-      setLoginStaff({
-        id: staffDoc.id,
-        ...staffData,
-      });
-} catch (error) {
-  const code = error?.code || "unknown";
-  const message = error?.message || "unknown";
-
-  console.error("Staff link failed", { code, message, error });
-  setStaffAuthError(`職員連携に失敗しました。code: ${code} / message: ${message}`);
-} finally {
-  setStaffAuthLoading(false);
-}
+    } finally {
+      if (!cancelled) setStaffAuthLoading(false);
+    }
   }
 
   loadLoginStaff();
+
+  return () => {
+    cancelled = true;
+  };
 }, [firebaseUser]);
 
 async function handleGoogleLogin() {
@@ -701,9 +742,9 @@ async function handleStaffLink() {
   setStaffAuthError("");
 
   try {
+    const uid = firebaseUser.uid;
     const staffRef = collection(db, "staff");
 
-    // まず通常検索。staffNumber が文字列で保存されている場合はこちらでヒットする。
     let staffSnapshot = await getDocs(
       query(
         staffRef,
@@ -715,7 +756,6 @@ async function handleStaffLink() {
 
     let staffDoc = staffSnapshot.empty ? null : staffSnapshot.docs[0];
 
-    // Firestore側の staffNumber が数値保存・前後空白ありの場合に備えて、職種で絞ってから文字列比較する。
     if (!staffDoc) {
       const sameJobSnapshot = await getDocs(
         query(staffRef, where("job", "==", selectedJob))
@@ -741,41 +781,48 @@ async function handleStaffLink() {
       return;
     }
 
-    if (staffData.uid && staffData.uid !== firebaseUser.uid) {
+    if (staffData.uid && staffData.uid !== uid) {
       setStaffAuthError("この職員番号はすでに別のGoogleアカウントと連携されています。");
       return;
     }
 
-    // Firestoreにはメールアドレスを保存しない。
-    // 本人識別はFirebase Authのuidだけで行う。
+    // staff と staffByUid を同じ連携処理内で必ず揃える。
     await updateDoc(doc(db, "staff", staffDoc.id), {
-      uid: firebaseUser.uid,
+      uid,
       linkedAt: serverTimestamp(),
     });
 
-    await setDoc(doc(db, "staffByUid", firebaseUser.uid), {
-  staffId: staffDoc.id,
-  uid: firebaseUser.uid,
-  job: staffData.job || selectedJob,
-  active: true,
-  linkedAt: serverTimestamp(),
-});
+    await setDoc(
+      doc(db, "staffByUid", uid),
+      {
+        staffId: staffDoc.id,
+        uid,
+        job: staffData.job || selectedJob,
+        role: staffData.role || "staff",
+        active: true,
+        linkedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
     setLoginStaff({
       id: staffDoc.id,
       ...staffData,
-      uid: firebaseUser.uid,
+      uid,
     });
   } catch (error) {
     const code = error?.code || "unknown";
     const message = error?.message || "unknown";
 
     console.error("Staff link failed", { code, message, error });
-    setStaffAuthError(`職員連携に失敗しました。code: ${code} / message: ${message}`);
+    setStaffAuthError(
+      `職員連携に失敗しました。code: ${code} / message: ${message}`
+    );
   } finally {
     setStaffAuthLoading(false);
   }
 }
+
   const today = new Date();
 
   // Firestoreのスタッフ読み込み完了前にデモスタッフを表示しない。
