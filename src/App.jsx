@@ -2557,7 +2557,6 @@ if (staffLoaded && staff.length === 0) {
             <div className="modalHeader">
               <div>
                 <h2>土曜出勤設定</h2>
-                <span className="modalSubLabel">設定した開始日から、A→B→C→D→A…の順で土曜日ごとに自動表示します。</span>
               </div>
               <button className="closeButton" type="button" onClick={() => setShowSaturdayEdit(false)}>
                 ×
@@ -2572,7 +2571,6 @@ if (staffLoaded && staff.length === 0) {
               >
                 <span>
                   <strong>グループ設定</strong>
-                  <small>基本グループとローテーション開始日の設定</small>
                 </span>
                 <b>{showSaturdayGroupSettings ? "閉じる" : "開く"}</b>
               </button>
@@ -2661,7 +2659,6 @@ if (staffLoaded && staff.length === 0) {
               )}
               <div className="saturdayForm saturdayChangeForm">
                 <div className="saturdayStaffSelect">
-                  <span>出勤者と候補の土曜日</span>
                   <div className="saturdayDatePuzzle">
                     <section className="saturdayAttendeePanel">
                       <div className="saturdayPanelTitle">
@@ -4786,7 +4783,6 @@ function markChanged(staffId, department) {
           {settingsView === "register" ? (
             <>
               <h3>{profession} スタッフ管理</h3>
-              <p className="settingHelp">連携状態は staff の uid の有無、管理表表示は visible で判定します。visible未設定のスタッフは表示扱いです。</p>
 
               <button
                 className="staffFormToggle"
