@@ -926,6 +926,7 @@ useEffect(() => {
       setSaturdayRotation({
         startDate: data.rotation.startDate || "2026-04-04",
         startGroup: data.rotation.startGroup || "A",
+        
       });
     }
   });
@@ -3173,8 +3174,9 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
     if (loginUser?.job) setProfession(loginUser.job);
   }, [loginUser?.id, loginUser?.job, setProfession]);
   const [fullTable, setFullTable] = useState(false);
-  const [patientSaveStatus, setPatientSaveStatus] = useState("saved");
-  const [patientSaving, setPatientSaving] = useState(false);
+const [patientSaveStatus, setPatientSaveStatus] = useState("loading");
+const [patientSaving, setPatientSaving] = useState(false);
+const [patientLoadError, setPatientLoadError] = useState("");
   // 患者振り分け用スタッフは、デモスタッフやlocalStorageを初期表示に使わない。
   // Firestoreのstaffコレクションを読み込んでから、settings/patientManagerの保存値と安全に合成する。
   const [staff, setStaff] = useState([]);
@@ -3260,51 +3262,81 @@ function FullPatientManager({ loginUser, profession, setProfession, staffSource 
   const [showTodayAdjustHistory, setShowTodayAdjustHistory] = useState(false);
 
 useEffect(() => {
-  const unsubscribe = onSnapshot(doc(db, "settings", "patientManager"), (snapshot) => {
-    if (!snapshot.exists()) {
+  const unsubscribe = onSnapshot(
+    doc(db, "settings", "patientManager"),
+
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        setPatientDataReady(true);
+        setPatientSaveStatus("dirty");
+        return;
+      }
+
+      const data = snapshot.data();
+
+      patientManagerDataRef.current = data;
+      patientRemoteApplyingRef.current = true;
+
+      if (Array.isArray(data.staff)) {
+        setStaff(
+          mergePatientStaffList(
+            data.staff,
+            staffSourceRef.current
+          )
+        );
+      }
+
+      if (Array.isArray(data.movements)) {
+        setMovements(data.movements);
+      }
+
+      if (Array.isArray(data.history)) {
+        setHistory(data.history);
+      }
+
+      if (data.recentChanges) {
+        setRecentChanges((prev) => {
+          const today = pmTodayKey();
+
+          const keepTodayChanges = Object.fromEntries(
+            Object.entries(prev).filter(
+              ([, value]) => value === today
+            )
+          );
+
+          return {
+            ...data.recentChanges,
+            ...keepTodayChanges,
+          };
+        });
+      }
+
+      if (data.fiscalSnapshots) {
+        setFiscalSnapshots(data.fiscalSnapshots);
+      }
+
       setPatientDataReady(true);
-      return;
+      setPatientSaveStatus("saved");
+
+      setTimeout(() => {
+        patientRemoteApplyingRef.current = false;
+      }, 0);
+    },
+
+    (error) => {
+      console.error("patientManager ERROR", error);
+
+      setPatientDataReady(false);
+      setPatientSaveStatus("error");
+      setPatientLoadError(
+        `患者振り分けを読み込めませんでした。code: ${error.code || "unknown"}`
+      );
+
+      alert(
+        `${error.code || "unknown"}\n${error.message || "読み込みエラー"}`
+      );
     }
-
-    const data = snapshot.data();
-    patientManagerDataRef.current = data;
-    patientRemoteApplyingRef.current = true;
-
-    if (Array.isArray(data.staff)) {
-      setStaff(mergePatientStaffList(data.staff, staffSourceRef.current));
-    }
-
-    if (Array.isArray(data.movements)) {
-      setMovements(data.movements);
-    }
-
-    if (Array.isArray(data.history)) {
-      setHistory(data.history);
-    }
-
-if (data.recentChanges) {
-  setRecentChanges((prev) => {
-    const today = pmTodayKey();
-    const keepTodayChanges = Object.fromEntries(
-      Object.entries(prev).filter(([, value]) => value === today)
-    );
-
-    return {
-      ...data.recentChanges,
-      ...keepTodayChanges,
-    };
-  });
-}
-
-    if (data.fiscalSnapshots) {
-      setFiscalSnapshots(data.fiscalSnapshots);
-    }
-
-    setPatientDataReady(true);
-    setTimeout(() => {
-  patientRemoteApplyingRef.current = false;
-}, 0);
-  });
+  );
 
   return () => unsubscribe();
 }, []);
