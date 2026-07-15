@@ -722,6 +722,14 @@ async function handleStaffLink() {
       linkedAt: serverTimestamp(),
     });
 
+    await setDoc(doc(db, "staffByUid", firebaseUser.uid), {
+  staffId: staffDoc.id,
+  uid: firebaseUser.uid,
+  job: staffData.job || selectedJob,
+  active: true,
+  linkedAt: serverTimestamp(),
+});
+
     setLoginStaff({
       id: staffDoc.id,
       ...staffData,
