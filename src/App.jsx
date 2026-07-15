@@ -2557,6 +2557,7 @@ if (staffLoaded && staff.length === 0) {
             <div className="modalHeader">
               <div>
                 <h2>土曜出勤設定</h2>
+                <span className="modalSubLabel">設定した開始日から、A→B→C→D→A…の順で土曜日ごとに自動表示します。</span>
               </div>
               <button className="closeButton" type="button" onClick={() => setShowSaturdayEdit(false)}>
                 ×
@@ -2571,6 +2572,7 @@ if (staffLoaded && staff.length === 0) {
               >
                 <span>
                   <strong>グループ設定</strong>
+                  <small>基本グループとローテーション開始日の設定</small>
                 </span>
                 <b>{showSaturdayGroupSettings ? "閉じる" : "開く"}</b>
               </button>
@@ -2659,6 +2661,7 @@ if (staffLoaded && staff.length === 0) {
               )}
               <div className="saturdayForm saturdayChangeForm">
                 <div className="saturdayStaffSelect">
+                  <span>出勤者と候補の土曜日</span>
                   <div className="saturdayDatePuzzle">
                     <section className="saturdayAttendeePanel">
                       <div className="saturdayPanelTitle">
@@ -3398,6 +3401,7 @@ const [patientLoadError, setPatientLoadError] = useState("");
   const [settingsView, setSettingsView] = useState("register");
   const [showStaffForm, setShowStaffForm] = useState(false);
   const [showTodayAdjustHistory, setShowTodayAdjustHistory] = useState(false);
+  const [lastAppliedMovementBatch, setLastAppliedMovementBatch] = useState(null);
 
 useEffect(() => {
   const unsubscribe = onSnapshot(
@@ -3959,54 +3963,147 @@ function markChanged(staffId, department) {
 
   function applyDueMovements() {
     const due = movements.filter(pmIsDue);
-    if (due.length === 0) return;
 
-    setStaff((prev) => {
-      let nextStaff = prev;
-      due.forEach((movement) => {
-        nextStaff = nextStaff.map((person) => {
-          if (person.id !== movement.staffId) return person;
-          return {
-            ...person,
-            counts: {
-              ...person.counts,
-              [movement.department]: Math.max(0, Number(person.counts?.[movement.department] || 0) - 1),
-            },
-          };
+    if (due.length === 0) {
+      alert("本日分までの患者移動はありません。");
+      return;
+    }
+
+    const batchId = makeId("movement-apply");
+    const affectedKeys = Array.from(
+      new Set(due.map((movement) => `${movement.staffId}:${movement.department}`))
+    );
+    const previousRecentChanges = Object.fromEntries(
+      affectedKeys.map((key) => [
+        key,
+        Object.prototype.hasOwnProperty.call(recentChanges, key)
+          ? recentChanges[key]
+          : null,
+      ])
+    );
+
+    const appliedHistoryItems = due.map((movement) => ({
+      id: makeId(),
+      applyBatchId: batchId,
+      date: movement.date,
+      createdAt: new Date().toISOString(),
+      pmFiscalYear: pmFiscalYear(movement.date),
+      profession: movement.profession,
+      staffId: movement.staffId,
+      staffName: movement.staffName,
+      action: pmMoveShort(movement.moveType),
+      moveType: movement.moveType,
+      department: movement.department,
+      pmDepartmentShort: pmDepartmentShort(movement.department),
+      delta: -1,
+      amount: 1,
+      updatedById: loginUser?.id || "",
+      updatedByName: loginUser ? personName(loginUser) : "",
+      note: movement.note || "",
+    }));
+
+    const decrementMap = due.reduce((map, movement) => {
+      const key = `${movement.staffId}:${movement.department}`;
+      map[key] = (map[key] || 0) + 1;
+      return map;
+    }, {});
+
+    setStaff((prev) =>
+      prev.map((person) => {
+        const nextCounts = { ...person.counts };
+        let changed = false;
+
+        Object.entries(decrementMap).forEach(([key, amount]) => {
+          const [staffId, department] = key.split(":");
+          if (person.id !== staffId) return;
+
+          nextCounts[department] = Math.max(
+            0,
+            Number(nextCounts?.[department] || 0) - Number(amount || 0)
+          );
+          changed = true;
         });
-      });
-      return nextStaff;
-    });
+
+        return changed ? { ...person, counts: nextCounts } : person;
+      })
+    );
 
     const changed = {};
     due.forEach((movement) => {
       changed[`${movement.staffId}:${movement.department}`] = pmTodayKey();
     });
+
     setRecentChanges((prev) => ({ ...prev, ...changed }));
+    setHistory((prev) => [...appliedHistoryItems, ...prev]);
+    setMovements((prev) =>
+      prev.filter((movement) => !due.some((target) => target.id === movement.id))
+    );
 
-    setHistory((prev) => [
-      ...due.map((movement) => ({
-        id: makeId(),
-        date: movement.date,
-        createdAt: new Date().toISOString(),
-        pmFiscalYear: pmFiscalYear(movement.date),
-        profession: movement.profession,
-        staffId: movement.staffId,
-        staffName: movement.staffName,
-        action: pmMoveShort(movement.moveType),
-        moveType: movement.moveType,
-        department: movement.department,
-        pmDepartmentShort: pmDepartmentShort(movement.department),
-        delta: -1,
-        amount: 1,
-        updatedById: loginUser?.id || "",
-        updatedByName: loginUser ? personName(loginUser) : "",
-        note: movement.note || "",
-      })),
-      ...prev,
-    ]);
+    setLastAppliedMovementBatch({
+      id: batchId,
+      movements: due,
+      historyIds: appliedHistoryItems.map((item) => item.id),
+      previousRecentChanges,
+    });
+  }
 
-    setMovements((prev) => prev.filter((movement) => !due.some((d) => d.id === movement.id)));
+  function undoLastAppliedMovements() {
+    const batch = lastAppliedMovementBatch;
+    if (!batch) return;
+
+    const incrementMap = batch.movements.reduce((map, movement) => {
+      const key = `${movement.staffId}:${movement.department}`;
+      map[key] = (map[key] || 0) + 1;
+      return map;
+    }, {});
+
+    setStaff((prev) =>
+      prev.map((person) => {
+        const nextCounts = { ...person.counts };
+        let changed = false;
+
+        Object.entries(incrementMap).forEach(([key, amount]) => {
+          const [staffId, department] = key.split(":");
+          if (person.id !== staffId) return;
+
+          nextCounts[department] =
+            Number(nextCounts?.[department] || 0) + Number(amount || 0);
+          changed = true;
+        });
+
+        return changed ? { ...person, counts: nextCounts } : person;
+      })
+    );
+
+    setMovements((prev) => {
+      const existingIds = new Set(prev.map((movement) => movement.id));
+      return [
+        ...prev,
+        ...batch.movements.filter((movement) => !existingIds.has(movement.id)),
+      ].sort((a, b) =>
+        String(a.date || "").localeCompare(String(b.date || ""))
+      );
+    });
+
+    setHistory((prev) =>
+      prev.filter((item) => !batch.historyIds.includes(item.id))
+    );
+
+    setRecentChanges((prev) => {
+      const next = { ...prev };
+
+      Object.entries(batch.previousRecentChanges).forEach(([key, value]) => {
+        if (value === null || value === undefined) {
+          delete next[key];
+        } else {
+          next[key] = value;
+        }
+      });
+
+      return next;
+    });
+
+    setLastAppliedMovementBatch(null);
   }
 
   function deleteMovement(id) {
@@ -4502,6 +4599,21 @@ function markChanged(staffId, department) {
       {view === "table" && (
         <>
           {table}
+          {lastAppliedMovementBatch && (
+            <section className="movementUndoBar" role="status">
+              <span>
+                本日分までの患者移動を
+                {lastAppliedMovementBatch.movements.length}件消去しました。
+              </span>
+              <button
+                className="softButton"
+                type="button"
+                onClick={undoLastAppliedMovements}
+              >
+                元に戻す
+              </button>
+            </section>
+          )}
           {showTodayAdjustHistory && (
             <section className="card todayAdjustHistoryCard">
               <div className="cardHeader compactHistoryHeader">
@@ -4783,6 +4895,7 @@ function markChanged(staffId, department) {
           {settingsView === "register" ? (
             <>
               <h3>{profession} スタッフ管理</h3>
+              <p className="settingHelp">連携状態は staff の uid の有無、管理表表示は visible で判定します。visible未設定のスタッフは表示扱いです。</p>
 
               <button
                 className="staffFormToggle"
@@ -5184,8 +5297,15 @@ function PMAssignmentTable({
               <th className="moveCol">
                 <span className="moveHeaderInline">
                   患者移動
-                  <button type="button" className="clearDueButton" onClick={(e) => { e.stopPropagation(); onClearDueMovements(); }}>
-                    消去
+                  <button
+                    type="button"
+                    className="clearDueButton"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClearDueMovements();
+                    }}
+                  >
+                    本日分までを消去
                   </button>
                 </span>
               </th>
