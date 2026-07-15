@@ -3339,10 +3339,6 @@ useEffect(() => {
       setPatientLoadError(
         `患者振り分けを読み込めませんでした。code: ${error.code || "unknown"}`
       );
-
-      alert(
-        `${error.code || "unknown"}\n${error.message || "読み込みエラー"}`
-      );
     }
   );
 
