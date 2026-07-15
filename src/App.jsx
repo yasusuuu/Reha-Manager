@@ -17,6 +17,12 @@ import {
 } from "firebase/firestore";
 import { auth, provider, db } from "./firebase/firebase";
 import "./App.css";
+import {
+  applyPwaUpdate,
+  checkForPwaUpdate,
+  clearPwaCacheAndReload,
+  subscribePwaUpdate,
+} from "./pwaUpdate.js";
 
 const FULL_DAY_HOURS = 7.75;
 const MORNING_HOURS = 3.5;
@@ -579,6 +585,40 @@ const [linkForm, setLinkForm] = useState({
   job: "PT",
   staffNumber: "",
 });
+
+const [pwaInfo, setPwaInfo] = useState({
+  needRefresh: false,
+  version: typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0",
+});
+const [pwaChecking, setPwaChecking] = useState(false);
+
+useEffect(() => subscribePwaUpdate(setPwaInfo), []);
+
+async function handlePwaUpdateCheck() {
+  setPwaChecking(true);
+  const ok = await checkForPwaUpdate();
+  setPwaChecking(false);
+
+  if (!ok) {
+    alert("更新確認に失敗しました。通信状況を確認してください。");
+    return;
+  }
+
+  if (!pwaInfo.needRefresh) {
+    alert("現在のアプリは最新版です。");
+  }
+}
+
+async function handlePwaApplyUpdate() {
+  await applyPwaUpdate();
+}
+
+async function handlePwaCacheClear() {
+  if (!window.confirm("アプリのキャッシュを削除して再読み込みしますか？\n入力中の内容は失われる場合があります。")) {
+    return;
+  }
+  await clearPwaCacheAndReload();
+}
 
 useEffect(() => {
   const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -4930,6 +4970,47 @@ function markChanged(staffId, department) {
             </>
           )}
             </div>
+
+            <section className="appInfoPanel">
+              <div className="appInfoHeader">
+                <div>
+                  <h3>アプリ情報</h3>
+                  <p className="settingHelp">表示不具合がある場合は、最新版確認またはキャッシュ削除を使用してください。</p>
+                </div>
+                {pwaInfo.needRefresh && <span className="appUpdateBadge">更新あり</span>}
+              </div>
+
+              <div className="appInfoGrid">
+                <div>
+                  <span>バージョン</span>
+                  <strong>{pwaInfo.version}</strong>
+                </div>
+                <div>
+                  <span>PWA</span>
+                  <strong>{window.matchMedia?.("(display-mode: standalone)")?.matches ? "インストール済" : "ブラウザ表示"}</strong>
+                </div>
+                <div>
+                  <span>更新状態</span>
+                  <strong>{pwaInfo.needRefresh ? "新しい版があります" : "最新版"}</strong>
+                </div>
+              </div>
+
+              <div className="appInfoActions">
+                {pwaInfo.needRefresh ? (
+                  <button className="primaryButton" type="button" onClick={handlePwaApplyUpdate}>
+                    最新版へ更新
+                  </button>
+                ) : (
+                  <button className="softButton" type="button" onClick={handlePwaUpdateCheck} disabled={pwaChecking}>
+                    {pwaChecking ? "確認中..." : "最新版を確認"}
+                  </button>
+                )}
+
+                <button className="softButton" type="button" onClick={handlePwaCacheClear}>
+                  キャッシュ削除・再読み込み
+                </button>
+              </div>
+            </section>
           </div>
         </section>
       )}

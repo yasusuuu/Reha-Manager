@@ -8809,3 +8809,73 @@ select.leaveSelectControl:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* PWA更新管理 */
+.appInfoPanel {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #dbe4ea;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.appInfoHeader,
+.appInfoActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.appInfoHeader h3 {
+  margin: 0;
+}
+
+.appUpdateBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.appInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.appInfoGrid > div {
+  padding: 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.appInfoGrid span,
+.appInfoGrid strong {
+  display: block;
+}
+
+.appInfoGrid span {
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .appInfoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .appInfoActions > button {
+    width: 100%;
+  }
+}
