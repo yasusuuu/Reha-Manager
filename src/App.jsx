@@ -2070,7 +2070,12 @@ if (staffLoaded && staff.length === 0) {
   profession={patientProfession}
   setProfession={setPatientProfession}
   staffSource={activeStaff}
-  />
+  pwaInfo={pwaInfo}
+  pwaChecking={pwaChecking}
+  onPwaUpdateCheck={handlePwaUpdateCheck}
+  onPwaApplyUpdate={handlePwaApplyUpdate}
+  onPwaCacheClear={handlePwaCacheClear}
+/>
  ) : (
    <>
       <AnnouncementBoard
@@ -3293,7 +3298,17 @@ function PMJapaneseDateInput({ value, onChange }) {
   );
 }
 
-function FullPatientManager({ loginUser, profession, setProfession, staffSource = [] }) {
+function FullPatientManager({
+  loginUser,
+  profession,
+  setProfession,
+  staffSource = [],
+  pwaInfo,
+  pwaChecking,
+  onPwaUpdateCheck,
+  onPwaApplyUpdate,
+  onPwaCacheClear,
+}) {
   const [view, setView] = useState("table");
 
   useEffect(() => {
@@ -4997,16 +5012,16 @@ function markChanged(staffId, department) {
 
               <div className="appInfoActions">
                 {pwaInfo.needRefresh ? (
-                  <button className="primaryButton" type="button" onClick={handlePwaApplyUpdate}>
+                  <button className="primaryButton" type="button" onClick={onPwaApplyUpdate}>
                     最新版へ更新
                   </button>
                 ) : (
-                  <button className="softButton" type="button" onClick={handlePwaUpdateCheck} disabled={pwaChecking}>
+                  <button className="softButton" type="button" onClick={onPwaUpdateCheck} disabled={pwaChecking}>
                     {pwaChecking ? "確認中..." : "最新版を確認"}
                   </button>
                 )}
 
-                <button className="softButton" type="button" onClick={handlePwaCacheClear}>
+                <button className="softButton" type="button" onClick={onPwaCacheClear}>
                   キャッシュ削除・再読み込み
                 </button>
               </div>
