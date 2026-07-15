@@ -5,6 +5,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -588,22 +589,6 @@ useEffect(() => {
   return () => unsubscribe();
 }, []);
 
-async function ensureStaffByUid(staffDocId, staffData = {}) {
-  if (!firebaseUser?.uid || !staffDocId) return;
-
-  await setDoc(
-    doc(db, "staffByUid", firebaseUser.uid),
-    {
-      staffId: staffDocId,
-      uid: firebaseUser.uid,
-      job: staffData.job || "",
-      active: staffData.active !== false,
-      linkedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
-}
-
 useEffect(() => {
   if (!firebaseUser) {
     setLoginStaff(null);
@@ -636,8 +621,35 @@ useEffect(() => {
         return;
       }
 
-      // staff に uid があるのに staffByUid が欠けている場合は、ログイン時に自動修復する。
-      await ensureStaffByUid(staffDoc.id, staffData);
+      // staffにはUIDがあるのにstaffByUidが欠けている場合、自動で修復する。
+      // FirestoreルールのisStaff()がstaffByUid/{uid}を参照するため、
+      // 初回連携済みの既存職員でもログイン時に不足分を補完する。
+      const staffByUidRef = doc(db, "staffByUid", firebaseUser.uid);
+      const staffByUidSnapshot = await getDoc(staffByUidRef);
+      const staffByUidData = staffByUidSnapshot.exists()
+        ? staffByUidSnapshot.data()
+        : null;
+
+      const needsStaffByUidRepair =
+        !staffByUidData
+        || staffByUidData.staffId !== staffDoc.id
+        || staffByUidData.uid !== firebaseUser.uid
+        || staffByUidData.active !== true
+        || staffByUidData.job !== (staffData.job || "PT");
+
+      if (needsStaffByUidRepair) {
+        await setDoc(
+          staffByUidRef,
+          {
+            staffId: staffDoc.id,
+            uid: firebaseUser.uid,
+            job: staffData.job || "PT",
+            active: true,
+            repairedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
 
       setLoginStaff({
         id: staffDoc.id,
@@ -741,12 +753,13 @@ async function handleStaffLink() {
       linkedAt: serverTimestamp(),
     });
 
-    // 初回連携時に、Firestoreルールの isStaff() 判定に必要な対応表も必ず作成する。
-    await ensureStaffByUid(staffDoc.id, {
-      ...staffData,
-      job: staffData.job || selectedJob,
-      active: true,
-    });
+    await setDoc(doc(db, "staffByUid", firebaseUser.uid), {
+  staffId: staffDoc.id,
+  uid: firebaseUser.uid,
+  job: staffData.job || selectedJob,
+  active: true,
+  linkedAt: serverTimestamp(),
+});
 
     setLoginStaff({
       id: staffDoc.id,
@@ -3288,62 +3301,77 @@ const [patientLoadError, setPatientLoadError] = useState("");
   const [showTodayAdjustHistory, setShowTodayAdjustHistory] = useState(false);
 
 useEffect(() => {
-  const unsubscribe = onSnapshot(doc(db, "settings", "patientManager"), (snapshot) => {
-    if (!snapshot.exists()) {
+  const unsubscribe = onSnapshot(
+    doc(db, "settings", "patientManager"),
+
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        setPatientDataReady(true);
+        setPatientSaveStatus("dirty");
+        return;
+      }
+
+      const data = snapshot.data();
+
+      patientManagerDataRef.current = data;
+      patientRemoteApplyingRef.current = true;
+
+      if (Array.isArray(data.staff)) {
+        setStaff(
+          mergePatientStaffList(
+            data.staff,
+            staffSourceRef.current
+          )
+        );
+      }
+
+      if (Array.isArray(data.movements)) {
+        setMovements(data.movements);
+      }
+
+      if (Array.isArray(data.history)) {
+        setHistory(data.history);
+      }
+
+      if (data.recentChanges) {
+        setRecentChanges((prev) => {
+          const today = pmTodayKey();
+
+          const keepTodayChanges = Object.fromEntries(
+            Object.entries(prev).filter(
+              ([, value]) => value === today
+            )
+          );
+
+          return {
+            ...data.recentChanges,
+            ...keepTodayChanges,
+          };
+        });
+      }
+
+      if (data.fiscalSnapshots) {
+        setFiscalSnapshots(data.fiscalSnapshots);
+      }
+
       setPatientDataReady(true);
-      return;
+      setPatientSaveStatus("saved");
+
+      setTimeout(() => {
+        patientRemoteApplyingRef.current = false;
+      }, 0);
+    },
+
+    (error) => {
+      console.error("patientManager ERROR", error);
+
+      setPatientDataReady(false);
+      setPatientSaveStatus("error");
+      setPatientLoadError(
+        `患者振り分けを読み込めませんでした。code: ${error.code || "unknown"}`
+      );
     }
-
-    const data = snapshot.data();
-    patientManagerDataRef.current = data;
-    patientRemoteApplyingRef.current = true;
-
-    if (Array.isArray(data.staff)) {
-      setStaff(mergePatientStaffList(data.staff, staffSourceRef.current));
-    }
-
-    if (Array.isArray(data.movements)) {
-      setMovements(data.movements);
-    }
-
-    if (Array.isArray(data.history)) {
-      setHistory(data.history);
-    }
-
-if (data.recentChanges) {
-  setRecentChanges((prev) => {
-    const today = pmTodayKey();
-    const keepTodayChanges = Object.fromEntries(
-      Object.entries(prev).filter(([, value]) => value === today)
-    );
-
-    return {
-      ...data.recentChanges,
-      ...keepTodayChanges,
-    };
-    const unsubscribe = onSnapshot(
-  doc(db, "settings", "patientManager"),
-
-(snapshot)=>{
-   ...
-},
-
-(error)=>{
-   console.error(error);
-   alert(error.code + "\n" + error.message);
-
-  });
-}
-
-    if (data.fiscalSnapshots) {
-      setFiscalSnapshots(data.fiscalSnapshots);
-    }
-
-    setPatientDataReady(true);
-    setTimeout(() => {
-  patientRemoteApplyingRef.current = false;
-}, 0);
-  });
+  );
 
   return () => unsubscribe();
 }, []);
