@@ -66,6 +66,7 @@ const LEAVE_TYPES = {
   paid: "有休",
   child: "看護休暇",
   summer: "夏季休暇",
+  compensatory: "代休",
   special: "特別休暇",
   training: "研修",
   business: "出張",
@@ -382,7 +383,7 @@ function recordDisplay(record) {
 }
 
 function isLeaveLike(record) {
-  return ["paid", "child", "summer", "special"].includes(record.type);
+  return ["paid", "child", "summer", "compensatory", "special"].includes(record.type);
 }
 
 function isFullDayRecord(record) {
@@ -4586,6 +4587,21 @@ function markChanged(staffId, department) {
 
   return (
     <div className="patientModule appShell">
+      {lastAppliedMovementBatch && (
+        <div className="movementUndoToast" role="status" aria-live="polite">
+          <span>
+            本日分までの患者移動を
+            {lastAppliedMovementBatch.movements.length}件消去しました。
+          </span>
+          <button
+            type="button"
+            onClick={undoLastAppliedMovements}
+          >
+            元に戻す
+          </button>
+        </div>
+      )}
+
       <nav className="viewTabs">
         <div className="viewTabGroup">
           <button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>管理表</button>
@@ -4599,21 +4615,6 @@ function markChanged(staffId, department) {
       {view === "table" && (
         <>
           {table}
-          {lastAppliedMovementBatch && (
-            <section className="movementUndoBar" role="status">
-              <span>
-                本日分までの患者移動を
-                {lastAppliedMovementBatch.movements.length}件消去しました。
-              </span>
-              <button
-                className="softButton"
-                type="button"
-                onClick={undoLastAppliedMovements}
-              >
-                元に戻す
-              </button>
-            </section>
-          )}
           {showTodayAdjustHistory && (
             <section className="card todayAdjustHistoryCard">
               <div className="cardHeader compactHistoryHeader">
