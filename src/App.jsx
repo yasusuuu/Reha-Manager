@@ -4827,7 +4827,7 @@ function markChanged(staffId, department) {
                 <span className="settingsMenuIcon">⤓</span>
                 <span className="settingsMenuText">
                   <strong>バックアップ</strong>
-                  <small>JSON保存・復元・直近20件</small>
+                  <small>JSON保存・復元・容量確認</small>
                 </span>
                 <span className="settingsMenuArrow">›</span>
               </button>
