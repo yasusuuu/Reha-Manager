@@ -3494,6 +3494,21 @@ function buildPatientManagerPayload(extra = {}) {
   };
 }
 
+function estimatePatientManagerSizeBytes() {
+  try {
+    return new Blob([JSON.stringify(buildPatientManagerPayload())]).size;
+  } catch (error) {
+    console.error("patientManager size estimate failed", error);
+    return 0;
+  }
+}
+
+function formatPatientManagerSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "計測できません";
+  if (bytes < 1024) return `${bytes} B`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
 
 async function savePatientManagerData() {
   if (!patientDataReady || patientRemoteApplyingRef.current || patientSaving) return;
@@ -4319,6 +4334,22 @@ function markChanged(staffId, department) {
     });
   }
 
+  const patientManagerSizeBytes = useMemo(
+    () => estimatePatientManagerSizeBytes(),
+    [staff, movements, history, recentChanges, fiscalSnapshots]
+  );
+  const firestoreDocumentLimitBytes = 1024 * 1024;
+  const patientManagerUsagePercent = Math.min(
+    100,
+    Math.round((patientManagerSizeBytes / firestoreDocumentLimitBytes) * 100)
+  );
+  const patientManagerSizeLevel =
+    patientManagerUsagePercent >= 85
+      ? "danger"
+      : patientManagerUsagePercent >= 65
+        ? "warning"
+        : "normal";
+
   const table = (
     <PMAssignmentTable
       staffList={visibleStaff}
@@ -4979,6 +5010,45 @@ function markChanged(staffId, department) {
                   <span>JSONから復元</span>
                   <input type="file" accept="application/json,.json" onChange={restorePatientManagerFromFile} />
                 </label>
+              </div>
+
+              <div className={`systemStatusBox ${patientManagerSizeLevel}`}>
+                <div className="systemStatusHeader">
+                  <div>
+                    <h4>システム状態</h4>
+                    <p className="settingHelp">患者振り分け本体の推定データ容量です。</p>
+                  </div>
+                  <strong>{patientManagerUsagePercent}%</strong>
+                </div>
+
+                <div className="systemStatusMeter">
+                  <span style={{ width: `${patientManagerUsagePercent}%` }} />
+                </div>
+
+                <div className="systemStatusDetails">
+                  <div>
+                    <span>現在の推定容量</span>
+                    <strong>{formatPatientManagerSize(patientManagerSizeBytes)}</strong>
+                  </div>
+                  <div>
+                    <span>Firestore上限</span>
+                    <strong>1,024 KB</strong>
+                  </div>
+                  <div>
+                    <span>判定</span>
+                    <strong>
+                      {patientManagerSizeLevel === "danger"
+                        ? "容量に注意"
+                        : patientManagerSizeLevel === "warning"
+                          ? "やや増加"
+                          : "正常"}
+                    </strong>
+                  </div>
+                </div>
+
+                <p className="systemStatusNote">
+                  65%以上で注意、85%以上で警告表示します。表示値は概算です。
+                </p>
               </div>
 
               <div className="backupSnapshotBox">
