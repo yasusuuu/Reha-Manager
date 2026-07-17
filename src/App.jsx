@@ -3494,49 +3494,26 @@ function buildPatientManagerPayload(extra = {}) {
   };
 }
 
-function buildPatientManagerSnapshot(reason = "manual") {
-  const source = patientManagerDataRef.current;
-  if (!source) return null;
-
-  return {
-    reason,
-    createdAt: new Date().toISOString(),
-    createdBy: loginUser?.id || "",
-    createdByName: loginUser ? personName(loginUser) : "",
-    data: {
-      staff: Array.isArray(source.staff) ? source.staff : [],
-      movements: Array.isArray(source.movements) ? source.movements : [],
-      history: Array.isArray(source.history) ? source.history : [],
-      recentChanges: source.recentChanges || {},
-      fiscalSnapshots: source.fiscalSnapshots || {},
-    },
-  };
-}
-
-function limitedPatientManagerSnapshots(nextSnapshot = null) {
-  const existing = Array.isArray(patientManagerDataRef.current?.snapshots)
-    ? patientManagerDataRef.current.snapshots
-    : [];
-
-  return nextSnapshot ? [nextSnapshot, ...existing].slice(0, 20) : existing.slice(0, 20);
-}
 
 async function savePatientManagerData() {
   if (!patientDataReady || patientRemoteApplyingRef.current || patientSaving) return;
 
   setPatientSaving(true);
   try {
-    const beforeSaveSnapshot = buildPatientManagerSnapshot("beforeSave");
-    const payload = buildPatientManagerPayload({
-      snapshots: limitedPatientManagerSnapshots(beforeSaveSnapshot),
-    });
+    // Firestoreの1ドキュメント上限を超えないよう、
+    // 患者振り分け本体にはスナップショットを含めない。
+    const payload = buildPatientManagerPayload();
 
     await setDoc(doc(db, "settings", "patientManager"), payload);
     patientManagerDataRef.current = payload;
     setPatientSaveStatus("saved");
   } catch (error) {
+    const code = error?.code || "unknown";
+    const message = error?.message || "unknown";
     console.error("patientManager save failed", error);
-    alert("患者振り分けの保存に失敗しました。通信状況を確認してください。");
+    alert(
+      `患者振り分けの保存に失敗しました。\ncode: ${code}\nmessage: ${message}`
+    );
     setPatientSaveStatus("dirty");
   } finally {
     setPatientSaving(false);
@@ -3551,9 +3528,7 @@ function downloadPatientManagerBackup() {
     createdAt: new Date().toISOString(),
     createdBy: loginUser?.id || "",
     createdByName: loginUser ? personName(loginUser) : "",
-    data: buildPatientManagerPayload({
-      snapshots: limitedPatientManagerSnapshots(),
-    }),
+    data: buildPatientManagerPayload(),
   };
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -3604,7 +3579,6 @@ if (!ok) return;
     setPatientSaving(true);
     patientRemoteApplyingRef.current = true;
 
-    const beforeRestoreSnapshot = buildPatientManagerSnapshot("beforeRestore");
     const payload = buildPatientManagerPayload({
       staff: nextStaff,
       movements: nextMovements,
@@ -3614,7 +3588,6 @@ if (!ok) return;
       restoredAt: Date.now(),
       restoredBy: loginUser?.id || "",
       restoredByName: loginUser ? personName(loginUser) : "",
-      snapshots: limitedPatientManagerSnapshots(beforeRestoreSnapshot),
     });
 
     await setDoc(doc(db, "settings", "patientManager"), payload);
@@ -3635,69 +3608,6 @@ if (!ok) return;
   } catch (error) {
     console.error("patientManager restore failed", error);
     alert("復元に失敗しました。JSONファイルの内容を確認してください。");
-    patientRemoteApplyingRef.current = false;
-  } finally {
-    setPatientSaving(false);
-  }
-}
-
-async function restorePatientManagerSnapshot(snapshot) {
-  if (!snapshot?.data) return;
-
-const ok = window.confirm(
-  `このスナップショットへ戻します。
-
-日時：
-${snapshot.createdAt || "日時不明"}
-
-理由：
-${snapshot.reason || "snapshot"}
-
-現在の患者振り分けデータは上書きされます。
-
-続行しますか？`
-);
-
-if (!ok) return;
-
-  setPatientSaving(true);
-  patientRemoteApplyingRef.current = true;
-
-  try {
-    const nextStaff = Array.isArray(snapshot.data.staff) ? snapshot.data.staff.map(pmNormalizeStaff) : [];
-    const nextMovements = Array.isArray(snapshot.data.movements) ? snapshot.data.movements : [];
-    const nextHistory = Array.isArray(snapshot.data.history) ? snapshot.data.history : [];
-    const nextRecentChanges = snapshot.data.recentChanges || {};
-    const nextFiscalSnapshots = snapshot.data.fiscalSnapshots || {};
-    const beforeRollbackSnapshot = buildPatientManagerSnapshot("beforeRollback");
-
-    const payload = buildPatientManagerPayload({
-      staff: nextStaff,
-      movements: nextMovements,
-      history: nextHistory,
-      recentChanges: nextRecentChanges,
-      fiscalSnapshots: nextFiscalSnapshots,
-      restoredAt: Date.now(),
-      restoredBy: loginUser?.id || "",
-      restoredByName: loginUser ? personName(loginUser) : "",
-      snapshots: limitedPatientManagerSnapshots(beforeRollbackSnapshot),
-    });
-
-    await setDoc(doc(db, "settings", "patientManager"), payload);
-    patientManagerDataRef.current = payload;
-    setStaff(mergePatientStaffList(nextStaff, staffSourceRef.current));
-    setMovements(nextMovements);
-    setHistory(nextHistory);
-    setRecentChanges(nextRecentChanges);
-    setFiscalSnapshots(nextFiscalSnapshots);
-    setPatientSaveStatus("saved");
-
-    setTimeout(() => {
-      patientRemoteApplyingRef.current = false;
-    }, 0);
-  } catch (error) {
-    console.error("patientManager snapshot restore failed", error);
-    alert("スナップショット復元に失敗しました。");
     patientRemoteApplyingRef.current = false;
   } finally {
     setPatientSaving(false);
@@ -5058,7 +4968,7 @@ function markChanged(staffId, department) {
               </div>
               <p className="settingHelp">
                 患者振り分けの現在データをJSONで保存できます。復元は選択したJSONで現在データを上書きします。
-                復元前の状態は直近スナップショットとして最大20件まで保持します。
+                Firestoreの容量上限を避けるため、直近スナップショットは一時停止しています。
               </p>
 
               <div className="backupActionGrid">
@@ -5073,24 +4983,10 @@ function markChanged(staffId, department) {
 
               <div className="backupSnapshotBox">
                 <h4>直近スナップショット</h4>
-                <p className="settingHelp">患者振り分け保存・復元・ロールバック前の状態を最大20件保持します。</p>
-                {Array.isArray(patientManagerDataRef.current?.snapshots) && patientManagerDataRef.current.snapshots.length > 0 ? (
-                  <div className="backupSnapshotList">
-                    {patientManagerDataRef.current.snapshots.slice(0, 20).map((snapshot, index) => (
-                      <div className="backupSnapshotItem" key={`${snapshot.createdAt || "snapshot"}-${index}`}>
-                        <div>
-                          <strong>{snapshot.createdAt ? new Date(snapshot.createdAt).toLocaleString("ja-JP") : "日時不明"}</strong>
-                          <small>{snapshot.reason || "snapshot"} ／ {snapshot.createdByName || "記録なし"}</small>
-                        </div>
-                        <button className="softButton" type="button" onClick={() => restorePatientManagerSnapshot(snapshot)}>
-                          戻す
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="emptyText left">まだスナップショットはありません。次回の患者振り分け保存時から作成されます。</p>
-                )}
+                <p className="settingHelp">
+                  Firestoreの1ドキュメント容量上限を避けるため、一時停止しています。
+                  必要な時点では「バックアップをダウンロード」を使用してください。
+                </p>
               </div>
             </>
           )}
