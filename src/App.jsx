@@ -29,39 +29,6 @@ const MORNING_HOURS = 3.5;
 const AFTERNOON_HOURS = 4.25;
 const SUMMER_LIMIT = 5;
 
-const DEFAULT_STAFF = [
-  { id: "s1", lastName: "阿部", firstName: "寛", name: "阿部 寛", job: "PT", role: "admin" },
-  { id: "s2", lastName: "大泉", firstName: "洋", name: "大泉 洋", job: "PT", role: "staff" },
-  { id: "s3", lastName: "佐藤", firstName: "二朗", name: "佐藤 二朗", job: "PT", role: "staff" },
-  { id: "s4", lastName: "ムロ", firstName: "ツヨシ", name: "ムロ ツヨシ", job: "PT", role: "staff" },
-  { id: "s5", lastName: "天海", firstName: "祐希", name: "天海 祐希", job: "OT", role: "staff" },
-  { id: "s6", lastName: "小池", firstName: "栄子", name: "小池 栄子", job: "OT", role: "staff" },
-  { id: "s7", lastName: "松重", firstName: "豊", name: "松重 豊", job: "OT", role: "staff" },
-  { id: "s8", lastName: "光石", firstName: "研", name: "光石 研", job: "OT", role: "staff" },
-];
-
-const SAMPLE_STAFF_NAME_BY_ID = {
-  s1: { lastName: "阿部", firstName: "寛" },
-  s2: { lastName: "大泉", firstName: "洋" },
-  s3: { lastName: "佐藤", firstName: "二朗" },
-  s4: { lastName: "ムロ", firstName: "ツヨシ" },
-  s5: { lastName: "天海", firstName: "祐希" },
-  s6: { lastName: "小池", firstName: "栄子" },
-  s7: { lastName: "松重", firstName: "豊" },
-  s8: { lastName: "光石", firstName: "研" },
-};
-
-const OLD_SAMPLE_STAFF_NAME_BY_ID = {
-  s1: { lastName: "山田", firstName: "太郎" },
-  s2: { lastName: "田中", firstName: "美咲" },
-  s3: { lastName: "佐藤", firstName: "健" },
-  s4: { lastName: "高橋", firstName: "優" },
-  s5: { lastName: "吉田", firstName: "彩" },
-  s6: { lastName: "伊藤", firstName: "翔" },
-  s7: { lastName: "渡辺", firstName: "葵" },
-  s8: { lastName: "中村", firstName: "蓮" },
-};
-
 const LEAVE_TYPES = {
   paid: "有休",
   child: "看護休暇",
@@ -179,27 +146,48 @@ function overlapMinutes(aStart, aEnd, bStart, bEnd) {
   return Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
 }
 
-function calcTimeHours(start, end, includeBreak) {
-  let minutes = toMinutes(end) - toMinutes(start);
-  if (minutes <= 0) return 0;
+function calcTimeHours(start, end, deductBreak = false) {
+  const workStart = toMinutes("08:30");
+  const workEnd = toMinutes("17:15");
+  const startMinutes = toMinutes(start);
+  const endMinutes = toMinutes(end);
 
-  if (!includeBreak) {
+  // 勤務時間内（08:30〜17:15）の入力だけを計算対象にする。
+  if (
+    startMinutes < workStart ||
+    startMinutes > workEnd ||
+    endMinutes < workStart ||
+    endMinutes > workEnd ||
+    endMinutes <= startMinutes
+  ) {
+    return 0;
+  }
+
+  let minutes = endMinutes - startMinutes;
+
+  // チェックされた場合だけ、昼休憩（12:00〜13:00）との重複時間を控除する。
+  if (deductBreak) {
     minutes -= overlapMinutes(
-      toMinutes(start),
-      toMinutes(end),
+      startMinutes,
+      endMinutes,
       toMinutes("12:00"),
       toMinutes("13:00")
     );
   }
 
-  return Math.max(0, Math.floor(minutes / 60));
+  return Math.max(0, Math.round((minutes / 60) * 100) / 100);
 }
 
 function getHours(record) {
   if (record.method === "full") return FULL_DAY_HOURS;
   if (record.method === "morning") return MORNING_HOURS;
   if (record.method === "afternoon") return AFTERNOON_HOURS;
-  if (record.method === "time") return calcTimeHours(record.start, record.end, record.includeBreak);
+  if (record.method === "time") {
+    // 旧データのincludeBreakは「休憩を含める」指定だったため、
+    // deductBreakが未保存の記録だけ反転して互換性を保つ。
+    const deductBreak = record.deductBreak ?? !record.includeBreak;
+    return calcTimeHours(record.start, record.end, deductBreak);
+  }
   return 0;
 }
 
@@ -1007,7 +995,7 @@ const [saturdayRotation, setSaturdayRotation] = useState({
     method: "full",
     start: "08:30",
     end: "17:15",
-    includeBreak: false,
+    deductBreak: false,
     note: "",
   });
 
@@ -1346,7 +1334,21 @@ const loginUser = loginStaff
     }
 
     if (["paid", "child"].includes(nextRecord.type) && nextRecord.method === "time") {
-      if (toMinutes(nextRecord.end) <= toMinutes(nextRecord.start)) {
+      const workStart = toMinutes("08:30");
+      const workEnd = toMinutes("17:15");
+      const startMinutes = toMinutes(nextRecord.start);
+      const endMinutes = toMinutes(nextRecord.end);
+
+      if (
+        startMinutes < workStart ||
+        startMinutes > workEnd ||
+        endMinutes < workStart ||
+        endMinutes > workEnd
+      ) {
+        return "時間休は8:30〜17:15の範囲で入力してください。";
+      }
+
+      if (endMinutes <= startMinutes) {
         return "終了時刻は開始時刻より後にしてください。";
       }
 
@@ -1504,7 +1506,7 @@ try {
     if (form.method === "full") return "計算結果：終日取得 1日";
     if (form.method === "morning") return "計算結果：時間休 3.5h";
     if (form.method === "afternoon") return "計算結果：時間休 4.25h";
-    return `計算結果：時間休 ${formatHours(calcTimeHours(form.start, form.end, form.includeBreak))}`;
+    return `計算結果：時間休 ${formatHours(calcTimeHours(form.start, form.end, form.deductBreak))}`;
   }
 
   function selectedRecords() {
@@ -1519,6 +1521,23 @@ try {
 
   function toggleDate(date) {
     setSelectedDate((current) => (current === date ? null : date));
+  }
+
+  function openLeaveFormForDate(date) {
+    setForm((prev) => ({
+      ...prev,
+      date,
+      staffId: isAdmin ? (prev.staffId || loginUser?.id || activeStaff[0]?.id || "") : (loginUser?.id || ""),
+    }));
+    setShowLeaveForm(true);
+    setSelectedDate(null);
+
+    window.setTimeout(() => {
+      document.querySelector(".leaveEntryCard")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 50);
   }
 
   function addStaff() {
@@ -2178,11 +2197,25 @@ if (staffLoaded && staff.length === 0) {
             <>
               <label>
                 <span>開始</span>
-                <input type="time" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} />
+                <input
+                  type="time"
+                  min="08:30"
+                  max="17:15"
+                  step="900"
+                  value={form.start}
+                  onChange={(e) => setForm({ ...form, start: e.target.value })}
+                />
               </label>
               <label>
                 <span>終了</span>
-                <input type="time" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} />
+                <input
+                  type="time"
+                  min="08:30"
+                  max="17:15"
+                  step="900"
+                  value={form.end}
+                  onChange={(e) => setForm({ ...form, end: e.target.value })}
+                />
               </label>
             </>
           )}
@@ -2196,10 +2229,10 @@ if (staffLoaded && staff.length === 0) {
             <label className="checkRow wide">
               <input
                 type="checkbox"
-                checked={form.includeBreak}
-                onChange={(e) => setForm({ ...form, includeBreak: e.target.checked })}
+                checked={form.deductBreak}
+                onChange={(e) => setForm({ ...form, deductBreak: e.target.checked })}
               />
-              <span>休憩時間（12:00〜13:00）を含めて計算する</span>
+              <span>昼休憩（12:00〜13:00）を控除する</span>
             </label>
           )}
         </div>
@@ -2423,6 +2456,16 @@ if (staffLoaded && staff.length === 0) {
                 ))}
               </div>
             )}
+
+            <div className="modalFooterActions">
+              <button
+                type="button"
+                className="primaryButton"
+                onClick={() => openLeaveFormForDate(selectedDate)}
+              >
+                {selectedRecords().length > 0 ? "この日に追加登録" : "この日に休暇・勤務を登録"}
+              </button>
+            </div>
           </div>
         </div>
       )}
