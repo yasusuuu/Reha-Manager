@@ -159,6 +159,8 @@ function makeTimeOptions(start = "08:30", end = "17:15", stepMinutes = 15) {
 }
 
 const TIME_LEAVE_OPTIONS = makeTimeOptions();
+const TIME_HOUR_OPTIONS = ["8", "9", "10", "11", "12", "13", "14", "15", "16", "17"];
+const TIME_MINUTE_OPTIONS = ["00", "15", "30", "45"];
 
 function calcTimeHours(start, end, deductBreak = false) {
   const workStart = toMinutes("08:30");
@@ -1942,9 +1944,74 @@ function deleteSaturdaySchedule(date) {
     showTimeInputs &&
     overlapMinutes(toMinutes(form.start), toMinutes(form.end), toMinutes("12:00"), toMinutes("13:00")) > 0;
 
-  const endTimeOptions = TIME_LEAVE_OPTIONS.filter(
-    (time) => toMinutes(time) > toMinutes(form.start)
+  const [startHour, startMinute] = form.start.split(":");
+  const [endHour, endMinute] = form.end.split(":");
+
+  const startHourOptions = TIME_HOUR_OPTIONS.filter((hour) =>
+    TIME_MINUTE_OPTIONS.some((minute) => {
+      const time = `${pad(hour)}:${minute}`;
+      return toMinutes(time) >= toMinutes("08:30") && toMinutes(time) < toMinutes("17:15");
+    })
   );
+
+  const startMinuteOptions = TIME_MINUTE_OPTIONS.filter((minute) => {
+    const time = `${pad(startHour)}:${minute}`;
+    return toMinutes(time) >= toMinutes("08:30") && toMinutes(time) < toMinutes("17:15");
+  });
+
+  const endHourOptions = TIME_HOUR_OPTIONS.filter((hour) =>
+    TIME_MINUTE_OPTIONS.some((minute) => {
+      const time = `${pad(hour)}:${minute}`;
+      return toMinutes(time) > toMinutes(form.start) && toMinutes(time) <= toMinutes("17:15");
+    })
+  );
+
+  const endMinuteOptions = TIME_MINUTE_OPTIONS.filter((minute) => {
+    const time = `${pad(endHour)}:${minute}`;
+    return toMinutes(time) > toMinutes(form.start) && toMinutes(time) <= toMinutes("17:15");
+  });
+
+  function changeStartPart(part, value) {
+    const nextHour = part === "hour" ? value : startHour;
+    const nextMinute = part === "minute" ? value : startMinute;
+    const nextStart = `${pad(nextHour)}:${nextMinute}`;
+
+    if (
+      toMinutes(nextStart) < toMinutes("08:30") ||
+      toMinutes(nextStart) >= toMinutes("17:15")
+    ) {
+      return;
+    }
+
+    const nextEnd =
+      toMinutes(form.end) > toMinutes(nextStart)
+        ? form.end
+        : TIME_LEAVE_OPTIONS.find((time) => toMinutes(time) > toMinutes(nextStart)) || "17:15";
+
+    setForm((prev) => ({
+      ...prev,
+      start: nextStart,
+      end: nextEnd,
+    }));
+  }
+
+  function changeEndPart(part, value) {
+    const nextHour = part === "hour" ? value : endHour;
+    const nextMinute = part === "minute" ? value : endMinute;
+    const nextEnd = `${pad(nextHour)}:${nextMinute}`;
+
+    if (
+      toMinutes(nextEnd) <= toMinutes(form.start) ||
+      toMinutes(nextEnd) > toMinutes("17:15")
+    ) {
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      end: nextEnd,
+    }));
+  }
 
     if (authLoading) {
   return (
@@ -2213,46 +2280,76 @@ if (staffLoaded && staff.length === 0) {
 
           {showTimeInputs && (
             <>
-              <label>
+              <label className="wide">
                 <span>開始</span>
-                <select
-                  className="leaveSelectControl"
-                  style={LEAVE_SELECT_VISIBLE_STYLE}
-                  value={form.start}
-                  onChange={(e) => {
-                    const nextStart = e.target.value;
-                    const currentEndIsValid = toMinutes(form.end) > toMinutes(nextStart);
-                    const nextEnd = currentEndIsValid
-                      ? form.end
-                      : TIME_LEAVE_OPTIONS.find(
-                          (time) => toMinutes(time) > toMinutes(nextStart)
-                        ) || "17:15";
-
-                    setForm({
-                      ...form,
-                      start: nextStart,
-                      end: nextEnd,
-                    });
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
+                    gap: "8px",
+                    alignItems: "center",
                   }}
                 >
-                  {TIME_LEAVE_OPTIONS.slice(0, -1).map((time) => (
-                    <option key={time} value={time}>{time}</option>
-                  ))}
-                </select>
+                  <select
+                    className="leaveSelectControl"
+                    style={LEAVE_SELECT_VISIBLE_STYLE}
+                    value={String(Number(startHour))}
+                    onChange={(e) => changeStartPart("hour", e.target.value)}
+                  >
+                    {startHourOptions.map((hour) => (
+                      <option key={`start-hour-${hour}`} value={hour}>{hour}</option>
+                    ))}
+                  </select>
+                  <span>時</span>
+
+                  <select
+                    className="leaveSelectControl"
+                    style={LEAVE_SELECT_VISIBLE_STYLE}
+                    value={startMinute}
+                    onChange={(e) => changeStartPart("minute", e.target.value)}
+                  >
+                    {startMinuteOptions.map((minute) => (
+                      <option key={`start-minute-${minute}`} value={minute}>{minute}</option>
+                    ))}
+                  </select>
+                  <span>分</span>
+                </div>
               </label>
 
-              <label>
+              <label className="wide">
                 <span>終了</span>
-                <select
-                  className="leaveSelectControl"
-                  style={LEAVE_SELECT_VISIBLE_STYLE}
-                  value={form.end}
-                  onChange={(e) => setForm({ ...form, end: e.target.value })}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
+                    gap: "8px",
+                    alignItems: "center",
+                  }}
                 >
-                  {endTimeOptions.map((time) => (
-                    <option key={time} value={time}>{time}</option>
-                  ))}
-                </select>
+                  <select
+                    className="leaveSelectControl"
+                    style={LEAVE_SELECT_VISIBLE_STYLE}
+                    value={String(Number(endHour))}
+                    onChange={(e) => changeEndPart("hour", e.target.value)}
+                  >
+                    {endHourOptions.map((hour) => (
+                      <option key={`end-hour-${hour}`} value={hour}>{hour}</option>
+                    ))}
+                  </select>
+                  <span>時</span>
+
+                  <select
+                    className="leaveSelectControl"
+                    style={LEAVE_SELECT_VISIBLE_STYLE}
+                    value={endMinute}
+                    onChange={(e) => changeEndPart("minute", e.target.value)}
+                  >
+                    {endMinuteOptions.map((minute) => (
+                      <option key={`end-minute-${minute}`} value={minute}>{minute}</option>
+                    ))}
+                  </select>
+                  <span>分</span>
+                </div>
               </label>
             </>
           )}
