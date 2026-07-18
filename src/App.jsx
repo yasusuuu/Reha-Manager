@@ -146,6 +146,20 @@ function overlapMinutes(aStart, aEnd, bStart, bEnd) {
   return Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
 }
 
+function makeTimeOptions(start = "08:30", end = "17:15", stepMinutes = 15) {
+  const options = [];
+  const startMinutes = toMinutes(start);
+  const endMinutes = toMinutes(end);
+
+  for (let minutes = startMinutes; minutes <= endMinutes; minutes += stepMinutes) {
+    options.push(`${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`);
+  }
+
+  return options;
+}
+
+const TIME_LEAVE_OPTIONS = makeTimeOptions();
+
 function calcTimeHours(start, end, deductBreak = false) {
   const workStart = toMinutes("08:30");
   const workEnd = toMinutes("17:15");
@@ -1928,6 +1942,10 @@ function deleteSaturdaySchedule(date) {
     showTimeInputs &&
     overlapMinutes(toMinutes(form.start), toMinutes(form.end), toMinutes("12:00"), toMinutes("13:00")) > 0;
 
+  const endTimeOptions = TIME_LEAVE_OPTIONS.filter(
+    (time) => toMinutes(time) > toMinutes(form.start)
+  );
+
     if (authLoading) {
   return (
     <div className="loginGate">
@@ -2197,25 +2215,44 @@ if (staffLoaded && staff.length === 0) {
             <>
               <label>
                 <span>開始</span>
-                <input
-                  type="time"
-                  min="08:30"
-                  max="17:15"
-                  step="900"
+                <select
+                  className="leaveSelectControl"
+                  style={LEAVE_SELECT_VISIBLE_STYLE}
                   value={form.start}
-                  onChange={(e) => setForm({ ...form, start: e.target.value })}
-                />
+                  onChange={(e) => {
+                    const nextStart = e.target.value;
+                    const currentEndIsValid = toMinutes(form.end) > toMinutes(nextStart);
+                    const nextEnd = currentEndIsValid
+                      ? form.end
+                      : TIME_LEAVE_OPTIONS.find(
+                          (time) => toMinutes(time) > toMinutes(nextStart)
+                        ) || "17:15";
+
+                    setForm({
+                      ...form,
+                      start: nextStart,
+                      end: nextEnd,
+                    });
+                  }}
+                >
+                  {TIME_LEAVE_OPTIONS.slice(0, -1).map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
               </label>
+
               <label>
                 <span>終了</span>
-                <input
-                  type="time"
-                  min="08:30"
-                  max="17:15"
-                  step="900"
+                <select
+                  className="leaveSelectControl"
+                  style={LEAVE_SELECT_VISIBLE_STYLE}
                   value={form.end}
                   onChange={(e) => setForm({ ...form, end: e.target.value })}
-                />
+                >
+                  {endTimeOptions.map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
               </label>
             </>
           )}
