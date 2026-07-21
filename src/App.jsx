@@ -30,11 +30,11 @@ const AFTERNOON_HOURS = 4.25;
 const SUMMER_LIMIT = 5;
 
 const LEAVE_TYPES = {
+  compensatory: "代休",
   paid: "有休",
   child: "看護休暇",
   summer: "夏季休暇",
-  compensatory: "代休",
-  special: "特別休暇",
+    special: "特別休暇",
   training: "研修",
   business: "出張",
   saturday: "土曜勤務",
@@ -1003,6 +1003,9 @@ const [saturdayRotation, setSaturdayRotation] = useState({
   const [swapCandidateDate, setSwapCandidateDate] = useState(null);
   const [swapCandidateStaffIds, setSwapCandidateStaffIds] = useState([]);
   const [showSaturdaySwapHelp, setShowSaturdaySwapHelp] = useState(false);
+  const [showSaturdayUndoDialog, setShowSaturdayUndoDialog] = useState(false);
+  const [saturdayUndoTargetDate, setSaturdayUndoTargetDate] = useState("");
+  const [saturdayUndoSelectedDates, setSaturdayUndoSelectedDates] = useState([]);
 
   const [form, setForm] = useState({
     staffId: staff[0]?.id || "s1",
@@ -1859,22 +1862,111 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
   });
 }
 
-  function resetSaturdayOverride(date) {
-    if (!saturdayOverrideForDate(date)) return;
-    if (!confirm("この日の個別変更を解除して、基本グループに戻しますか？")) return;
-setSaturdayOverrides((prev) => {
-  const nextOverrides = prev.filter((item) => item.date !== date);
-  saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
-  return nextOverrides;
-});
-    setSaturdayForm((prev) => {
-      const groupKey = saturdayBaseGroupKeyForDate(date);
-      return {
-        ...prev,
-        staffIds: groupKey ? pruneSaturdayStaffIds(saturdayGroups[groupKey]) : [],
-        note: "",
-      };
+  function saturdayUndoItemsForDate(date) {
+    const target = saturdayOverrideForDate(date);
+    if (!target) return [];
+
+    const groupId = target.changeGroupId || null;
+    const related = groupId
+      ? saturdayOverrides.filter((item) => item.changeGroupId === groupId)
+      : [target];
+
+    return related
+      .map((item) => ({
+        ...item,
+        displayDate: String(item.date || "").replaceAll("-", "/"),
+      }))
+      .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+  }
+
+  function openSaturdayUndoDialog(date) {
+    const items = saturdayUndoItemsForDate(date);
+    if (items.length === 0) return;
+
+    setSaturdayUndoTargetDate(date);
+    setSaturdayUndoSelectedDates(items.map((item) => item.date));
+    setShowSaturdayUndoDialog(true);
+  }
+
+  function toggleSaturdayUndoDate(date) {
+    setSaturdayUndoSelectedDates((prev) =>
+      prev.includes(date)
+        ? prev.filter((item) => item !== date)
+        : [...prev, date]
+    );
+  }
+
+  function applySaturdayUndoSelection() {
+    const targetDates = Array.from(new Set(saturdayUndoSelectedDates));
+    if (targetDates.length === 0) {
+      alert("解除する変更を1件以上選択してください。");
+      return;
+    }
+
+    const itemsToRestore = saturdayOverrides.filter((item) =>
+      targetDates.includes(item.date)
+    );
+
+    setSaturdayOverrides((prev) => {
+      let nextOverrides = [...prev];
+
+      itemsToRestore.forEach((item) => {
+        nextOverrides = nextOverrides.filter(
+          (candidate) => candidate.date !== item.date
+        );
+
+        if (item.previousOverride) {
+          nextOverrides.push({
+            ...item.previousOverride,
+            date: item.date,
+            staffIds: pruneSaturdayStaffIds(
+              item.previousOverride.staffIds
+            ),
+          });
+        }
+      });
+
+      nextOverrides.sort((a, b) =>
+        String(a.date || "").localeCompare(String(b.date || ""))
+      );
+
+      saveSaturdaySettings(
+        saturdayGroups,
+        nextOverrides,
+        saturdayRotation
+      );
+
+      return nextOverrides;
     });
+
+    if (targetDates.includes(saturdayForm.date)) {
+      const currentItem = itemsToRestore.find(
+        (item) => item.date === saturdayForm.date
+      );
+      const restored = currentItem?.previousOverride || null;
+      const groupKey = saturdayBaseGroupKeyForDate(saturdayForm.date);
+
+      setSaturdayForm((prev) => ({
+        ...prev,
+        staffIds: restored
+          ? pruneSaturdayStaffIds(restored.staffIds)
+          : groupKey
+            ? pruneSaturdayStaffIds(saturdayGroups[groupKey])
+            : [],
+        note: restored?.note || "",
+      }));
+    }
+
+    setSwapCandidateDate(null);
+    setSwapCandidateStaffIds([]);
+    setSwapTargetStaffId(null);
+    setShowSaturdayUndoDialog(false);
+    setSaturdayUndoTargetDate("");
+    setSaturdayUndoSelectedDates([]);
+  }
+
+  function resetSaturdayOverride(date) {
+    openSaturdayUndoDialog(date);
   }
 
   function saveSaturdaySchedule(e) {
@@ -1891,31 +1983,65 @@ if (pruneSaturdayStaffIds(saturdayForm.staffIds).length === 0 && !swapCandidateD
   return;
 }
     setSaturdayOverrides((prev) => {
+      const changeGroupId = makeId("saturday-change");
+      const changedAt = Date.now();
+
+      const previousByDate = new Map(
+        prev.map((item) => [item.date, item])
+      );
+
       const upsert = (list, next) => {
         const exists = list.some((item) => item.date === next.date);
         if (exists) return list.map((item) => (item.date === next.date ? next : item));
         return [...list, next];
       };
 
-      let nextList = upsert(prev, {
-        date: saturdayForm.date,
-        staffIds: pruneSaturdayStaffIds(saturdayForm.staffIds),
-        note: (saturdayForm.note || "").trim(),
-        updatedAt: Date.now(),
-      });
+      const makeOverride = (date, staffIds, note) => {
+        const previousOverride = previousByDate.get(date) || null;
+
+        return {
+          date,
+          staffIds: pruneSaturdayStaffIds(staffIds),
+          note: String(note || "").trim(),
+          updatedAt: changedAt,
+          changeGroupId,
+          previousOverride: previousOverride
+            ? {
+                ...previousOverride,
+                previousOverride: previousOverride.previousOverride || null,
+              }
+            : null,
+          changedBy: loginUser?.id || "",
+          changedByName: loginUser ? personName(loginUser) : "",
+        };
+      };
+
+      let nextList = upsert(
+        prev,
+        makeOverride(
+          saturdayForm.date,
+          saturdayForm.staffIds,
+          saturdayForm.note
+        )
+      );
 
       if (swapCandidateDate) {
         const originalCandidateIds = saturdayScheduleForDate(swapCandidateDate)?.staffIds || [];
+
         if (!arraysEqualByValue(originalCandidateIds, swapCandidateStaffIds)) {
-          nextList = upsert(nextList, {
-            date: swapCandidateDate,
-            staffIds: pruneSaturdayStaffIds(swapCandidateStaffIds),
-            note: saturdayScheduleForDate(swapCandidateDate)?.note || "",
-            updatedAt: Date.now(),
-          });
+          nextList = upsert(
+            nextList,
+            makeOverride(
+              swapCandidateDate,
+              swapCandidateStaffIds,
+              saturdayScheduleForDate(swapCandidateDate)?.note || ""
+            )
+          );
         }
       }
-saveSaturdaySettings(saturdayGroups, nextList, saturdayRotation);
+
+      nextList.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+      saveSaturdaySettings(saturdayGroups, nextList, saturdayRotation);
 
       return nextList;
     });
@@ -1925,13 +2051,7 @@ saveSaturdaySettings(saturdayGroups, nextList, saturdayRotation);
   }
 
 function deleteSaturdaySchedule(date) {
-  if (!confirm("この日の土曜出勤を削除しますか？")) return;
-
-  setSaturdayOverrides((prev) => {
-    const nextOverrides = prev.filter((item) => item.date !== date);
-    saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
-    return nextOverrides;
-  });
+  openSaturdayUndoDialog(date);
 }
 
   const visibleStaff = isAdmin ? activeStaff : activeStaff.filter((s) => s.id === loginId);
@@ -2977,6 +3097,106 @@ if (staffLoaded && staff.length === 0) {
         </div>
       )}
 
+      {showSaturdayUndoDialog && (
+        <div
+          className="modalBackdrop"
+          onClick={() => setShowSaturdayUndoDialog(false)}
+        >
+          <div
+            className="staffModal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="modalHeader">
+              <div>
+                <h2>個別変更を解除</h2>
+                <span className="modalSubLabel">
+                  解除する日付を選択してください。
+                </span>
+              </div>
+              <button
+                className="closeButton"
+                type="button"
+                onClick={() => setShowSaturdayUndoDialog(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="staffCheckGrid">
+              {saturdayUndoItemsForDate(saturdayUndoTargetDate).map((item) => {
+                const baseIds = pruneSaturdayStaffIds(
+                  saturdayGroups[saturdayBaseGroupKeyForDate(item.date)] || []
+                );
+                const beforeIds = item.previousOverride
+                  ? pruneSaturdayStaffIds(item.previousOverride.staffIds)
+                  : baseIds;
+                const afterIds = pruneSaturdayStaffIds(item.staffIds);
+
+                const beforeNames = beforeIds
+                  .map((id) => staff.find((person) => person.id === id))
+                  .filter(Boolean)
+                  .map((person) => personName(person))
+                  .join("、") || "未設定";
+
+                const afterNames = afterIds
+                  .map((id) => staff.find((person) => person.id === id))
+                  .filter(Boolean)
+                  .map((person) => personName(person))
+                  .join("、") || "未設定";
+
+                return (
+                  <label
+                    className="staffCheckItem"
+                    key={`undo-${item.date}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={saturdayUndoSelectedDates.includes(item.date)}
+                      onChange={() => toggleSaturdayUndoDate(item.date)}
+                    />
+                    <span>
+                      <strong>{item.displayDate}</strong>
+                      <br />
+                      <small>{beforeNames} ⇒ {afterNames}</small>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="overrideActions">
+              <button
+                className="primaryButton"
+                type="button"
+                onClick={applySaturdayUndoSelection}
+              >
+                選択した変更を解除
+              </button>
+              <button
+                className="softButton"
+                type="button"
+                onClick={() =>
+                  setSaturdayUndoSelectedDates(
+                    saturdayUndoItemsForDate(saturdayUndoTargetDate).map(
+                      (item) => item.date
+                    )
+                  )
+                }
+              >
+                すべて選択
+              </button>
+              <button
+                className="softButton"
+                type="button"
+                onClick={() => setShowSaturdayUndoDialog(false)}
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showStaffEdit && (
         <div className="modalBackdrop" onClick={() => setShowStaffEdit(false)}>
           <div className="staffModal" onClick={(e) => e.stopPropagation()}>
@@ -3030,6 +3250,18 @@ if (staffLoaded && staff.length === 0) {
 
 const PM_PROFESSIONS = ["PT", "OT"];
 
+
+const PM_COUNT_CHECK_FIELDS = [
+  "ortho",
+  "neuroSurgery",
+  "respSurgery",
+  "surgery",
+  "cancer",
+  "neuroInternal",
+  "internal",
+  "urology",
+  "ent",
+];
 
 const PM_DEPARTMENTS = [
   { key: "outpatient", label: "外来", short: "外来" },
@@ -3580,6 +3812,13 @@ const [patientLoadError, setPatientLoadError] = useState("");
   const [showStaffForm, setShowStaffForm] = useState(false);
   const [showTodayAdjustHistory, setShowTodayAdjustHistory] = useState(false);
   const [lastAppliedMovementBatch, setLastAppliedMovementBatch] = useState(null);
+  const [selectedSuspiciousHistoryIds, setSelectedSuspiciousHistoryIds] = useState([]);
+
+  // 人数確認モード専用。Firestoreへ保存するpayloadには含めない。
+  const [countCheckMode, setCountCheckMode] = useState(false);
+  const [countCheckValues, setCountCheckValues] = useState({});
+  const [changedCountCheckKeys, setChangedCountCheckKeys] = useState(() => new Set());
+  const [showCountCheckApplyDialog, setShowCountCheckApplyDialog] = useState(false);
 
 useEffect(() => {
   const unsubscribe = onSnapshot(
@@ -3839,9 +4078,32 @@ useEffect(() => {
   }, [history, profession]);
 
   const todayAdjustHistory = useMemo(() => {
+    const today = pmTodayKey();
+
     return history
-      .filter((item) => item.profession === profession && item.date === pmTodayKey() && !item.moveType)
+      .filter((item) => {
+        if (item.profession !== profession) return false;
+
+        // 通常の-/+操作は操作対象日で判定する。
+        if (!item.moveType) return item.date === today;
+
+        // 「本日分までを消去」は過去日分も含むため、
+        // 患者移動日ではなく実行日で本日の履歴に表示する。
+        return item.appliedOn === today;
+      })
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }, [history, profession]);
+
+  const suspiciousManualMinusHistory = useMemo(() => {
+    return history
+      .filter((item) =>
+        item.profession === profession
+        && !item.moveType
+        && Number(item.delta || 0) < 0
+      )
+      .sort((a, b) =>
+        String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+      );
   }, [history, profession]);
 
   const fiscal = pmFiscalYear(pmTodayKey());
@@ -4095,6 +4357,8 @@ function markChanged(staffId, department) {
       staffId: movement.staffId,
       staffName: movement.staffName,
       action: pmMoveShort(movement.moveType),
+      operation: "本日分まで消去",
+      appliedOn: pmTodayKey(),
       moveType: movement.moveType,
       department: movement.department,
       pmDepartmentShort: pmDepartmentShort(movement.department),
@@ -4490,11 +4754,170 @@ function markChanged(staffId, department) {
     };
   }
 
+  function makeEmptyCountCheckValues(targetStaff = visibleStaff) {
+    const next = {};
+
+    targetStaff.forEach((person) => {
+      PM_COUNT_CHECK_FIELDS.forEach((department) => {
+        next[`${person.id}:${department}`] = 0;
+      });
+    });
+
+    return next;
+  }
+
+  function startCountCheckMode() {
+    if (!loginPatientStaff) {
+      alert("ログイン者に対応する担当者が見つかりません。職員設定を確認してください。");
+      return;
+    }
+
+    setActiveCell(null);
+    setCountCheckValues(makeEmptyCountCheckValues([loginPatientStaff]));
+    setChangedCountCheckKeys(new Set());
+    setCountCheckMode(true);
+  }
+
+  function finishCountCheckMode() {
+    setCountCheckMode(false);
+    setCountCheckValues({});
+    setChangedCountCheckKeys(new Set());
+    setShowCountCheckApplyDialog(false);
+    setActiveCell(null);
+  }
+
+  function markCountCheckKeyChanged(key) {
+    setChangedCountCheckKeys((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }
+
+  function updateCountCheckValue(staffId, department, value) {
+    if (!PM_COUNT_CHECK_FIELDS.includes(department)) return;
+
+    const key = `${staffId}:${department}`;
+    const nextValue = Math.max(0, Number(value || 0));
+
+    setCountCheckValues((prev) => ({
+      ...prev,
+      [key]: nextValue,
+    }));
+    markCountCheckKeyChanged(key);
+  }
+
+  function quickAdjustCountCheck(staffId, department, diff) {
+    if (!PM_COUNT_CHECK_FIELDS.includes(department)) return;
+
+    const key = `${staffId}:${department}`;
+
+    setCountCheckValues((prev) => ({
+      ...prev,
+      [key]: Math.max(0, Number(prev[key] || 0) + Number(diff || 0)),
+    }));
+    markCountCheckKeyChanged(key);
+  }
+
+  function countCheckChangedItems() {
+    return Array.from(changedCountCheckKeys)
+      .map((key) => {
+        const [staffId, department] = key.split(":");
+
+        // 転記可能項目は明示的な許可リストだけに限定する。
+        if (!staffId || !PM_COUNT_CHECK_FIELDS.includes(department)) return null;
+        if (!Object.prototype.hasOwnProperty.call(countCheckValues, key)) return null;
+
+        const person = staff.find((item) => item.id === staffId);
+        const departmentInfo = PM_DEPARTMENTS.find((item) => item.key === department);
+        if (!person || !departmentInfo) return null;
+
+        const before = Math.max(0, Number(person.counts?.[department] || 0));
+        const after = Math.max(0, Number(countCheckValues[key] || 0));
+
+        return {
+          key,
+          staffId,
+          staffName: pmPersonName(person),
+          department,
+          departmentLabel: departmentInfo.label,
+          before,
+          after,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) =>
+        String(a.staffName).localeCompare(String(b.staffName), "ja") ||
+        PM_COUNT_CHECK_FIELDS.indexOf(a.department) - PM_COUNT_CHECK_FIELDS.indexOf(b.department)
+      );
+  }
+
+  function openCountCheckApplyDialog() {
+    const items = countCheckChangedItems();
+
+    if (items.length === 0) {
+      alert("変更された項目はありません。");
+      return;
+    }
+
+    setShowCountCheckApplyDialog(true);
+  }
+
+  function applyChangedCountCheckValues() {
+    const changedItems = countCheckChangedItems();
+
+    if (changedItems.length === 0) {
+      alert("変更された項目はありません。");
+      setShowCountCheckApplyDialog(false);
+      return;
+    }
+
+    const updatesByStaff = changedItems.reduce((map, item) => {
+      if (!map[item.staffId]) map[item.staffId] = {};
+      map[item.staffId][item.department] = item.after;
+      return map;
+    }, {});
+
+    setStaff((prev) =>
+      prev.map((person) => {
+        const updates = updatesByStaff[person.id];
+        if (!updates) return person;
+
+        const nextCounts = { ...person.counts };
+
+        // 外来・中止・透析などを誤って変更しないよう、
+        // 許可リストに含まれるキーだけ反映する。
+        PM_COUNT_CHECK_FIELDS.forEach((department) => {
+          if (Object.prototype.hasOwnProperty.call(updates, department)) {
+            nextCounts[department] = updates[department];
+          }
+        });
+
+        return {
+          ...person,
+          counts: nextCounts,
+        };
+      })
+    );
+
+    // 転記後もFirestoreへ即保存しない。
+    // 既存のdirty判定により、通常の保存ボタンで確定する。
+    setPatientSaveStatus("dirty");
+    setShowCountCheckApplyDialog(false);
+    finishCountCheckMode();
+  }
+
   function quickAdjust(staffId, department, diff) {
     const target = staff.find((person) => person.id === staffId);
     if (!target) return;
-    const current = Number(target.counts?.[department] || 0);
-    const next = Math.max(0, current + diff);
+
+    const current = Math.max(0, Number(target.counts?.[department] || 0));
+    const next = Math.max(0, current + Number(diff || 0));
+    const actualDiff = next - current;
+
+    // 0人の状態でマイナスを押した場合など、
+    // 実際の人数が変わらない操作は、変更・履歴ともに作成しない。
+    if (actualDiff === 0) return;
 
     updateCount(staffId, department, next);
 
@@ -4503,13 +4926,130 @@ function markChanged(staffId, department) {
       profession: target.profession,
       staffId,
       staffName: pmPersonName(target),
-      action: diff > 0 ? "新規" : "減算",
+      action: actualDiff > 0 ? "新規" : "減算",
       department,
       pmDepartmentShort: pmDepartmentShort(department),
-      delta: diff,
-      amount: Math.abs(diff),
+      delta: actualDiff,
+      amount: Math.abs(actualDiff),
     });
   }
+
+  function toggleSuspiciousHistorySelection(id) {
+    setSelectedSuspiciousHistoryIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  }
+
+  function deleteSelectedSuspiciousHistory() {
+    const selectedIds = Array.from(new Set(selectedSuspiciousHistoryIds));
+
+    if (selectedIds.length === 0) {
+      alert("削除する履歴を1件以上選択してください。");
+      return;
+    }
+
+    const selectedItems = suspiciousManualMinusHistory.filter((item) =>
+      selectedIds.includes(item.id)
+    );
+
+    const summary = selectedItems
+      .slice(0, 10)
+      .map((item) =>
+        `${pmDisplayDate(item.date)} ${item.staffName || "氏名不明"} ${item.pmDepartmentShort || pmDepartmentShort(item.department)} ${item.delta}`
+      )
+      .join("\n");
+
+    const extraText = selectedItems.length > 10
+      ? `\nほか${selectedItems.length - 10}件`
+      : "";
+
+    const ok = window.confirm(
+      `選択したマイナス履歴を削除します。\n\n${summary}${extraText}\n\n人数そのものは変更せず、履歴だけを削除します。続行しますか？`
+    );
+
+    if (!ok) return;
+
+    setHistory((prev) =>
+      prev.filter((item) => !selectedIds.includes(item.id))
+    );
+    setSelectedSuspiciousHistoryIds([]);
+  }
+
+  function resetPatientAggregationForOperationStart() {
+    const ok = window.confirm(
+      `患者振り分けの集計を運用開始時点でリセットします。
+
+【リセットされるもの】
+・年間集計に使う増減履歴
+・保存済み年度スナップショット
+・本日の変更表示
+・マイナス履歴確認の選択状態
+
+【そのまま残るもの】
+・現在の患者人数
+・外来人数
+・透析人数
+・中止人数
+・登録中の患者移動
+・備考
+・スタッフ設定
+
+※現在表示されている患者人数を
+「運用開始時点の基準値」として今後の集計を開始します。
+
+※実行前にJSONバックアップを保存することをおすすめします。
+
+この操作は元に戻せません。
+続行しますか？`
+    );
+
+    if (!ok) return;
+
+    const finalCheck = window.confirm(
+      `最終確認です。
+
+現在表示されている患者人数を
+運用開始時点の基準値として、
+集計履歴のみリセットします。
+
+本当に実行しますか？`
+    );
+
+    if (!finalCheck) return;
+
+    setHistory([]);
+    setFiscalSnapshots({});
+    setRecentChanges({});
+    setSelectedFiscal(null);
+    setSelectedSuspiciousHistoryIds([]);
+    setLastAppliedMovementBatch(null);
+    setPatientSaveStatus("dirty");
+
+    alert(
+      `患者振り分けの集計をリセットしました。
+
+現在の患者人数は変更していません。
+今後の増減操作から新しく集計されます。
+
+最後に「保存」ボタンを押して確定してください。`
+    );
+  }
+
+  useEffect(() => {
+    if (view !== "table" && countCheckMode) {
+      finishCountCheckMode();
+    }
+  }, [view]);
+
+  useEffect(() => {
+    if (countCheckMode) {
+      finishCountCheckMode();
+    }
+    // PT／OT切替時は別職種の一時確認値を持ち越さない。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profession]);
 
   const patientManagerSizeBytes = useMemo(
     () => estimatePatientManagerSizeBytes(),
@@ -4542,6 +5082,12 @@ function markChanged(staffId, department) {
       quickAdjustOutpatient={quickAdjustOutpatient}
       quickAdjustDialysis={quickAdjustDialysis}
       quickAdjustStopped={quickAdjustStopped}
+      countCheckMode={countCheckMode}
+      countCheckStaff={loginPatientStaff}
+      countCheckValues={countCheckValues}
+      changedCountCheckKeys={changedCountCheckKeys}
+      updateCountCheckValue={updateCountCheckValue}
+      quickAdjustCountCheck={quickAdjustCountCheck}
       activeCell={activeCell}
       setActiveCell={setActiveCell}
       onEditMovement={setEditMovement}
@@ -4558,6 +5104,14 @@ function markChanged(staffId, department) {
             {patientSaving ? "保存中..." : patientSaveStatus === "dirty" ? "保存" : "保存済"}
           </button>
           <button className="tabExpandBtn iconOnly" type="button" onClick={() => setFullTable(true)} aria-label="拡大表示" title="拡大表示">⛶</button>
+          <button
+            className={countCheckMode ? "adjustHistoryButton active" : "adjustHistoryButton"}
+            type="button"
+            onClick={countCheckMode ? finishCountCheckMode : startCountCheckMode}
+            title={countCheckMode ? "確認値を破棄して終了します" : "実人数を変更せずに0から数え直します"}
+          >
+            {countCheckMode ? "確認終了" : "人数確認"}
+          </button>
           <button
             className={`adjustHistoryButton ${showTodayAdjustHistory ? "active" : ""}`}
             type="button"
@@ -4733,6 +5287,105 @@ function markChanged(staffId, department) {
       {view === "table" && (
         <>
           {table}
+          {countCheckMode && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: "8px",
+                margin: "8px 0 12px",
+              }}
+            >
+              <span>変更済み：{changedCountCheckKeys.size}項目</span>
+              <button
+                type="button"
+                className="primaryButton"
+                onClick={openCountCheckApplyDialog}
+                disabled={changedCountCheckKeys.size === 0}
+              >
+                変更した項目だけ反映
+              </button>
+              <button
+                type="button"
+                className="softButton"
+                onClick={finishCountCheckMode}
+              >
+                確認値を破棄して終了
+              </button>
+            </div>
+          )}
+
+          {showCountCheckApplyDialog && (
+            <div
+              className="modalBackdrop"
+              onClick={() => setShowCountCheckApplyDialog(false)}
+            >
+              <div
+                className="staffModal"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="modalHeader">
+                  <div>
+                    <h2>人数確認の反映</h2>
+                    <span className="modalSubLabel">
+                      以下の項目だけ変更します。
+                    </span>
+                  </div>
+                  <button
+                    className="closeButton"
+                    type="button"
+                    onClick={() => setShowCountCheckApplyDialog(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {countCheckChangedItems().length === 0 ? (
+                  <p className="emptyText">変更された項目はありません。</p>
+                ) : (
+                  <div className="detailList">
+                    {countCheckChangedItems().map((item) => (
+                      <div className="detailItem" key={item.key}>
+                        <div>
+                          <strong>{item.staffName}</strong>
+                          <p>
+                            {item.departmentLabel}　{item.before} → {item.after}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div
+                  className="previewBox"
+                  style={{ marginTop: "12px" }}
+                >
+                  透析・外来人数・中止・患者移動・備考・スタッフ設定などは変更されません。
+                </div>
+
+                <div className="overrideActions">
+                  <button
+                    className="softButton"
+                    type="button"
+                    onClick={() => setShowCountCheckApplyDialog(false)}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    className="primaryButton"
+                    type="button"
+                    disabled={countCheckChangedItems().length === 0}
+                    onClick={applyChangedCountCheckValues}
+                  >
+                    反映する
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {showTodayAdjustHistory && (
             <section className="card todayAdjustHistoryCard">
               <div className="cardHeader compactHistoryHeader">
@@ -4747,7 +5400,11 @@ function markChanged(staffId, department) {
                     <div className="historyItem todayAdjustHistoryItem" key={item.id}>
                       <span>{pmDisplayDate(item.date)}</span>
                       <strong>{item.staffName}</strong>
-                      <span>{item.action}</span>
+                      <span>
+                        {item.moveType
+                          ? `${item.operation || "患者移動消去"}（${item.action}）`
+                          : item.action}
+                      </span>
                       <span>{item.pmDepartmentShort}</span>
                       <span className={Number(item.delta) >= 0 ? "plus" : "minus"}>
                         {Number(item.delta) >= 0 ? "+" : ""}{item.delta}
@@ -5164,8 +5821,29 @@ function markChanged(staffId, department) {
             <>
               <div className="cardHeader settingsSummaryHeader">
                 <h3>集計</h3>
-                <button className="softButton" type="button" onClick={saveFiscalSnapshot}>今年度を保存</button>
+                <div className="backupActionGrid">
+                  <button className="softButton" type="button" onClick={saveFiscalSnapshot}>
+                    今年度を保存
+                  </button>
+                  <button
+                    className="deleteButton"
+                    type="button"
+                    onClick={resetPatientAggregationForOperationStart}
+                  >
+                    運用開始時に集計をリセット
+                  </button>
+                </div>
               </div>
+
+              <div className="backupSnapshotBox">
+                <h4>運用開始時の集計リセット</h4>
+                <p className="settingHelp">
+                  現在表示されている患者人数を開始時点の基準値として残し、
+                  これまでの増減履歴と年度集計だけをリセットします。
+                  実行前にバックアップ画面からJSONを保存してください。
+                </p>
+              </div>
+
               {annualSummaryTable}
             </>
           ) : (
@@ -5226,6 +5904,73 @@ function markChanged(staffId, department) {
                 <p className="systemStatusNote">
                   65%以上で注意、85%以上で警告表示します。表示値は概算です。
                 </p>
+              </div>
+
+              <div className="backupSnapshotBox">
+                <div className="cardHeader settingsSummaryHeader">
+                  <div>
+                    <h4>マイナス履歴の確認</h4>
+                    <p className="settingHelp">
+                      旧バージョンで0人の状態からマイナスを押した際に作成された可能性がある履歴を確認します。
+                      自動判定では正誤を断定できないため、内容を確認して選択削除してください。
+                    </p>
+                  </div>
+                  <strong>{suspiciousManualMinusHistory.length}件</strong>
+                </div>
+
+                {suspiciousManualMinusHistory.length === 0 ? (
+                  <p className="emptyText">確認対象のマイナス履歴はありません。</p>
+                ) : (
+                  <>
+                    <div className="historyList">
+                      {suspiciousManualMinusHistory.map((item) => (
+                        <label className="historyItem" key={`cleanup-${item.id}`}>
+                          <input
+                            type="checkbox"
+                            checked={selectedSuspiciousHistoryIds.includes(item.id)}
+                            onChange={() => toggleSuspiciousHistorySelection(item.id)}
+                          />
+                          <span>{pmDisplayDate(item.date)}</span>
+                          <strong>{item.staffName || "氏名不明"}</strong>
+                          <span>{item.action || "減算"}</span>
+                          <span>{item.pmDepartmentShort || pmDepartmentShort(item.department)}</span>
+                          <span className="minus">{item.delta}</span>
+                          <span className="historyUpdater">
+                            更新者：{item.updatedByName || "記録なし"}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="backupActionGrid">
+                      <button
+                        className="softButton"
+                        type="button"
+                        onClick={() =>
+                          setSelectedSuspiciousHistoryIds(
+                            suspiciousManualMinusHistory.map((item) => item.id)
+                          )
+                        }
+                      >
+                        すべて選択
+                      </button>
+                      <button
+                        className="softButton"
+                        type="button"
+                        onClick={() => setSelectedSuspiciousHistoryIds([])}
+                      >
+                        選択解除
+                      </button>
+                      <button
+                        className="deleteButton"
+                        type="button"
+                        onClick={deleteSelectedSuspiciousHistory}
+                      >
+                        選択した履歴を削除
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="backupSnapshotBox">
@@ -5342,6 +6087,12 @@ function PMAssignmentTable({
   quickAdjustOutpatient,
   quickAdjustDialysis,
   quickAdjustStopped,
+  countCheckMode,
+  countCheckStaff,
+  countCheckValues,
+  changedCountCheckKeys,
+  updateCountCheckValue,
+  quickAdjustCountCheck,
   activeCell,
   setActiveCell,
   onEditMovement,
@@ -5458,6 +6209,154 @@ function PMAssignmentTable({
           </thead>
 
           <tbody>
+            {countCheckMode && countCheckStaff && (
+              <tr className="countCheckOnlyRow">
+                <th
+                  className="stickyName nameCol"
+                  style={{
+                    background: "#fffbeb",
+                    borderTop: "2px solid #f59e0b",
+                    borderBottom: "2px solid #f59e0b",
+                  }}
+                >
+                  <div className="nameCell">
+                    <strong>確認モード</strong>
+                    <small style={{ display: "block", marginTop: "2px" }}>
+                      {pmTableDisplayName(countCheckStaff)}
+                    </small>
+                  </div>
+                </th>
+
+                <td
+                  className="totalCol stickyTotal totalNumber"
+                  style={{
+                    background: "#fffbeb",
+                    borderTop: "2px solid #f59e0b",
+                    borderBottom: "2px solid #f59e0b",
+                  }}
+                >
+                  {PM_COUNT_CHECK_FIELDS.reduce(
+                    (sum, department) =>
+                      sum + Number(countCheckValues[`${countCheckStaff.id}:${department}`] || 0),
+                    0
+                  )}
+                </td>
+
+                {PM_DEPARTMENTS.map((dept) => {
+                  const isAllowed = PM_COUNT_CHECK_FIELDS.includes(dept.key);
+                  const key = `${countCheckStaff.id}:${dept.key}`;
+                  const value = Number(countCheckValues[key] || 0);
+                  const changed = changedCountCheckKeys?.has
+                    ? changedCountCheckKeys.has(key)
+                    : false;
+
+                  return (
+                    <td
+                      key={`count-check-${dept.key}`}
+                      className={`numberCell dept-${dept.key} sep-${dept.key}`}
+                      style={{
+                        background: isAllowed
+                          ? changed
+                            ? "#fef3c7"
+                            : "#fffbeb"
+                          : "#f8fafc",
+                        borderTop: "2px solid #f59e0b",
+                        borderBottom: "2px solid #f59e0b",
+                      }}
+                    >
+                      {isAllowed ? (
+                        <div
+                          onClick={(event) => event.stopPropagation()}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "22px minmax(24px, 1fr) 22px",
+                            gap: "2px",
+                            alignItems: "center",
+                            minWidth: "58px",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="inlineBtn minus"
+                            onClick={() =>
+                              quickAdjustCountCheck(countCheckStaff.id, dept.key, -1)
+                            }
+                          >
+                            −
+                          </button>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={value}
+                            aria-label={`${dept.label} 確認値`}
+                            onChange={(event) =>
+                              updateCountCheckValue(
+                                countCheckStaff.id,
+                                dept.key,
+                                event.target.value.replace(/[^0-9]/g, "")
+                              )
+                            }
+                            style={{
+                              width: "100%",
+                              minWidth: 0,
+                              textAlign: "center",
+                              padding: "4px 1px",
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="inlineBtn plus"
+                            onClick={() =>
+                              quickAdjustCountCheck(countCheckStaff.id, dept.key, 1)
+                            }
+                          >
+                            ＋
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ opacity: 0.35 }}>—</span>
+                      )}
+                    </td>
+                  );
+                })}
+
+                <td
+                  className="dialysisCol"
+                  style={{
+                    background: "#f8fafc",
+                    borderTop: "2px solid #f59e0b",
+                    borderBottom: "2px solid #f59e0b",
+                    opacity: 0.45,
+                  }}
+                >
+                  —
+                </td>
+                <td
+                  className="moveCol"
+                  style={{
+                    background: "#f8fafc",
+                    borderTop: "2px solid #f59e0b",
+                    borderBottom: "2px solid #f59e0b",
+                    opacity: 0.45,
+                  }}
+                >
+                  —
+                </td>
+                <td
+                  className="noteCol"
+                  style={{
+                    background: "#f8fafc",
+                    borderTop: "2px solid #f59e0b",
+                    borderBottom: "2px solid #f59e0b",
+                    opacity: 0.45,
+                  }}
+                >
+                  —
+                </td>
+              </tr>
+            )}
+
             {staffList.map((person, rowIndex) => {
               return (
                 <tr key={person.id} className={person.canCancerRehab ? "cancerRehabRow" : ""}>
