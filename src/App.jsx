@@ -5212,6 +5212,21 @@ function markChanged(staffId, department) {
           >
             {countCheckMode ? "確認終了" : "人数確認"}
           </button>
+          {countCheckMode && (
+            <button
+              className="patientSaveButton dirty"
+              type="button"
+              onClick={openCountCheckApplyDialog}
+              disabled={changedCountCheckKeys.size === 0}
+              title={
+                changedCountCheckKeys.size === 0
+                  ? "確認値を入力すると反映できます"
+                  : "確認した人数を通常の患者人数へ反映します"
+              }
+            >
+              確認を反映
+            </button>
+          )}
           <button
             className={`adjustHistoryButton ${showTodayAdjustHistory ? "active" : ""}`}
             type="button"
@@ -5387,34 +5402,6 @@ function markChanged(staffId, department) {
       {view === "table" && (
         <>
           {table}
-          {countCheckMode && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                gap: "8px",
-                margin: "8px 0 12px",
-              }}
-            >
-              <span>変更済み：{changedCountCheckKeys.size}項目</span>
-              <button
-                type="button"
-                className="primaryButton"
-                onClick={openCountCheckApplyDialog}
-                disabled={changedCountCheckKeys.size === 0}
-              >
-                変更した項目だけ反映
-              </button>
-              <button
-                type="button"
-                className="softButton"
-                onClick={finishCountCheckMode}
-              >
-                確認値を破棄して終了
-              </button>
-            </div>
-          )}
 
           {showMovementClearDialog && (
             <div
@@ -5596,7 +5583,7 @@ function markChanged(staffId, department) {
                     disabled={countCheckChangedItems().length === 0}
                     onClick={applyChangedCountCheckValues}
                   >
-                    反映する
+                    確認を反映
                   </button>
                 </div>
               </div>
