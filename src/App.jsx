@@ -4092,7 +4092,7 @@ useEffect(() => {
         // 通常の-/+操作は操作対象日で判定する。
         if (!item.moveType) return item.date === today;
 
-        // 「本日分までを消去」は過去日分も含むため、
+        // 範囲消去は過去日・翌日・次の平日分を含む場合があるため、
         // 患者移動日ではなく実行日で本日の履歴に表示する。
         return item.appliedOn === today;
       })
@@ -4391,6 +4391,27 @@ function markChanged(staffId, department) {
     const holidayName = holidays?.[dateKey];
 
     return `${date.getMonth() + 1}/${date.getDate()}（${weekday}${holidayName ? `・${holidayName}` : ""}）`;
+  }
+
+  function movementHistoryLabel(item) {
+    if (!item?.moveType) return item?.action || "";
+
+    const scopeLabel = item.operation || "患者移動消去";
+    const actionLabel = item.action ? `（${item.action}）` : "";
+    return `${scopeLabel}${actionLabel}`;
+  }
+
+  function movementHistoryDetail(item) {
+    if (!item?.moveType) return "";
+
+    const executed = item.appliedOn
+      ? `実行日：${pmDisplayDate(item.appliedOn)}`
+      : "";
+    const cutoff = item.clearCutoff
+      ? `対象期限：${pmDisplayDate(item.clearCutoff)}`
+      : "";
+
+    return [executed, cutoff].filter(Boolean).join("　");
   }
 
   function openMovementClearDialog() {
@@ -5596,16 +5617,15 @@ function markChanged(staffId, department) {
                     <div className="historyItem todayAdjustHistoryItem" key={item.id}>
                       <span>{pmDisplayDate(item.date)}</span>
                       <strong>{item.staffName}</strong>
-                      <span>
-                        {item.moveType
-                          ? `${item.operation || "患者移動消去"}（${item.action}）`
-                          : item.action}
-                      </span>
+                      <span>{movementHistoryLabel(item)}</span>
                       <span>{item.pmDepartmentShort}</span>
                       <span className={Number(item.delta) >= 0 ? "plus" : "minus"}>
                         {Number(item.delta) >= 0 ? "+" : ""}{item.delta}
                       </span>
                       <span className="historyUpdater">更新者：{item.updatedByName || "記録なし"}</span>
+                      {movementHistoryDetail(item) && (
+                        <small>{movementHistoryDetail(item)}</small>
+                      )}
                     </div>
                   ))
                 )}
@@ -5806,12 +5826,15 @@ function markChanged(staffId, department) {
                     <div className="historyItem" key={item.id}>
                       <span>{pmDisplayDate(item.date)}</span>
                       <strong>{item.staffName}</strong>
-                      <span>{item.action}</span>
+                      <span>{movementHistoryLabel(item)}</span>
                       <span>{item.pmDepartmentShort}</span>
                       <span className={Number(item.delta) >= 0 ? "plus" : "minus"}>
                         {Number(item.delta) >= 0 ? "+" : ""}{item.delta}
                       </span>
                       <span className="historyUpdater">更新者：{item.updatedByName || "記録なし"}</span>
+                      {movementHistoryDetail(item) && (
+                        <small>{movementHistoryDetail(item)}</small>
+                      )}
                       {item.note && <small>{item.note}</small>}
                     </div>
                   ))
