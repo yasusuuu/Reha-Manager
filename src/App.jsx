@@ -2295,6 +2295,7 @@ if (staffLoaded && staff.length === 0) {
   profession={patientProfession}
   setProfession={setPatientProfession}
   staffSource={activeStaff}
+  holidays={holidays}
   pwaInfo={pwaInfo}
   pwaChecking={pwaChecking}
   onPwaUpdateCheck={handlePwaUpdateCheck}
@@ -3713,6 +3714,7 @@ function FullPatientManager({
   profession,
   setProfession,
   staffSource = [],
+  holidays = {},
   pwaInfo,
   pwaChecking,
   onPwaUpdateCheck,
@@ -3793,6 +3795,9 @@ const [patientLoadError, setPatientLoadError] = useState("");
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
+
+  const [showMovementClearDialog, setShowMovementClearDialog] = useState(false);
+  const [movementClearScope, setMovementClearScope] = useState("today");
 
   const [movementForm, setMovementForm] = useState({
     staffId: "",
@@ -4326,11 +4331,80 @@ function markChanged(staffId, department) {
     setMovementForm((prev) => ({ ...prev, note: "" }));
   }
 
-  function applyDueMovements() {
-    const due = movements.filter(pmIsDue);
+  function addPmDays(dateKey, amount) {
+    const date = new Date(`${dateKey}T00:00:00`);
+    date.setDate(date.getDate() + amount);
+    return `${date.getFullYear()}-${pmPad(date.getMonth() + 1)}-${pmPad(date.getDate())}`;
+  }
+
+  function isPmBusinessDay(dateKey) {
+    const weekday = new Date(`${dateKey}T00:00:00`).getDay();
+    return weekday !== 0 && weekday !== 6 && !holidays?.[dateKey];
+  }
+
+  function movementClearCutoff(scope) {
+    const today = pmTodayKey();
+
+    if (scope === "tomorrow") {
+      return addPmDays(today, 1);
+    }
+
+    if (scope === "nextBusinessDay") {
+      let target = addPmDays(today, 1);
+      let guard = 0;
+
+      while (!isPmBusinessDay(target) && guard < 14) {
+        target = addPmDays(target, 1);
+        guard += 1;
+      }
+
+      return target;
+    }
+
+    return today;
+  }
+
+  function movementClearTargets(scope = movementClearScope) {
+    const cutoff = movementClearCutoff(scope);
+
+    return movements
+      .filter((movement) => (
+        !movement.done
+        && movement.profession === profession
+        && String(movement.date || "") <= cutoff
+      ))
+      .sort((a, b) =>
+        String(a.date || "").localeCompare(String(b.date || ""))
+        || String(a.staffName || "").localeCompare(String(b.staffName || ""), "ja")
+      );
+  }
+
+  function movementClearScopeLabel(scope) {
+    if (scope === "tomorrow") return "明日分まで";
+    if (scope === "nextBusinessDay") return "次の平日分まで";
+    return "本日分まで";
+  }
+
+  function formatMovementClearDate(dateKey) {
+    const date = new Date(`${dateKey}T00:00:00`);
+    const weekday = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];
+    const holidayName = holidays?.[dateKey];
+
+    return `${date.getMonth() + 1}/${date.getDate()}（${weekday}${holidayName ? `・${holidayName}` : ""}）`;
+  }
+
+  function openMovementClearDialog() {
+    setMovementClearScope("today");
+    setShowMovementClearDialog(true);
+  }
+
+  function applyDueMovements(scope = movementClearScope) {
+    const due = movementClearTargets(scope);
+    const cutoff = movementClearCutoff(scope);
+    const scopeLabel = movementClearScopeLabel(scope);
 
     if (due.length === 0) {
-      alert("本日分までの患者移動はありません。");
+      alert(`${scopeLabel}の患者移動はありません。`);
       return;
     }
 
@@ -4357,7 +4431,9 @@ function markChanged(staffId, department) {
       staffId: movement.staffId,
       staffName: movement.staffName,
       action: pmMoveShort(movement.moveType),
-      operation: "本日分まで消去",
+      operation: `${scopeLabel}消去`,
+      clearScope: scope,
+      clearCutoff: cutoff,
       appliedOn: pmTodayKey(),
       moveType: movement.moveType,
       department: movement.department,
@@ -4412,6 +4488,9 @@ function markChanged(staffId, department) {
       historyIds: appliedHistoryItems.map((item) => item.id),
       previousRecentChanges,
     });
+
+    setShowMovementClearDialog(false);
+    setPatientSaveStatus("dirty");
   }
 
   function undoLastAppliedMovements() {
@@ -5091,7 +5170,7 @@ function markChanged(staffId, department) {
       activeCell={activeCell}
       setActiveCell={setActiveCell}
       onEditMovement={setEditMovement}
-      onClearDueMovements={applyDueMovements}
+      onClearDueMovements={openMovementClearDialog}
       sectionActions={!fullTable && (
         <>
           <button
@@ -5313,6 +5392,123 @@ function markChanged(staffId, department) {
               >
                 確認値を破棄して終了
               </button>
+            </div>
+          )}
+
+          {showMovementClearDialog && (
+            <div
+              className="modalBackdrop"
+              onClick={() => setShowMovementClearDialog(false)}
+            >
+              <div
+                className="staffModal"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="modalHeader">
+                  <div>
+                    <h2>患者移動の消去</h2>
+                    <span className="modalSubLabel">
+                      消去する範囲を選択してください。
+                    </span>
+                  </div>
+                  <button
+                    className="closeButton"
+                    type="button"
+                    onClick={() => setShowMovementClearDialog(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div style={{ display: "grid", gap: "8px", marginTop: "10px" }}>
+                  {[
+                    ["today", "本日分まで"],
+                    ["tomorrow", "明日分まで"],
+                    ["nextBusinessDay", "次の平日分まで（土日祝を含む）"],
+                  ].map(([value, label]) => (
+                    <label
+                      key={value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "10px",
+                        border: movementClearScope === value
+                          ? "2px solid #2563eb"
+                          : "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="movementClearScope"
+                        value={value}
+                        checked={movementClearScope === value}
+                        onChange={() => setMovementClearScope(value)}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="previewBox" style={{ marginTop: "12px" }}>
+                  <strong>
+                    対象：{movementClearTargets().length}件
+                  </strong>
+                  <div style={{ marginTop: "6px" }}>
+                    期限：{formatMovementClearDate(movementClearCutoff(movementClearScope))}
+                  </div>
+
+                  {movementClearTargets().length > 0 && (
+                    <div
+                      style={{
+                        marginTop: "10px",
+                        maxHeight: "220px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      {movementClearTargets().map((movement) => (
+                        <div
+                          key={movement.id}
+                          style={{
+                            padding: "6px 0",
+                            borderTop: "1px solid #e2e8f0",
+                          }}
+                        >
+                          {formatMovementClearDate(movement.date)}　
+                          {movement.staffName}　
+                          {pmDepartmentShort(movement.department)}　
+                          {pmMoveShort(movement.moveType)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <p style={{ margin: "12px 0 0", fontSize: "13px" }}>
+                  対象の患者移動を患者人数へ反映し、移動予定から消去します。
+                  外来・透析・備考・スタッフ設定は変更しません。
+                </p>
+
+                <div className="overrideActions">
+                  <button
+                    className="softButton"
+                    type="button"
+                    onClick={() => setShowMovementClearDialog(false)}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    className="deleteButton"
+                    type="button"
+                    disabled={movementClearTargets().length === 0}
+                    onClick={() => applyDueMovements(movementClearScope)}
+                  >
+                    {movementClearTargets().length}件を消去する
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -6200,7 +6396,7 @@ function PMAssignmentTable({
                       onClearDueMovements();
                     }}
                   >
-                    本日分までを消去
+                    患者移動を消去
                   </button>
                 </span>
               </th>
