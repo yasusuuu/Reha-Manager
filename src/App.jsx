@@ -6438,11 +6438,21 @@ function PMAssignmentTable({
                     borderBottom: "2px solid #f59e0b",
                   }}
                 >
-                  <div className="nameCell">
-                    <strong>確認モード</strong>
-                    <small style={{ display: "block", marginTop: "2px" }}>
-                      {pmTableDisplayName(countCheckStaff)}
-                    </small>
+                  <div
+                    className="nameCell"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "40px",
+                      fontWeight: 700,
+                      textAlign: "center",
+                      lineHeight: 1.15,
+                      whiteSpace: "normal",
+                      wordBreak: "keep-all",
+                    }}
+                  >
+                    確認モード
                   </div>
                 </th>
 
