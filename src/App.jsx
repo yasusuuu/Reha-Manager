@@ -1880,6 +1880,106 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
   });
 }
 
+function updateSaturdayRotation(nextRotation) {
+  const rotationChanged =
+    nextRotation.startDate !== saturdayRotation.startDate
+    || nextRotation.startGroup !== saturdayRotation.startGroup;
+
+  if (!rotationChanged) return;
+
+  let nextOverrides = saturdayOverrides;
+
+  if (saturdayOverrides.length > 0) {
+    const shouldReset = window.confirm(
+      "ローテーション開始設定を変更すると、これまでの土曜勤務の個別変更をすべて解除し、基本グループの状態から再計算します。\n\n変更してよいですか？"
+    );
+
+    if (!shouldReset) return;
+    nextOverrides = [];
+  }
+
+  setSaturdayRotation(nextRotation);
+  setSaturdayOverrides(nextOverrides);
+  saveSaturdaySettings(saturdayGroups, nextOverrides, nextRotation);
+}
+
+function resetAllSaturdayOverrides() {
+  if (saturdayOverrides.length === 0) {
+    alert("解除する土曜勤務の個別変更はありません。");
+    return;
+  }
+
+  const shouldReset = window.confirm(
+    `土曜勤務の個別変更 ${saturdayOverrides.length}件をすべて解除し、ローテーションとA〜Dグループの設定から再計算します。\n\nこの操作を実行しますか？`
+  );
+
+  if (!shouldReset) return;
+
+  setSaturdayOverrides([]);
+  setSaturdayUndoTargetDate("");
+  setSaturdayUndoSelectedDates([]);
+
+  setSaturdayForm((prev) => {
+    if (!prev.date) return prev;
+    const baseGroupKey = saturdayBaseGroupKeyForDate(prev.date);
+    return {
+      ...prev,
+      staffIds: pruneSaturdayStaffIds(saturdayGroups[baseGroupKey] || []),
+      note: "",
+    };
+  });
+
+  saveSaturdaySettings(saturdayGroups, [], saturdayRotation);
+}
+
+function resetSaturdayOverrideForDate(date) {
+  if (!date) return;
+
+  const currentOverride = saturdayOverrideForDate(date);
+  if (!currentOverride) {
+    alert("この日はすでに初期状態です。");
+    return;
+  }
+
+  const baseGroupKey = saturdayBaseGroupKeyForDate(date);
+  const baseStaffIds = pruneSaturdayStaffIds(
+    saturdayGroups[baseGroupKey] || []
+  );
+  const baseNames = baseStaffIds
+    .map((id) => staff.find((person) => person.id === id))
+    .filter(Boolean)
+    .map((person) => personName(person))
+    .join("、") || "該当なし";
+
+  const shouldReset = window.confirm(
+    `${String(date).replaceAll("-", "/")} の個別変更だけを解除し、初期状態へ戻します。\n\n` +
+    `復元先：${baseGroupKey || "未設定"}グループ\n` +
+    `出勤者：${baseNames}\n\n` +
+    "この操作を実行しますか？"
+  );
+
+  if (!shouldReset) return;
+
+  const nextOverrides = saturdayOverrides.filter(
+    (item) => item.date !== date
+  );
+
+  setSaturdayOverrides(nextOverrides);
+  setSaturdayUndoSelectedDates((prev) =>
+    prev.filter((targetDate) => targetDate !== date)
+  );
+
+  if (saturdayForm.date === date) {
+    setSaturdayForm((prev) => ({
+      ...prev,
+      staffIds: baseStaffIds,
+      note: "",
+    }));
+  }
+
+  saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
+}
+
   function saturdayUndoItemsForDate(date) {
     const target = saturdayOverrideForDate(date);
     if (!target) return [];
@@ -2711,9 +2811,23 @@ if (staffLoaded && staff.length === 0) {
                             出勤日を変更
                           </button>
                           {saturdayScheduleForDate(selectedDate)?.isOverride && (
-                            <button type="button" className="deleteButton compactAction" onClick={() => deleteSaturdaySchedule(selectedDate)}>
-                              個別変更解除
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="deleteButton compactAction"
+                                onClick={() => deleteSaturdaySchedule(selectedDate)}
+                              >
+                                個別変更解除
+                              </button>
+                              <button
+                                type="button"
+                                className="softMiniButton"
+                                onClick={() => resetSaturdayOverrideForDate(selectedDate)}
+                                title="この日だけ個別変更を解除し、現在の基本グループへ戻します"
+                              >
+                                初期状態に戻す
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -2948,12 +3062,11 @@ if (staffLoaded && staff.length === 0) {
                   <JapaneseDateInput
                     value={saturdayRotation.startDate}
                     onChange={(startDate) => {
-  setSaturdayRotation((prev) => {
-    const nextRotation = { ...prev, startDate };
-    saveSaturdaySettings(saturdayGroups, saturdayOverrides, nextRotation);
-    return nextRotation;
-  });
-}}
+                      updateSaturdayRotation({
+                        ...saturdayRotation,
+                        startDate,
+                      });
+                    }}
                   />
                 </label>
                 <label>
@@ -2961,19 +3074,40 @@ if (staffLoaded && staff.length === 0) {
                   <select
                     value={saturdayRotation.startGroup}
                     onChange={(e) => {
-  const startGroup = e.target.value;
-  setSaturdayRotation((prev) => {
-    const nextRotation = { ...prev, startGroup };
-    saveSaturdaySettings(saturdayGroups, saturdayOverrides, nextRotation);
-    return nextRotation;
-  });
-}}
+                      updateSaturdayRotation({
+                        ...saturdayRotation,
+                        startGroup: e.target.value,
+                      });
+                    }}
                   >
                     {SATURDAY_GROUP_KEYS.map((groupKey) => (
                       <option key={groupKey} value={groupKey}>{groupKey}</option>
                     ))}
                   </select>
                 </label>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "12px",
+                  padding: "12px",
+                  border: "1px solid #fecaca",
+                  borderRadius: "10px",
+                  background: "#fff7f7",
+                }}
+              >
+                <strong>初期状態へ戻す</strong>
+                <p style={{ margin: "6px 0 10px", fontSize: "13px" }}>
+                  日付ごとの個別変更をすべて解除し、現在の開始日・開始グループ・A〜Dの所属から土曜勤務を再計算します。
+                </p>
+                <button
+                  type="button"
+                  className="deleteButton"
+                  onClick={resetAllSaturdayOverrides}
+                  disabled={saturdayOverrides.length === 0}
+                >
+                  個別変更をすべて解除
+                </button>
               </div>
             </section>
 
