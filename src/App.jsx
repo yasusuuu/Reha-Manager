@@ -1876,9 +1876,11 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
         const baseIds = pruneSaturdayStaffIds(
           saturdayGroups[saturdayBaseGroupKeyForDate(item.date)] || []
         );
-        const beforeIds = item.previousOverride
-          ? pruneSaturdayStaffIds(item.previousOverride.staffIds)
-          : baseIds;
+        const beforeIds = Array.isArray(item.previousStaffIds)
+          ? pruneSaturdayStaffIds(item.previousStaffIds)
+          : item.previousOverride
+            ? pruneSaturdayStaffIds(item.previousOverride.staffIds)
+            : baseIds;
         const afterIds = pruneSaturdayStaffIds(item.staffIds);
 
         const removedIds = beforeIds.filter((id) => !afterIds.includes(id));
@@ -1889,6 +1891,10 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
           displayDate: String(item.date || "").replaceAll("-", "/"),
           removedIds,
           addedIds,
+          // 解除時は「現在の基本班へ戻す」だけではなく、
+          // 変更直前の実際の出勤者一覧を復元する。
+          restoreStaffIds: beforeIds,
+          restoreNote: item.previousNote ?? item.previousOverride?.note ?? "",
         };
       })
       .filter((item) => item.removedIds.length > 0 || item.addedIds.length > 0)
@@ -1919,7 +1925,8 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
       return;
     }
 
-    const itemsToRestore = saturdayOverrides.filter((item) =>
+    const undoItems = saturdayUndoItemsForDate(saturdayUndoTargetDate);
+    const itemsToRestore = undoItems.filter((item) =>
       targetDates.includes(item.date)
     );
 
@@ -1931,15 +1938,21 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
           (candidate) => candidate.date !== item.date
         );
 
-        if (item.previousOverride) {
-          nextOverrides.push({
-            ...item.previousOverride,
-            date: item.date,
-            staffIds: pruneSaturdayStaffIds(
-              item.previousOverride.staffIds
-            ),
-          });
-        }
+        const restoreStaffIds = pruneSaturdayStaffIds(item.restoreStaffIds);
+
+        // 解除後に空欄へ落ちないよう、変更直前の実際の出勤者を
+        // 明示的なoverrideとして復元する。
+        nextOverrides.push({
+          date: item.date,
+          staffIds: restoreStaffIds,
+          note: item.restoreNote || "",
+          updatedAt: Date.now(),
+          changeGroupId: makeId("saturday-undo"),
+          previousOverride: item.previousOverride?.previousOverride || null,
+          changedBy: loginUser?.id || "",
+          changedByName: loginUser ? personName(loginUser) : "",
+          restoredByUndo: true,
+        });
       });
 
       nextOverrides.sort((a, b) =>
@@ -1959,17 +1972,11 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
       const currentItem = itemsToRestore.find(
         (item) => item.date === saturdayForm.date
       );
-      const restored = currentItem?.previousOverride || null;
-      const groupKey = saturdayBaseGroupKeyForDate(saturdayForm.date);
 
       setSaturdayForm((prev) => ({
         ...prev,
-        staffIds: restored
-          ? pruneSaturdayStaffIds(restored.staffIds)
-          : groupKey
-            ? pruneSaturdayStaffIds(saturdayGroups[groupKey])
-            : [],
-        note: restored?.note || "",
+        staffIds: pruneSaturdayStaffIds(currentItem?.restoreStaffIds),
+        note: currentItem?.restoreNote || "",
       }));
     }
 
@@ -2014,6 +2021,10 @@ if (pruneSaturdayStaffIds(saturdayForm.staffIds).length === 0 && !swapCandidateD
 
       const makeOverride = (date, staffIds, note) => {
         const previousOverride = previousByDate.get(date) || null;
+        const baseGroupKey = saturdayBaseGroupKeyForDate(date);
+        const previousEffectiveStaffIds = previousOverride
+          ? pruneSaturdayStaffIds(previousOverride.staffIds)
+          : pruneSaturdayStaffIds(saturdayGroups[baseGroupKey] || []);
 
         return {
           date,
@@ -2021,6 +2032,8 @@ if (pruneSaturdayStaffIds(saturdayForm.staffIds).length === 0 && !swapCandidateD
           note: String(note || "").trim(),
           updatedAt: changedAt,
           changeGroupId,
+          previousStaffIds: previousEffectiveStaffIds,
+          previousNote: previousOverride?.note || "",
           previousOverride: previousOverride
             ? {
                 ...previousOverride,
