@@ -1200,7 +1200,20 @@ const loginUser = loginStaff
   }
 
   function saturdayOverrideForDate(date) {
-    return saturdayOverrides.find((item) => item.date === date && !item.disabled) || null;
+    return saturdayOverrides.find((item) => {
+      if (item.date !== date || item.disabled) return false;
+
+      // 旧版の個別解除で作られた空の復元overrideは、
+      // 基本グループを隠してカレンダーを空欄にするため無効扱いにする。
+      if (
+        item.restoredByUndo
+        && (!Array.isArray(item.staffIds) || item.staffIds.length === 0)
+      ) {
+        return false;
+      }
+
+      return true;
+    }) || null;
   }
 
   function saturdayScheduleForDate(date) {
@@ -1823,10 +1836,15 @@ async function saveSaturdaySettings(nextGroups, nextOverrides, nextRotation) {
     return acc;
   }, {});
 
-  const cleanOverrides = (nextOverrides || []).map((item) => ({
-    ...item,
-    staffIds: pruneSaturdayStaffIds(item.staffIds),
-  }));
+  const cleanOverrides = (nextOverrides || [])
+    .map((item) => ({
+      ...item,
+      staffIds: pruneSaturdayStaffIds(item.staffIds),
+    }))
+    .filter((item) => !(
+      item.restoredByUndo
+      && item.staffIds.length === 0
+    ));
 
   const payload = {
     overrides: cleanOverrides,
@@ -1895,6 +1913,9 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
           // 変更直前の実際の出勤者一覧を復元する。
           restoreStaffIds: beforeIds,
           restoreNote: item.previousNote ?? item.previousOverride?.note ?? "",
+          // 変更前に個別overrideがなかった場合は、
+          // 固定人数のoverrideを作らず基本班の自動表示へ戻す。
+          restoreToBase: !item.previousOverride,
         };
       })
       .filter((item) => item.removedIds.length > 0 || item.addedIds.length > 0)
@@ -1940,19 +1961,24 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
 
         const restoreStaffIds = pruneSaturdayStaffIds(item.restoreStaffIds);
 
-        // 解除後に空欄へ落ちないよう、変更直前の実際の出勤者を
-        // 明示的なoverrideとして復元する。
-        nextOverrides.push({
-          date: item.date,
-          staffIds: restoreStaffIds,
-          note: item.restoreNote || "",
-          updatedAt: Date.now(),
-          changeGroupId: makeId("saturday-undo"),
-          previousOverride: item.previousOverride?.previousOverride || null,
-          changedBy: loginUser?.id || "",
-          changedByName: loginUser ? personName(loginUser) : "",
-          restoredByUndo: true,
-        });
+        if (!item.restoreToBase) {
+          // 変更前にも個別overrideが存在した場合だけ、その内容を復元する。
+          nextOverrides.push({
+            date: item.date,
+            staffIds: restoreStaffIds,
+            note: item.restoreNote || "",
+            updatedAt: Date.now(),
+            changeGroupId: makeId("saturday-undo"),
+            previousStaffIds: item.previousOverride?.previousStaffIds || [],
+            previousNote: item.previousOverride?.previousNote || "",
+            previousOverride: item.previousOverride?.previousOverride || null,
+            changedBy: loginUser?.id || "",
+            changedByName: loginUser ? personName(loginUser) : "",
+            restoredByUndo: true,
+          });
+        }
+        // 変更前に個別overrideがなかった場合は何も追加しない。
+        // その日付は基本グループの現在設定から自動表示される。
       });
 
       nextOverrides.sort((a, b) =>
@@ -1973,10 +1999,15 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
         (item) => item.date === saturdayForm.date
       );
 
+      const baseGroupKey = saturdayBaseGroupKeyForDate(saturdayForm.date);
+      const restoredStaffIds = currentItem?.restoreToBase
+        ? pruneSaturdayStaffIds(saturdayGroups[baseGroupKey] || [])
+        : pruneSaturdayStaffIds(currentItem?.restoreStaffIds);
+
       setSaturdayForm((prev) => ({
         ...prev,
-        staffIds: pruneSaturdayStaffIds(currentItem?.restoreStaffIds),
-        note: currentItem?.restoreNote || "",
+        staffIds: restoredStaffIds,
+        note: currentItem?.restoreToBase ? "" : currentItem?.restoreNote || "",
       }));
     }
 
