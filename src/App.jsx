@@ -1872,10 +1872,26 @@ function toggleSaturdayGroupStaff(groupKey, staffId) {
       : [target];
 
     return related
-      .map((item) => ({
-        ...item,
-        displayDate: String(item.date || "").replaceAll("-", "/"),
-      }))
+      .map((item) => {
+        const baseIds = pruneSaturdayStaffIds(
+          saturdayGroups[saturdayBaseGroupKeyForDate(item.date)] || []
+        );
+        const beforeIds = item.previousOverride
+          ? pruneSaturdayStaffIds(item.previousOverride.staffIds)
+          : baseIds;
+        const afterIds = pruneSaturdayStaffIds(item.staffIds);
+
+        const removedIds = beforeIds.filter((id) => !afterIds.includes(id));
+        const addedIds = afterIds.filter((id) => !beforeIds.includes(id));
+
+        return {
+          ...item,
+          displayDate: String(item.date || "").replaceAll("-", "/"),
+          removedIds,
+          addedIds,
+        };
+      })
+      .filter((item) => item.removedIds.length > 0 || item.addedIds.length > 0)
       .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
   }
 
@@ -3125,25 +3141,24 @@ if (staffLoaded && staff.length === 0) {
 
             <div className="staffCheckGrid">
               {saturdayUndoItemsForDate(saturdayUndoTargetDate).map((item) => {
-                const baseIds = pruneSaturdayStaffIds(
-                  saturdayGroups[saturdayBaseGroupKeyForDate(item.date)] || []
-                );
-                const beforeIds = item.previousOverride
-                  ? pruneSaturdayStaffIds(item.previousOverride.staffIds)
-                  : baseIds;
-                const afterIds = pruneSaturdayStaffIds(item.staffIds);
-
-                const beforeNames = beforeIds
+                const removedNames = item.removedIds
                   .map((id) => staff.find((person) => person.id === id))
                   .filter(Boolean)
                   .map((person) => personName(person))
-                  .join("、") || "未設定";
+                  .join("、");
 
-                const afterNames = afterIds
+                const addedNames = item.addedIds
                   .map((id) => staff.find((person) => person.id === id))
                   .filter(Boolean)
                   .map((person) => personName(person))
-                  .join("、") || "未設定";
+                  .join("、");
+
+                const changeText =
+                  removedNames && addedNames
+                    ? `${removedNames} ⇒ ${addedNames}`
+                    : removedNames
+                      ? `${removedNames} を解除`
+                      : `${addedNames} を追加`;
 
                 return (
                   <label
@@ -3158,7 +3173,7 @@ if (staffLoaded && staff.length === 0) {
                     <span>
                       <strong>{item.displayDate}</strong>
                       <br />
-                      <small>{beforeNames} ⇒ {afterNames}</small>
+                      <small>{changeText}</small>
                     </span>
                   </label>
                 );
