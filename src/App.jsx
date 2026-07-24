@@ -10,6 +10,7 @@ import {
   limit,
   onSnapshot,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -4015,6 +4016,8 @@ function FullPatientManager({
 const [patientSaveStatus, setPatientSaveStatus] = useState("loading");
 const [patientSaving, setPatientSaving] = useState(false);
 const [patientLoadError, setPatientLoadError] = useState("");
+const [patientRemoteUpdatePending, setPatientRemoteUpdatePending] = useState(false);
+const [patientRemoteUpdatedByName, setPatientRemoteUpdatedByName] = useState("");
   // 患者振り分け用スタッフは、デモスタッフやlocalStorageを初期表示に使わない。
   // Firestoreのstaffコレクションを読み込んでから、settings/patientManagerの保存値と安全に合成する。
   const [staff, setStaff] = useState([]);
@@ -4077,6 +4080,10 @@ const [patientLoadError, setPatientLoadError] = useState("");
   const [selectedFiscal, setSelectedFiscal] = useState(null); // null = 今年度
   const [patientDataReady, setPatientDataReady] = useState(false);
   const patientRemoteApplyingRef = useRef(false);
+  const patientSaveStatusRef = useRef("loading");
+  const patientSavingRef = useRef(false);
+  const patientBaseRevisionRef = useRef(0);
+  const pendingPatientRemoteDataRef = useRef(null);
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
@@ -4110,10 +4117,57 @@ const [patientLoadError, setPatientLoadError] = useState("");
   const [changedCountCheckKeys, setChangedCountCheckKeys] = useState(() => new Set());
   const [showCountCheckApplyDialog, setShowCountCheckApplyDialog] = useState(false);
 
+  useEffect(() => {
+    patientSaveStatusRef.current = patientSaveStatus;
+  }, [patientSaveStatus]);
+
+  useEffect(() => {
+    patientSavingRef.current = patientSaving;
+  }, [patientSaving]);
+
+  function applyPatientManagerRemoteData(data) {
+    patientManagerDataRef.current = data;
+    patientRemoteApplyingRef.current = true;
+    patientBaseRevisionRef.current = Number(data.revision || 0);
+
+    if (Array.isArray(data.staff)) {
+      setStaff(mergePatientStaffList(data.staff, staffSourceRef.current));
+    }
+    if (Array.isArray(data.movements)) setMovements(data.movements);
+    if (Array.isArray(data.history)) setHistory(data.history);
+    if (data.recentChanges) setRecentChanges(data.recentChanges);
+    if (data.fiscalSnapshots) setFiscalSnapshots(data.fiscalSnapshots);
+
+    setPatientDataReady(true);
+    setPatientSaveStatus("saved");
+    setPatientRemoteUpdatePending(false);
+    setPatientRemoteUpdatedByName("");
+    pendingPatientRemoteDataRef.current = null;
+
+    setTimeout(() => {
+      patientRemoteApplyingRef.current = false;
+    }, 0);
+  }
+
+  function applyPendingPatientRemoteData() {
+    const data = pendingPatientRemoteDataRef.current;
+    if (!data) return;
+
+    const ok = window.confirm(
+      `他のスタッフが保存した最新データを反映します。
+
+現在この端末でまだ保存していない変更は破棄されます。
+
+続行しますか？`
+    );
+    if (!ok) return;
+
+    applyPatientManagerRemoteData(data);
+  }
+
 useEffect(() => {
   const unsubscribe = onSnapshot(
     doc(db, "settings", "patientManager"),
-
     (snapshot) => {
       if (!snapshot.exists()) {
         setPatientDataReady(true);
@@ -4122,59 +4176,28 @@ useEffect(() => {
       }
 
       const data = snapshot.data();
+      const incomingRevision = Number(data.revision || 0);
+      const isInitialLoad = patientManagerDataRef.current === null;
+      const isOwnSave = patientSavingRef.current && data.updatedBy === loginUser?.id;
+      const hasLocalUnsavedChanges = patientSaveStatusRef.current === "dirty";
+      const isNewerRemoteData = incomingRevision !== patientBaseRevisionRef.current;
 
-      patientManagerDataRef.current = data;
-      patientRemoteApplyingRef.current = true;
-
-      if (Array.isArray(data.staff)) {
-        setStaff(
-          mergePatientStaffList(
-            data.staff,
-            staffSourceRef.current
-          )
-        );
+      if (
+        !isInitialLoad &&
+        !isOwnSave &&
+        hasLocalUnsavedChanges &&
+        isNewerRemoteData
+      ) {
+        pendingPatientRemoteDataRef.current = data;
+        setPatientRemoteUpdatePending(true);
+        setPatientRemoteUpdatedByName(data.updatedByName || "他のスタッフ");
+        return;
       }
 
-      if (Array.isArray(data.movements)) {
-        setMovements(data.movements);
-      }
-
-      if (Array.isArray(data.history)) {
-        setHistory(data.history);
-      }
-
-      if (data.recentChanges) {
-        setRecentChanges((prev) => {
-          const today = pmTodayKey();
-
-          const keepTodayChanges = Object.fromEntries(
-            Object.entries(prev).filter(
-              ([, value]) => value === today
-            )
-          );
-
-          return {
-            ...data.recentChanges,
-            ...keepTodayChanges,
-          };
-        });
-      }
-
-      if (data.fiscalSnapshots) {
-        setFiscalSnapshots(data.fiscalSnapshots);
-      }
-
-      setPatientDataReady(true);
-      setPatientSaveStatus("saved");
-
-      setTimeout(() => {
-        patientRemoteApplyingRef.current = false;
-      }, 0);
+      applyPatientManagerRemoteData(data);
     },
-
     (error) => {
       console.error("patientManager ERROR", error);
-
       setPatientDataReady(false);
       setPatientSaveStatus("error");
       setPatientLoadError(
@@ -4184,7 +4207,7 @@ useEffect(() => {
   );
 
   return () => unsubscribe();
-}, []);
+}, [loginUser?.id]);
 
 function buildPatientManagerPayload(extra = {}) {
   return {
@@ -4219,16 +4242,51 @@ function formatPatientManagerSize(bytes) {
 async function savePatientManagerData() {
   if (!patientDataReady || patientRemoteApplyingRef.current || patientSaving) return;
 
-  setPatientSaving(true);
-  try {
-    // Firestoreの1ドキュメント上限を超えないよう、
-    // 患者振り分け本体にはスナップショットを含めない。
-    const payload = buildPatientManagerPayload();
+  if (patientRemoteUpdatePending) {
+    alert("他のスタッフが先に更新しています。最新データを反映してから、必要な内容をもう一度入力してください。");
+    return;
+  }
 
-    await setDoc(doc(db, "settings", "patientManager"), payload);
-    patientManagerDataRef.current = payload;
+  setPatientSaving(true);
+  setPatientSaveStatus("saving");
+
+  try {
+    const targetRef = doc(db, "settings", "patientManager");
+    let savedPayload = null;
+
+    await runTransaction(db, async (transaction) => {
+      const currentSnapshot = await transaction.get(targetRef);
+      const currentData = currentSnapshot.exists() ? currentSnapshot.data() : {};
+      const currentRevision = Number(currentData.revision || 0);
+      const baseRevision = Number(patientBaseRevisionRef.current || 0);
+
+      if (currentSnapshot.exists() && currentRevision !== baseRevision) {
+        const conflictError = new Error("PATIENT_MANAGER_CONFLICT");
+        conflictError.code = "patient-manager/conflict";
+        conflictError.remoteData = currentData;
+        throw conflictError;
+      }
+
+      savedPayload = buildPatientManagerPayload({
+        revision: currentRevision + 1,
+      });
+
+      transaction.set(targetRef, savedPayload);
+    });
+
+    patientManagerDataRef.current = savedPayload;
+    patientBaseRevisionRef.current = Number(savedPayload?.revision || 0);
     setPatientSaveStatus("saved");
   } catch (error) {
+    if (error?.code === "patient-manager/conflict") {
+      pendingPatientRemoteDataRef.current = error.remoteData || null;
+      setPatientRemoteUpdatePending(Boolean(error.remoteData));
+      setPatientRemoteUpdatedByName(error.remoteData?.updatedByName || "他のスタッフ");
+      setPatientSaveStatus("dirty");
+      alert("他のスタッフが先に保存しました。古い画面からの上書きを防止しました。最新データを反映してください。");
+      return;
+    }
+
     const code = error?.code || "unknown";
     const message = error?.message || "unknown";
     console.error("patientManager save failed", error);
@@ -5659,6 +5717,41 @@ function markChanged(staffId, department) {
 
   return (
     <div className="patientModule appShell">
+      {patientRemoteUpdatePending && (
+        <div
+          role="alert"
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 50,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px",
+            padding: "10px 12px",
+            marginBottom: "10px",
+            border: "2px solid #d97706",
+            borderRadius: "10px",
+            background: "#fff7ed",
+          }}
+        >
+          <div>
+            <strong>{patientRemoteUpdatedByName || "他のスタッフ"}が更新しました</strong>
+            <div style={{ fontSize: "13px", marginTop: "2px" }}>
+              入力中の内容を守るため、自動反映を止めています。
+            </div>
+          </div>
+          <button
+            className="primaryButton"
+            type="button"
+            onClick={applyPendingPatientRemoteData}
+          >
+            最新データを反映
+          </button>
+        </div>
+      )}
+
       {lastAppliedMovementBatch && (
         <div className="movementUndoToast" role="status" aria-live="polite">
           <span>
