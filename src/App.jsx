@@ -1006,6 +1006,9 @@ const [saturdayRotation, setSaturdayRotation] = useState({
   const [showSaturdayUndoDialog, setShowSaturdayUndoDialog] = useState(false);
   const [saturdayUndoTargetDate, setSaturdayUndoTargetDate] = useState("");
   const [saturdayUndoSelectedDates, setSaturdayUndoSelectedDates] = useState([]);
+  const [showSaturdayRestoreDialog, setShowSaturdayRestoreDialog] = useState(false);
+  const [saturdayRestoreTargetDate, setSaturdayRestoreTargetDate] = useState("");
+  const [saturdayRestoreSubmitting, setSaturdayRestoreSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     staffId: staff[0]?.id || "s1",
@@ -1887,97 +1890,108 @@ function updateSaturdayRotation(nextRotation) {
 
   if (!rotationChanged) return;
 
-  let nextOverrides = saturdayOverrides;
-
-  if (saturdayOverrides.length > 0) {
-    const shouldReset = window.confirm(
-      "ローテーション開始設定を変更すると、これまでの土曜勤務の個別変更をすべて解除し、基本グループの状態から再計算します。\n\n変更してよいですか？"
-    );
-
-    if (!shouldReset) return;
-    nextOverrides = [];
-  }
-
+  // 開始設定を変更しても、日付ごとの個別変更は削除しない。
+  // 必要な日だけ「この日を元に戻す」から再計算する。
   setSaturdayRotation(nextRotation);
-  setSaturdayOverrides(nextOverrides);
-  saveSaturdaySettings(saturdayGroups, nextOverrides, nextRotation);
+  saveSaturdaySettings(saturdayGroups, saturdayOverrides, nextRotation);
 }
 
-function resetAllSaturdayOverrides() {
-  if (saturdayOverrides.length === 0) {
-    alert("解除する土曜勤務の個別変更はありません。");
-    return;
-  }
+function saturdayRestorePreview(date) {
+  if (!date) return null;
 
-  const shouldReset = window.confirm(
-    `土曜勤務の個別変更 ${saturdayOverrides.length}件をすべて解除し、ローテーションとA〜Dグループの設定から再計算します。\n\nこの操作を実行しますか？`
-  );
+  const groupKey = saturdayBaseGroupKeyForDate(date);
+  if (!groupKey) return null;
 
-  if (!shouldReset) return;
+  const staffIds = pruneSaturdayStaffIds(saturdayGroups[groupKey] || []);
+  const people = staffIds
+    .map((id) => staff.find((person) => person.id === id))
+    .filter(Boolean);
 
-  setSaturdayOverrides([]);
-  setSaturdayUndoTargetDate("");
-  setSaturdayUndoSelectedDates([]);
-
-  setSaturdayForm((prev) => {
-    if (!prev.date) return prev;
-    const baseGroupKey = saturdayBaseGroupKeyForDate(prev.date);
-    return {
-      ...prev,
-      staffIds: pruneSaturdayStaffIds(saturdayGroups[baseGroupKey] || []),
-      note: "",
-    };
-  });
-
-  saveSaturdaySettings(saturdayGroups, [], saturdayRotation);
+  return {
+    date,
+    groupKey,
+    staffIds,
+    people,
+  };
 }
 
-function resetSaturdayOverrideForDate(date) {
+function openSaturdayRestoreDialog(date) {
   if (!date) return;
 
-  const currentOverride = saturdayOverrideForDate(date);
-  if (!currentOverride) {
-    alert("この日はすでに初期状態です。");
+  const target = new Date(`${date}T00:00:00`);
+  if (target.getDay() !== 6) {
+    alert("この機能は土曜日だけ使用できます。");
     return;
   }
 
-  const baseGroupKey = saturdayBaseGroupKeyForDate(date);
-  const baseStaffIds = pruneSaturdayStaffIds(
-    saturdayGroups[baseGroupKey] || []
-  );
-  const baseNames = baseStaffIds
-    .map((id) => staff.find((person) => person.id === id))
-    .filter(Boolean)
-    .map((person) => personName(person))
-    .join("、") || "該当なし";
-
-  const shouldReset = window.confirm(
-    `${String(date).replaceAll("-", "/")} の個別変更だけを解除し、初期状態へ戻します。\n\n` +
-    `復元先：${baseGroupKey || "未設定"}グループ\n` +
-    `出勤者：${baseNames}\n\n` +
-    "この操作を実行しますか？"
-  );
-
-  if (!shouldReset) return;
-
-  const nextOverrides = saturdayOverrides.filter(
-    (item) => item.date !== date
-  );
-
-  setSaturdayOverrides(nextOverrides);
-  setSaturdayUndoSelectedDates((prev) =>
-    prev.filter((targetDate) => targetDate !== date)
-  );
-
-  if (saturdayForm.date === date) {
-    setSaturdayForm((prev) => ({
-      ...prev,
-      staffIds: baseStaffIds,
-      note: "",
-    }));
+  const preview = saturdayRestorePreview(date);
+  if (!preview) {
+    alert("この日の土曜勤務を計算できません。開始日と開始グループを確認してください。");
+    return;
   }
 
-  saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
+  if (preview.staffIds.length === 0) {
+    alert(`${preview.groupKey}グループに職員が登録されていません。土曜出勤設定を確認してください。`);
+    return;
+  }
+
+  setSaturdayRestoreTargetDate(date);
+  setShowSaturdayRestoreDialog(true);
+}
+
+async function resetSaturdayOverrideForDate(date) {
+  if (!date || saturdayRestoreSubmitting) return;
+
+  const preview = saturdayRestorePreview(date);
+  if (!preview || preview.staffIds.length === 0) {
+    alert("復元する土曜勤務を計算できません。設定を確認してください。");
+    return;
+  }
+
+  setSaturdayRestoreSubmitting(true);
+
+  const restoredOverride = {
+    date,
+    staffIds: preview.staffIds,
+    note: "",
+    updatedAt: Date.now(),
+    changeGroupId: makeId("saturday-day-restore"),
+    previousStaffIds: [],
+    previousNote: "",
+    previousOverride: null,
+    changedBy: loginUser?.id || "",
+    changedByName: loginUser ? personName(loginUser) : "",
+    restoredFromBase: true,
+  };
+
+  const nextOverrides = [
+    ...saturdayOverrides.filter((item) => item.date !== date),
+    restoredOverride,
+  ].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+
+  try {
+    await saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
+    setSaturdayOverrides(nextOverrides);
+    setSaturdayUndoSelectedDates((prev) =>
+      prev.filter((targetDate) => targetDate !== date)
+    );
+
+    if (saturdayForm.date === date) {
+      setSaturdayForm((prev) => ({
+        ...prev,
+        staffIds: preview.staffIds,
+        note: "",
+      }));
+    }
+
+    setShowSaturdayRestoreDialog(false);
+    setSaturdayRestoreTargetDate("");
+  } catch (error) {
+    console.error("Saturday restore failed", error);
+    alert("この日の土曜勤務を元に戻せませんでした。通信状況を確認して、もう一度お試しください。");
+  } finally {
+    setSaturdayRestoreSubmitting(false);
+  }
 }
 
   function saturdayUndoItemsForDate(date) {
@@ -2770,7 +2784,7 @@ if (staffLoaded && staff.length === 0) {
               </button>
             </div>
 
-            {selectedRecords().length === 0 && selectedAnnouncements().length === 0 && !canShowSaturdayForDate(selectedDate) && !holidays[selectedDate] ? (
+            {selectedRecords().length === 0 && selectedAnnouncements().length === 0 && new Date(`${selectedDate}T00:00:00`).getDay() !== 6 && !holidays[selectedDate] ? (
               <p className="emptyText">この日の登録はありません。</p>
             ) : (
               <div className="detailList">
@@ -2798,7 +2812,7 @@ if (staffLoaded && staff.length === 0) {
                   </div>
                 )}
 
-                {canShowSaturdayForDate(selectedDate) && (
+                {new Date(`${selectedDate}T00:00:00`).getDay() === 6 && (
                   <div className="detailItem saturdayWorkDetail">
                     <div className="saturdayWorkBody">
                       <div className="saturdayWorkTitle">
@@ -2811,23 +2825,24 @@ if (staffLoaded && staff.length === 0) {
                             出勤日を変更
                           </button>
                           {saturdayScheduleForDate(selectedDate)?.isOverride && (
-                            <>
-                              <button
-                                type="button"
-                                className="deleteButton compactAction"
-                                onClick={() => deleteSaturdaySchedule(selectedDate)}
-                              >
-                                個別変更解除
-                              </button>
-                              <button
-                                type="button"
-                                className="softMiniButton"
-                                onClick={() => resetSaturdayOverrideForDate(selectedDate)}
-                                title="この日だけ個別変更を解除し、現在の基本グループへ戻します"
-                              >
-                                初期状態に戻す
-                              </button>
-                            </>
+                            <button
+                              type="button"
+                              className="deleteButton compactAction"
+                              onClick={() => deleteSaturdaySchedule(selectedDate)}
+                            >
+                              個別変更解除
+                            </button>
+                          )}
+
+                          {isAdmin && new Date(`${selectedDate}T00:00:00`).getDay() === 6 && (
+                            <button
+                              type="button"
+                              className="softMiniButton"
+                              onClick={() => openSaturdayRestoreDialog(selectedDate)}
+                              title="この日の土曜勤務だけを、現在の土曜勤務表どおりに戻します"
+                            >
+                              この日を元に戻す
+                            </button>
                           )}
                         </div>
                       </div>
@@ -3087,28 +3102,6 @@ if (staffLoaded && staff.length === 0) {
                 </label>
               </div>
 
-              <div
-                style={{
-                  marginTop: "12px",
-                  padding: "12px",
-                  border: "1px solid #fecaca",
-                  borderRadius: "10px",
-                  background: "#fff7f7",
-                }}
-              >
-                <strong>初期状態へ戻す</strong>
-                <p style={{ margin: "6px 0 10px", fontSize: "13px" }}>
-                  日付ごとの個別変更をすべて解除し、現在の開始日・開始グループ・A〜Dの所属から土曜勤務を再計算します。
-                </p>
-                <button
-                  type="button"
-                  className="deleteButton"
-                  onClick={resetAllSaturdayOverrides}
-                  disabled={saturdayOverrides.length === 0}
-                >
-                  個別変更をすべて解除
-                </button>
-              </div>
             </section>
 
             <section className="groupSettings">
@@ -3291,6 +3284,105 @@ if (staffLoaded && staff.length === 0) {
           </form>
         </div>
       )}
+
+      {showSaturdayRestoreDialog && (() => {
+        const preview = saturdayRestorePreview(saturdayRestoreTargetDate);
+        return (
+          <div
+            className="modalBackdrop"
+            onClick={() => {
+              if (saturdayRestoreSubmitting) return;
+              setShowSaturdayRestoreDialog(false);
+              setSaturdayRestoreTargetDate("");
+            }}
+          >
+            <div
+              className="staffModal"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="modalHeader">
+                <div>
+                  <h2>この日の土曜勤務を元に戻す</h2>
+                  <span className="modalSubLabel">
+                    実行する前に、元に戻した後の内容を確認してください。
+                  </span>
+                </div>
+                <button
+                  className="closeButton"
+                  type="button"
+                  disabled={saturdayRestoreSubmitting}
+                  onClick={() => {
+                    setShowSaturdayRestoreDialog(false);
+                    setSaturdayRestoreTargetDate("");
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="previewBox" style={{ marginTop: "12px" }}>
+                <div><strong>対象日</strong></div>
+                <div style={{ marginTop: "4px" }}>
+                  {saturdayRestoreTargetDate.replaceAll("-", "/")}
+                </div>
+
+                <div style={{ marginTop: "12px" }}><strong>元に戻した後の出勤者</strong></div>
+                <div style={{ marginTop: "6px", display: "grid", gap: "4px" }}>
+                  {preview?.people?.length ? (
+                    preview.people.map((person) => (
+                      <div key={`restore-preview-${person.id}`}>
+                        ・{personName(person)}　{person.job}
+                      </div>
+                    ))
+                  ) : (
+                    <div>出勤者を確認できません。</div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ marginTop: "14px", fontSize: "14px", lineHeight: 1.7 }}>
+                <p style={{ margin: 0 }}>
+                  この日の土曜勤務を、現在登録されている土曜勤務の順番とA〜Dの所属から計算し直します。
+                </p>
+                <p style={{ margin: "10px 0 0" }}>
+                  <strong>この操作で変わるもの</strong><br />
+                  ・この日の出勤者<br />
+                  ・この日に保存されている個別変更
+                </p>
+                <p style={{ margin: "10px 0 0" }}>
+                  <strong>変わらないもの</strong><br />
+                  ・ほかの日の土曜勤務<br />
+                  ・A〜Dの所属<br />
+                  ・ローテーションの開始日と開始グループ<br />
+                  ・ほかの日の個別変更
+                </p>
+              </div>
+
+              <div className="overrideActions">
+                <button
+                  className="softButton"
+                  type="button"
+                  disabled={saturdayRestoreSubmitting}
+                  onClick={() => {
+                    setShowSaturdayRestoreDialog(false);
+                    setSaturdayRestoreTargetDate("");
+                  }}
+                >
+                  キャンセル
+                </button>
+                <button
+                  className="primaryButton"
+                  type="button"
+                  disabled={saturdayRestoreSubmitting || !preview?.staffIds?.length}
+                  onClick={() => resetSaturdayOverrideForDate(saturdayRestoreTargetDate)}
+                >
+                  {saturdayRestoreSubmitting ? "復元中..." : "元に戻す"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {showSaturdayUndoDialog && (
         <div
