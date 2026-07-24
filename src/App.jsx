@@ -2859,18 +2859,18 @@ if (staffLoaded && staff.length === 0) {
                                   <p key={row.id} className={row.changed || row.added || row.removed ? "saturdayChanged" : ""}>
                                     {row.changed ? (
                                       <>
-                                        {personName(row.before)} {job} <span>⇒</span> {personName(row.after)} {job}
+                                        {personName(row.before)} <span>⇒</span> {personName(row.after)}
                                       </>
                                     ) : row.added ? (
                                       <>
-                                        追加 <span>⇒</span> {personName(row.after)} {job}
+                                        追加 <span>⇒</span> {personName(row.after)}
                                       </>
                                     ) : row.removed ? (
                                       <>
-                                        {personName(row.before)} {job} <span>⇒</span> 未設定
+                                        {personName(row.before)} <span>⇒</span> 未設定
                                       </>
                                     ) : (
-                                      <>{personName(row.after || row.before)} {job}</>
+                                      <>{personName(row.after || row.before)}</>
                                     )}
                                   </p>
                                 ))
