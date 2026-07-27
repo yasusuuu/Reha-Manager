@@ -64,7 +64,7 @@ const ANNOUNCEMENT_TYPES = {
 };
 
 const SATURDAY_GROUP_KEYS = ["A", "B", "C", "D"];
-// App25: カレンダーをホーム画面に固定し、集計・設定を下部メニューへ整理。
+// App26: カレンダー上部を圧縮し、全体・自分切替の選択状態を明確化。
 // 土曜勤務の変更・解除・復元ロジック自体は既存処理を利用する。
 const LEAVE_SELECT_VISIBLE_STYLE = {
   color: "#0f172a",
@@ -2786,10 +2786,6 @@ if (staffLoaded && staff.length === 0) {
       {view === "calendar" ? (
         <>
           <section className="calendarCard">
-            <div style={{ textAlign: "left", marginBottom: "10px" }}>
-              <h2 style={{ margin: 0, fontSize: "20px" }}>カレンダー</h2>
-            </div>
-
             <div
               className="calendarScopeSwitch"
               role="group"
@@ -2797,13 +2793,14 @@ if (staffLoaded && staff.length === 0) {
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                width: "min(100%, 240px)",
-                margin: "0 auto 12px",
+                width: "min(100%, 220px)",
+                margin: "0 auto 8px",
                 padding: "3px",
                 gap: "3px",
-                border: "1px solid #cbd5e1",
-                borderRadius: "999px",
-                background: "#f1f5f9",
+                border: "1px solid #93c5fd",
+                borderRadius: "10px",
+                background: "#eff6ff",
+                boxShadow: "inset 0 1px 2px rgba(15, 23, 42, 0.08)",
               }}
             >
               <button
@@ -2811,7 +2808,17 @@ if (staffLoaded && staff.length === 0) {
                 className={displayScope === "all" ? "active" : ""}
                 aria-pressed={displayScope === "all"}
                 onClick={() => { setDisplayScope("all"); setSelectedDate(null); }}
-                style={{ borderRadius: "999px", whiteSpace: "nowrap" }}
+                style={{
+                  minHeight: "34px",
+                  padding: "5px 12px",
+                  border: "none",
+                  borderRadius: "7px",
+                  whiteSpace: "nowrap",
+                  fontWeight: 700,
+                  color: displayScope === "all" ? "#ffffff" : "#475569",
+                  background: displayScope === "all" ? "#2563eb" : "transparent",
+                  boxShadow: displayScope === "all" ? "0 1px 3px rgba(37, 99, 235, 0.3)" : "none",
+                }}
               >
                 全体
               </button>
@@ -2820,7 +2827,17 @@ if (staffLoaded && staff.length === 0) {
                 className={displayScope === "mine" ? "active" : ""}
                 aria-pressed={displayScope === "mine"}
                 onClick={() => { setDisplayScope("mine"); setSelectedDate(null); }}
-                style={{ borderRadius: "999px", whiteSpace: "nowrap" }}
+                style={{
+                  minHeight: "34px",
+                  padding: "5px 12px",
+                  border: "none",
+                  borderRadius: "7px",
+                  whiteSpace: "nowrap",
+                  fontWeight: 700,
+                  color: displayScope === "mine" ? "#ffffff" : "#475569",
+                  background: displayScope === "mine" ? "#2563eb" : "transparent",
+                  boxShadow: displayScope === "mine" ? "0 1px 3px rgba(37, 99, 235, 0.3)" : "none",
+                }}
               >
                 自分
               </button>
@@ -2896,8 +2913,8 @@ if (staffLoaded && staff.length === 0) {
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: "10px",
-              marginTop: "12px",
+              gap: "8px",
+              marginTop: "8px",
             }}
           >
             <button
@@ -2907,7 +2924,7 @@ if (staffLoaded && staff.length === 0) {
                 setSelectedDate(null);
                 setView("summary");
               }}
-              style={{ minHeight: "52px" }}
+              style={{ minHeight: "44px", fontWeight: 700 }}
             >
               集計
             </button>
@@ -2915,7 +2932,7 @@ if (staffLoaded && staff.length === 0) {
               type="button"
               className="softButton"
               onClick={() => setShowLeaveSettings(true)}
-              style={{ minHeight: "52px" }}
+              style={{ minHeight: "44px", fontWeight: 700 }}
             >
               設定
             </button>
