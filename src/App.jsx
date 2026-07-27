@@ -64,7 +64,8 @@ const ANNOUNCEMENT_TYPES = {
 };
 
 const SATURDAY_GROUP_KEYS = ["A", "B", "C", "D"];
-// App22: 個別変更解除だけを残し、選択した変更グループの連動日をまとめて解除する。
+// App25: カレンダーをホーム画面に固定し、集計・設定を下部メニューへ整理。
+// 土曜勤務の変更・解除・復元ロジック自体は既存処理を利用する。
 const LEAVE_SELECT_VISIBLE_STYLE = {
   color: "#0f172a",
   WebkitTextFillColor: "#0f172a",
@@ -1007,6 +1008,7 @@ const [saturdayRotation, setSaturdayRotation] = useState({
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState(null);
   const [showStaffEdit, setShowStaffEdit] = useState(false);
+  const [showLeaveSettings, setShowLeaveSettings] = useState(false);
   const [showAnnouncementEdit, setShowAnnouncementEdit] = useState(false);
   const [showSaturdayEdit, setShowSaturdayEdit] = useState(false);
   const [showLeaveForm, setShowLeaveForm] = useState(false);
@@ -2612,27 +2614,8 @@ if (staffLoaded && staff.length === 0) {
         onDelete={deleteAnnouncement}
       />
 
-      <section className={`card leaveEntryCard ${showLeaveForm ? "open" : ""}`}>
-        <button
-          className="leaveEntryTitleButton"
-          type="button"
-          onClick={() => setShowLeaveForm((prev) => !prev)}
-          aria-expanded={showLeaveForm}
-        >
-          ＋ 休暇・勤務登録
-        </button>
-
-        {showLeaveForm && (
-          <>
-        <div className="actionButtons leaveEntryActions">
-          <button className="softButton" type="button" onClick={() => openSaturdayEdit(form.date)}>
-            土曜出勤設定
-          </button>
-          <button className="softButton" type="button" onClick={() => setShowStaffEdit(true)}>
-            職員編集
-          </button>
-        </div>
-
+      {showLeaveForm && (
+        <section className="card leaveEntryCard open">
         <div className="formGrid">
           <label>
             <span>職員</span>
@@ -2797,105 +2780,174 @@ if (staffLoaded && staff.length === 0) {
         <button className="primaryButton" type="button" onClick={addRecord} disabled={recordSubmitting}>
           {recordSubmitting ? "登録中..." : "登録する"}
         </button>
-          </>
-        )}
-      </section>
-
-      <nav className="toolbar">
-        <div className="calendarModeBar" aria-label="カレンダー表示切替">
-          <button className={view === "calendar" ? "active" : ""} onClick={() => setView("calendar")}>
-            カレンダー
-          </button>
-          <button
-            type="button"
-            className={displayScope === "all" ? "active" : ""}
-            onClick={() => { setDisplayScope("all"); setSelectedDate(null); }}
-          >
-            全体
-          </button>
-          <button
-            type="button"
-            className={displayScope === "mine" ? "active" : ""}
-            onClick={() => { setDisplayScope("mine"); setSelectedDate(null); }}
-          >
-            自分
-          </button>
-        </div>
-        <div className="summaryModeBox">
-          <button className={view === "summary" ? "active" : ""} onClick={() => setView("summary")}>
-            集計
-          </button>
-        </div>
-
-      </nav>
+        </section>
+      )}
 
       {view === "calendar" ? (
-        <section className="calendarCard">
-          <div className="monthNav calendarMonthNav">
-            <button onClick={() => {
-              if (month === 1) { setYear(year - 1); setMonth(12); } else setMonth(month - 1);
-              setSelectedDate(null);
-            }}>＜</button>
-            <strong className="calendarMonthLabel">{year}年{month}月</strong>
-            <button onClick={() => {
-              if (month === 12) { setYear(year + 1); setMonth(1); } else setMonth(month + 1);
-              setSelectedDate(null);
-            }}>＞</button>
-          </div>
+        <>
+          <section className="calendarCard">
+            <div style={{ textAlign: "left", marginBottom: "10px" }}>
+              <h2 style={{ margin: 0, fontSize: "20px" }}>カレンダー</h2>
+            </div>
 
-          <div className="weekHeader">
-            {["日", "月", "火", "水", "木", "金", "土"].map((d) => (
-              <div key={d}>{d}</div>
-            ))}
-          </div>
+            <div
+              className="calendarScopeSwitch"
+              role="group"
+              aria-label="カレンダーの表示範囲"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                width: "min(100%, 240px)",
+                margin: "0 auto 12px",
+                padding: "3px",
+                gap: "3px",
+                border: "1px solid #cbd5e1",
+                borderRadius: "999px",
+                background: "#f1f5f9",
+              }}
+            >
+              <button
+                type="button"
+                className={displayScope === "all" ? "active" : ""}
+                aria-pressed={displayScope === "all"}
+                onClick={() => { setDisplayScope("all"); setSelectedDate(null); }}
+                style={{ borderRadius: "999px", whiteSpace: "nowrap" }}
+              >
+                全体
+              </button>
+              <button
+                type="button"
+                className={displayScope === "mine" ? "active" : ""}
+                aria-pressed={displayScope === "mine"}
+                onClick={() => { setDisplayScope("mine"); setSelectedDate(null); }}
+                style={{ borderRadius: "999px", whiteSpace: "nowrap" }}
+              >
+                自分
+              </button>
+            </div>
 
-          <div className="calendarGrid">
-            {calendarCells.map((day, index) => {
-              if (!day) return <div key={`empty-${index}`} className="calendarCell empty" />;
+            <div className="monthNav calendarMonthNav">
+              <button onClick={() => {
+                if (month === 1) { setYear(year - 1); setMonth(12); } else setMonth(month - 1);
+                setSelectedDate(null);
+              }}>＜</button>
+              <strong className="calendarMonthLabel">{year}年{month}月</strong>
+              <button onClick={() => {
+                if (month === 12) { setYear(year + 1); setMonth(1); } else setMonth(month + 1);
+                setSelectedDate(null);
+              }}>＞</button>
+            </div>
 
-              const date = dateKey(year, month, day);
-              const count = countByJob(date);
-              const holidayWork = holidayWorkCountByJob(date);
-              const dayAnnouncements = announcementsForDate(date);
-              const weekday = new Date(`${date}T00:00:00`).getDay();
-              const holidayName = holidays[date];
+            <div className="weekHeader">
+              {["日", "月", "火", "水", "木", "金", "土"].map((d) => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
 
-              return (
-                <button
-                  key={date}
-                  type="button"
-                  onClick={() => toggleDate(date)}
-                  className={[
-                    "calendarCell",
-                    weekday === 0 ? "sunday" : "",
-                    weekday === 6 ? "saturdayCell" : "",
-                    holidayName ? "holidayCell" : "",
-                    selectedDate === date ? "selected" : "",
-                  ].join(" ")}
-                >
-                  <div className="dayHeader">
-                    <span className="dayNumber">{day}</span>
-                    {canShowSaturdayForDate(date) && <span className="saturdayMini">土勤</span>}
-                    {dayAnnouncements.length > 0 && <span className="announcementMini">予{dayAnnouncements.length}</span>}
-                  </div>
+            <div className="calendarGrid">
+              {calendarCells.map((day, index) => {
+                if (!day) return <div key={`empty-${index}`} className="calendarCell empty" />;
 
-                  <div className="dayCounts">
-                    {count.PT > 0 && <span>PT {count.PT}</span>}
-                    {count.OT > 0 && <span>OT {count.OT}</span>}
-                  </div>
-                  {holidayWork.total > 0 && (
-                    <div className="holidayWorkTags">
-                      {holidayWork.PT > 0 && <span>休出 PT {holidayWork.PT}</span>}
-                      {holidayWork.OT > 0 && <span>休出 OT {holidayWork.OT}</span>}
+                const date = dateKey(year, month, day);
+                const count = countByJob(date);
+                const holidayWork = holidayWorkCountByJob(date);
+                const dayAnnouncements = announcementsForDate(date);
+                const weekday = new Date(`${date}T00:00:00`).getDay();
+                const holidayName = holidays[date];
+
+                return (
+                  <button
+                    key={date}
+                    type="button"
+                    onClick={() => toggleDate(date)}
+                    className={[
+                      "calendarCell",
+                      weekday === 0 ? "sunday" : "",
+                      weekday === 6 ? "saturdayCell" : "",
+                      holidayName ? "holidayCell" : "",
+                      selectedDate === date ? "selected" : "",
+                    ].join(" ")}
+                  >
+                    <div className="dayHeader">
+                      <span className="dayNumber">{day}</span>
+                      {canShowSaturdayForDate(date) && <span className="saturdayMini">土勤</span>}
+                      {dayAnnouncements.length > 0 && <span className="announcementMini">予{dayAnnouncements.length}</span>}
                     </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+
+                    <div className="dayCounts">
+                      {count.PT > 0 && <span>PT {count.PT}</span>}
+                      {count.OT > 0 && <span>OT {count.OT}</span>}
+                    </div>
+                    {holidayWork.total > 0 && (
+                      <div className="holidayWorkTags">
+                        {holidayWork.PT > 0 && <span>休出 PT {holidayWork.PT}</span>}
+                        {holidayWork.OT > 0 && <span>休出 OT {holidayWork.OT}</span>}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section
+            className="card leaveHomeActions"
+            aria-label="カレンダーメニュー"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: "10px",
+              marginTop: "12px",
+            }}
+          >
+            <button
+              type="button"
+              className="softButton"
+              onClick={() => {
+                setSelectedDate(null);
+                setView("summary");
+              }}
+              style={{ minHeight: "52px" }}
+            >
+              集計
+            </button>
+            <button
+              type="button"
+              className="softButton"
+              onClick={() => setShowLeaveSettings(true)}
+              style={{ minHeight: "52px" }}
+            >
+              設定
+            </button>
+          </section>
+        </>
       ) : (
-        <SummaryView staff={visibleStaff} summary={summary} fiscalYear={currentFy} />
+        <section className="summaryHomeView">
+          <div
+            className="card"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              marginBottom: "12px",
+            }}
+          >
+            <div style={{ textAlign: "left" }}>
+              <h2 style={{ margin: 0, fontSize: "20px" }}>集計</h2>
+              <small style={{ color: "#64748b" }}>{currentFy}年度</small>
+            </div>
+            <button
+              type="button"
+              className="softButton"
+              onClick={() => setView("calendar")}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              カレンダーへ戻る
+            </button>
+          </div>
+          <SummaryView staff={visibleStaff} summary={summary} fiscalYear={currentFy} />
+        </section>
       )}
 
       {selectedDate && (
@@ -2994,72 +3046,138 @@ if (staffLoaded && staff.length === 0) {
                 )}
 
                 {new Date(`${selectedDate}T00:00:00`).getDay() === 6 && (
-                  <div className="detailItem saturdayWorkDetail">
-                    <div className="saturdayWorkBody">
-                      <div className="saturdayWorkTitle">
-                        <div className="saturdayWorkTitleText">
+                  <>
+                    <section
+                      className="detailItem saturdayWorkDetail"
+                      aria-label="土曜出勤変更"
+                      style={{ display: "block", padding: "10px" }}
+                    >
+                      <div style={{ textAlign: "left", marginBottom: "8px" }}>
+                        <strong style={{ display: "block", fontSize: "14px" }}>土曜出勤変更</strong>
+                        <small style={{ color: "#64748b" }}>
+                          {saturdayScheduleForDate(selectedDate)?.isOverride
+                            ? "この日のみ個別変更"
+                            : "この日の勤務者を個別に変更できます"}
+                        </small>
+                      </div>
+
+                      <div
+                        className="saturdayChangeActionRow"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                          gap: "5px",
+                          width: "100%",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="softMiniButton"
+                          onClick={() => openSaturdayEdit(selectedDate)}
+                          style={{
+                            width: "100%",
+                            minWidth: 0,
+                            height: "36px",
+                            padding: "0 4px",
+                            fontSize: "clamp(10px, 2.7vw, 12px)",
+                            whiteSpace: "nowrap",
+                            lineHeight: 1,
+                          }}
+                        >
+                          出勤日を変更
+                        </button>
+                        <button
+                          type="button"
+                          className="deleteButton compactAction"
+                          disabled={!saturdayScheduleForDate(selectedDate)?.isOverride}
+                          onClick={() => openSaturdayUndoDialog(selectedDate)}
+                          style={{
+                            width: "100%",
+                            minWidth: 0,
+                            height: "36px",
+                            padding: "0 4px",
+                            fontSize: "clamp(10px, 2.7vw, 12px)",
+                            whiteSpace: "nowrap",
+                            lineHeight: 1,
+                            opacity: saturdayScheduleForDate(selectedDate)?.isOverride ? 1 : 0.45,
+                          }}
+                        >
+                          個別変更解除
+                        </button>
+                        <button
+                          type="button"
+                          className="softMiniButton"
+                          disabled={!saturdayScheduleForDate(selectedDate)?.isOverride}
+                          onClick={() => openSaturdayRestoreDialog(selectedDate)}
+                          style={{
+                            width: "100%",
+                            minWidth: 0,
+                            height: "36px",
+                            padding: "0 4px",
+                            fontSize: "clamp(10px, 2.7vw, 12px)",
+                            whiteSpace: "nowrap",
+                            lineHeight: 1,
+                            opacity: saturdayScheduleForDate(selectedDate)?.isOverride ? 1 : 0.45,
+                          }}
+                        >
+                          この日を元に戻す
+                        </button>
+                      </div>
+                    </section>
+
+                    <section
+                      className="detailItem saturdayWorkDetail"
+                      aria-label="土曜出勤者一覧"
+                      style={{ display: "block", padding: "10px" }}
+                    >
+                      <div className="saturdayWorkBody">
+                        <div className="saturdayWorkTitleText" style={{ textAlign: "left", marginBottom: "8px" }}>
                           <strong>
                             {saturdayScheduleForDate(selectedDate)?.isYearEndNewYearVolunteer
                               ? "土曜出勤（年末年始・希望者勤務）"
-                              : "土曜出勤"}
+                              : "土曜出勤者"}
                           </strong>
-                          {saturdayScheduleForDate(selectedDate)?.isYearEndNewYearVolunteer ? (
-                            <small>通常のA〜Dループは進みません</small>
-                          ) : saturdayScheduleForDate(selectedDate)?.isOverride ? (
-                            <small>この日のみ個別変更</small>
-                          ) : null}
-                        </div>
-                        <div className="detailActions">
-                          <button type="button" className="softMiniButton" onClick={() => openSaturdayEdit(selectedDate)}>
-                            出勤日を変更
-                          </button>
-                          {saturdayScheduleForDate(selectedDate)?.isOverride && (
-                            <button
-                              type="button"
-                              className="deleteButton compactAction"
-                              onClick={() => openSaturdayUndoDialog(selectedDate)}
-                            >
-                              個別変更解除
-                            </button>
+                          {saturdayScheduleForDate(selectedDate)?.isYearEndNewYearVolunteer && (
+                            <small style={{ display: "block" }}>通常のA〜Dループは進みません</small>
                           )}
                         </div>
+                        <div className="saturdayJobColumns">
+                          {["PT", "OT"].map((job) => {
+                            const rows = saturdayDutyRowsForDate(selectedDate, job);
+                            return (
+                              <section className="saturdayJobColumn" key={job}>
+                                <h4>{job}</h4>
+                                {rows.length === 0 ? (
+                                  <p className="saturdayEmpty">該当なし</p>
+                                ) : (
+                                  rows.map((row) => (
+                                    <p key={row.id} className={row.changed || row.added || row.removed ? "saturdayChanged" : ""}>
+                                      {row.changed ? (
+                                        <>
+                                          {personName(row.before)} <span>⇒</span> {personName(row.after)}
+                                        </>
+                                      ) : row.added ? (
+                                        <>
+                                          追加 <span>⇒</span> {personName(row.after)}
+                                        </>
+                                      ) : row.removed ? (
+                                        <>
+                                          {personName(row.before)} <span>⇒</span> 未設定
+                                        </>
+                                      ) : (
+                                        <>{personName(row.after || row.before)}</>
+                                      )}
+                                    </p>
+                                  ))
+                                )}
+                              </section>
+                            );
+                          })}
+                        </div>
+                        {saturdayScheduleForDate(selectedDate)?.note && <small>{saturdayScheduleForDate(selectedDate).note}</small>}
                       </div>
-                      <div className="saturdayJobColumns">
-                        {["PT", "OT"].map((job) => {
-                          const rows = saturdayDutyRowsForDate(selectedDate, job);
-                          return (
-                            <section className="saturdayJobColumn" key={job}>
-                              <h4>{job}</h4>
-                              {rows.length === 0 ? (
-                                <p className="saturdayEmpty">該当なし</p>
-                              ) : (
-                                rows.map((row) => (
-                                  <p key={row.id} className={row.changed || row.added || row.removed ? "saturdayChanged" : ""}>
-                                    {row.changed ? (
-                                      <>
-                                        {personName(row.before)} <span>⇒</span> {personName(row.after)}
-                                      </>
-                                    ) : row.added ? (
-                                      <>
-                                        追加 <span>⇒</span> {personName(row.after)}
-                                      </>
-                                    ) : row.removed ? (
-                                      <>
-                                        {personName(row.before)} <span>⇒</span> 未設定
-                                      </>
-                                    ) : (
-                                      <>{personName(row.after || row.before)}</>
-                                    )}
-                                  </p>
-                                ))
-                              )}
-                            </section>
-                          );
-                        })}
-                      </div>
-                      {saturdayScheduleForDate(selectedDate)?.note && <small>{saturdayScheduleForDate(selectedDate).note}</small>}
-                    </div>
-                  </div>
+                    </section>
+                  </>
                 )}
 
                 {selectedRecords().length > 0 && (
@@ -3123,13 +3241,57 @@ if (staffLoaded && staff.length === 0) {
               </div>
             )}
 
-            <div className="modalFooterActions" style={{ paddingTop: "8px" }}>
+          </div>
+        </div>
+      )}
+
+      {showLeaveSettings && (
+        <div className="modalBackdrop" onClick={() => setShowLeaveSettings(false)}>
+          <div className="staffModal" onClick={(event) => event.stopPropagation()}>
+            <div className="modalHeader">
+              <h2>設定</h2>
+              <button className="closeButton" type="button" onClick={() => setShowLeaveSettings(false)}>
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: "10px", marginTop: "12px" }}>
               <button
                 type="button"
-                className="primaryButton"
-                onClick={() => openLeaveFormForDate(selectedDate)}
+                className="softButton"
+                onClick={() => {
+                  setShowLeaveSettings(false);
+                  setShowStaffEdit(true);
+                }}
+                style={{ minHeight: "48px", textAlign: "left" }}
               >
-                {selectedRecords().length > 0 ? "この日に追加登録" : "この日に休暇・勤務を登録"}
+                職員編集
+              </button>
+
+              <button
+                type="button"
+                className="softButton"
+                onClick={() => {
+                  setShowLeaveSettings(false);
+                  setShowSaturdayGroupSettings(true);
+                  openSaturdayEdit(form.date);
+                }}
+                style={{ minHeight: "48px", textAlign: "left" }}
+              >
+                土曜出勤グループ設定
+              </button>
+
+              <button
+                type="button"
+                className="softButton"
+                onClick={() => {
+                  setShowLeaveSettings(false);
+                  setShowSaturdayGroupSettings(false);
+                  openSaturdayEdit(form.date);
+                }}
+                style={{ minHeight: "48px", textAlign: "left" }}
+              >
+                土曜出勤設定
               </button>
             </div>
           </div>
