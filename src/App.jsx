@@ -466,6 +466,17 @@ function modulo(value, length) {
   return ((value % length) + length) % length;
 }
 
+function isYearEndNewYearVolunteerSaturday(dateStr) {
+  if (!dateStr) return false;
+  const date = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(date.getTime()) || date.getDay() !== 6) return false;
+
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return (month === 12 && day >= 29 && day <= 31)
+    || (month === 1 && day >= 1 && day <= 3);
+}
+
 function saturdayCountBetween(startDateStr, targetDateStr) {
   if (!startDateStr || !targetDateStr) return 0;
   const start = new Date(`${startDateStr}T00:00:00`);
@@ -475,7 +486,7 @@ function saturdayCountBetween(startDateStr, targetDateStr) {
   const step = target >= start ? 1 : -1;
   let count = 0;
   for (let d = new Date(start); step > 0 ? d < target : d > target; d = addDateDays(d, 7 * step)) {
-    count += step;
+    if (!isYearEndNewYearVolunteerSaturday(toDateKey(d))) count += step;
   }
   return count;
 }
@@ -1221,8 +1232,9 @@ const loginUser = loginStaff
   }
 
   function saturdayScheduleForDate(date) {
-    const groupKey = saturdayBaseGroupKeyForDate(date);
-    if (!groupKey) return null;
+    const volunteerDay = isYearEndNewYearVolunteerSaturday(date);
+    const groupKey = volunteerDay ? null : saturdayBaseGroupKeyForDate(date);
+    if (!volunteerDay && !groupKey) return null;
 
     const override = saturdayOverrideForDate(date);
     if (override) {
@@ -1232,15 +1244,17 @@ const loginUser = loginStaff
         staffIds: pruneSaturdayStaffIds(override.staffIds),
         note: override.note || "",
         isOverride: true,
+        isYearEndNewYearVolunteer: volunteerDay,
       };
     }
 
     return {
       date,
       groupKey,
-      staffIds: pruneSaturdayStaffIds(saturdayGroups[groupKey]),
+      staffIds: volunteerDay ? [] : pruneSaturdayStaffIds(saturdayGroups[groupKey]),
       note: "",
       isOverride: false,
+      isYearEndNewYearVolunteer: volunteerDay,
     };
   }
 
@@ -1255,6 +1269,7 @@ const loginUser = loginStaff
   }
 
   function saturdayBaseStaffForDate(date) {
+    if (isYearEndNewYearVolunteerSaturday(date)) return [];
     const groupKey = saturdayBaseGroupKeyForDate(date);
     if (!groupKey) return [];
     const people = pruneSaturdayStaffIds(saturdayGroups[groupKey])
@@ -1898,7 +1913,7 @@ function updateSaturdayRotation(nextRotation) {
 }
 
 function saturdayRestorePreview(date) {
-  if (!date) return null;
+  if (!date || isYearEndNewYearVolunteerSaturday(date)) return null;
 
   const groupKey = saturdayBaseGroupKeyForDate(date);
   if (!groupKey) return null;
@@ -2225,8 +2240,64 @@ if (pruneSaturdayStaffIds(saturdayForm.staffIds).length === 0 && !swapCandidateD
     setShowSaturdayEdit(false);
   }
 
-function deleteSaturdaySchedule(date) {
-  openSaturdayUndoDialog(date);
+async function deleteSaturdaySchedule(date) {
+  if (!date) return;
+
+  const targetOverrideExists = saturdayOverrides.some(
+    (item) => item.date === date
+  );
+
+  if (!targetOverrideExists) {
+    alert("この日に解除できる個別変更はありません。");
+    return;
+  }
+
+  const preview = saturdayRestorePreview(date);
+  if (!preview) {
+    alert("この日の土曜勤務を再計算できません。開始日と開始グループを確認してください。");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `${String(date).replaceAll("-", "/")} の個別変更を解除します。\n\n` +
+    "保存当時のスタッフ名や変更対象者には依存せず、この日付の個別変更データをすべて削除します。\n" +
+    "解除後は、現在のスタッフマスタとA〜Dグループ設定から土曜勤務を再計算します。"
+  );
+
+  if (!confirmed) return;
+
+  // 氏名・変更前後の担当者・changeGroupIdには依存せず、
+  // 対象日をキーに、その日の個別変更データをすべて削除する。
+  const nextOverrides = saturdayOverrides
+    .filter((item) => item.date !== date)
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+
+  try {
+    await saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
+    setSaturdayOverrides(nextOverrides);
+
+    setSaturdayUndoSelectedDates((prev) =>
+      prev.filter((targetDate) => targetDate !== date)
+    );
+
+    if (saturdayForm.date === date) {
+      setSaturdayForm((prev) => ({
+        ...prev,
+        staffIds: preview.staffIds,
+        note: "",
+      }));
+    }
+
+    setSwapCandidateDate(null);
+    setSwapCandidateStaffIds([]);
+    setSwapTargetStaffId(null);
+    setShowSaturdayUndoDialog(false);
+    setSaturdayUndoTargetDate("");
+    setSaturdayUndoSelectedDates([]);
+  } catch (error) {
+    console.error("Saturday override delete by date failed", error);
+    alert("個別変更を解除できませんでした。通信状況を確認して、もう一度お試しください。");
+  }
 }
 
   const visibleStaff = isAdmin ? activeStaff : activeStaff.filter((s) => s.id === loginId);
@@ -2872,8 +2943,16 @@ if (staffLoaded && staff.length === 0) {
                     <div className="saturdayWorkBody">
                       <div className="saturdayWorkTitle">
                         <div className="saturdayWorkTitleText">
-                          <strong>土曜出勤</strong>
-                          {saturdayScheduleForDate(selectedDate)?.isOverride && <small>この日のみ個別変更</small>}
+                          <strong>
+                            {saturdayScheduleForDate(selectedDate)?.isYearEndNewYearVolunteer
+                              ? "土曜出勤（年末年始・希望者勤務）"
+                              : "土曜出勤"}
+                          </strong>
+                          {saturdayScheduleForDate(selectedDate)?.isYearEndNewYearVolunteer ? (
+                            <small>通常のA〜Dループは進みません</small>
+                          ) : saturdayScheduleForDate(selectedDate)?.isOverride ? (
+                            <small>この日のみ個別変更</small>
+                          ) : null}
                         </div>
                         <div className="detailActions">
                           <button type="button" className="softMiniButton" onClick={() => openSaturdayEdit(selectedDate)}>
