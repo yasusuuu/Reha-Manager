@@ -64,7 +64,7 @@ const ANNOUNCEMENT_TYPES = {
 };
 
 const SATURDAY_GROUP_KEYS = ["A", "B", "C", "D"];
-// App21: 土曜勤務の変更をchangeGroupId単位で保存し、同日の複数変更を選択解除できる。
+// App22: 個別変更解除だけを残し、選択した変更グループの連動日をまとめて解除する。
 const LEAVE_SELECT_VISIBLE_STYLE = {
   color: "#0f172a",
   WebkitTextFillColor: "#0f172a",
@@ -2175,11 +2175,8 @@ async function resetSaturdayOverrideForDate(date) {
   }
 
   function toggleSaturdayUndoDate(changeGroupId) {
-    setSaturdayUndoSelectedDates((prev) =>
-      prev.includes(changeGroupId)
-        ? prev.filter((item) => item !== changeGroupId)
-        : [...prev, changeGroupId]
-    );
+    // 個別解除は1回につき1つの変更グループだけを対象にする。
+    setSaturdayUndoSelectedDates([changeGroupId]);
   }
 
   async function applySaturdayUndoSelection() {
@@ -3020,20 +3017,9 @@ if (staffLoaded && staff.length === 0) {
                             <button
                               type="button"
                               className="deleteButton compactAction"
-                              onClick={() => deleteSaturdaySchedule(selectedDate)}
+                              onClick={() => openSaturdayUndoDialog(selectedDate)}
                             >
                               個別変更解除
-                            </button>
-                          )}
-
-                          {isAdmin && new Date(`${selectedDate}T00:00:00`).getDay() === 6 && (
-                            <button
-                              type="button"
-                              className="softMiniButton"
-                              onClick={() => openSaturdayRestoreDialog(selectedDate)}
-                              title="この日の土曜勤務だけを、現在の土曜勤務表どおりに戻します"
-                            >
-                              この日を元に戻す
                             </button>
                           )}
                         </div>
@@ -3677,7 +3663,8 @@ if (staffLoaded && staff.length === 0) {
                     key={`undo-group-${group.changeGroupId}`}
                   >
                     <input
-                      type="checkbox"
+                      type="radio"
+                      name="saturday-undo-group"
                       checked={saturdayUndoSelectedDates.includes(group.changeGroupId)}
                       onChange={() => toggleSaturdayUndoDate(group.changeGroupId)}
                     />
@@ -3699,20 +3686,7 @@ if (staffLoaded && staff.length === 0) {
                 type="button"
                 onClick={applySaturdayUndoSelection}
               >
-                選択した変更を解除
-              </button>
-              <button
-                className="softButton"
-                type="button"
-                onClick={() =>
-                  setSaturdayUndoSelectedDates(
-                    saturdayUndoGroupsForDate(saturdayUndoTargetDate).map(
-                      (group) => group.changeGroupId
-                    )
-                  )
-                }
-              >
-                すべて選択
+                この変更を解除
               </button>
               <button
                 className="softButton"
