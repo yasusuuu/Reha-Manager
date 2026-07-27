@@ -4403,6 +4403,7 @@ function FullPatientManager({
   onPwaCacheClear,
 }) {
   const [view, setView] = useState("table");
+  const [movementView, setMovementView] = useState("new");
 
   useEffect(() => {
     if (loginUser?.job) setProfession(loginUser.job);
@@ -5067,6 +5068,7 @@ function markChanged(staffId, department) {
     ]);
 
     setMovementForm((prev) => ({ ...prev, note: "" }));
+    setMovementView("waiting");
   }
 
   function addPmDays(dateKey, amount) {
@@ -6418,75 +6420,200 @@ function markChanged(staffId, department) {
             <h2>患者移動</h2>
           </div>
 
-          <form className="moveForm compactMoveForm" onSubmit={registerMovement}>
-            <div className="moveFormQuartet">
-              <div className="autoStaffBox">
-                <span>担当者</span>
-                <strong>{autoMovementStaff ? pmPersonName(autoMovementStaff) : "未設定"}</strong>
-              </div>
-              <label>
-              <span>移動日</span>
-              <PMJapaneseDateInput value={movementForm.date} onChange={(date) => setMovementForm({ ...movementForm, date })} />
-              </label>
-
-              <label>
-              <span>種類</span>
-              <select value={movementForm.moveType} onChange={(e) => setMovementForm({ ...movementForm, moveType: e.target.value })}>
-                {PM_MOVE_TYPES.map((item) => (
-                  <option key={item.key} value={item.key}>{item.label}</option>
-                ))}
-              </select>
-              </label>
-
-              <label>
-              <span>科</span>
-              <select value={movementForm.department} onChange={(e) => setMovementForm({ ...movementForm, department: e.target.value })}>
-                {PM_DEPARTMENTS.filter((dept) => dept.key !== "stopped").map((dept) => (
-                  <option key={dept.key} value={dept.key}>{dept.label}</option>
-                ))}
-              </select>
-              </label>
-            </div>
-
-            <label className="memoInlineField">
-              <input
-                value={movementForm.note}
-                placeholder="メモ"
-                onChange={(e) => setMovementForm({ ...movementForm, note: e.target.value })}
-              />
-            </label>
-
-            <button className="primaryButton" type="submit">登録</button>
-          </form>
-
-          <div className="movementList">
-            {pendingMovements.filter((movement) => movement.profession === profession).length === 0 ? (
-              <p className="emptyText">登録中の患者移動はありません。</p>
-            ) : (
-              visibleStaff
-                .map((person) => {
-                  const personMovements = pendingMovements.filter(
-                    (m) => m.profession === profession && m.staffId === person.id
-                  );
-                  if (personMovements.length === 0) return null;
-                  return (
-                    <div className="movementCard" key={person.id}>
-                      <div className="movementCardHeader">{pmPersonName(person)}</div>
-                      {personMovements.map((movement) => (
-                        <div className="movementItem" key={movement.id}>
-                          <strong>{pmDisplayDate(movement.date)} {pmDepartmentShort(movement.department)} {pmMoveShort(movement.moveType)}</strong>
-                          {movement.note && <small>{movement.note}</small>}
-                          <div className="movementItemActions">
-                            <button className="editButton" type="button" onClick={() => setEditMovement({ ...movement })}>編集</button>
-                            <button className="deleteButton" type="button" onClick={() => deleteMovement(movement.id)}>削除</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })
-            )}
+          <div
+            role="tablist"
+            aria-label="患者移動画面"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "4px",
+              padding: "4px",
+              marginBottom: "14px",
+              border: "1px solid #cbd5e1",
+              borderRadius: "10px",
+              background: "#f1f5f9",
+            }}
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={movementView === "new"}
+              onClick={() => setMovementView("new")}
+              style={{
+                minHeight: "42px",
+                border: movementView === "new" ? "1px solid #2563eb" : "1px solid transparent",
+                borderRadius: "7px",
+                background: movementView === "new" ? "#2563eb" : "transparent",
+                color: movementView === "new" ? "#ffffff" : "#475569",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              新規登録
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={movementView === "waiting"}
+              onClick={() => setMovementView("waiting")}
+              style={{
+                minHeight: "42px",
+                border: movementView === "waiting" ? "1px solid #2563eb" : "1px solid transparent",
+                borderRadius: "7px",
+                background: movementView === "waiting" ? "#2563eb" : "transparent",
+                color: movementView === "waiting" ? "#ffffff" : "#475569",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              移動待ち
+              {pendingMovements.filter((movement) => movement.profession === profession).length > 0 && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: "22px",
+                    height: "22px",
+                    padding: "0 6px",
+                    marginLeft: "7px",
+                    borderRadius: "999px",
+                    background: movementView === "waiting" ? "#ffffff" : "#dbeafe",
+                    color: "#1d4ed8",
+                    fontSize: "12px",
+                    fontWeight: 800,
+                  }}
+                >
+                  {pendingMovements.filter((movement) => movement.profession === profession).length}
+                </span>
+              )}
+            </button>
           </div>
+
+          {movementView === "new" && (
+            <div>
+              <div style={{ marginBottom: "12px" }}>
+                <strong style={{ display: "block", fontSize: "16px" }}>患者移動を登録</strong>
+                <span style={{ display: "block", marginTop: "3px", color: "#64748b", fontSize: "13px" }}>
+                  移動予定を入力して登録します。
+                </span>
+              </div>
+
+              <form className="moveForm compactMoveForm" onSubmit={registerMovement}>
+                <div className="moveFormQuartet">
+                  <div className="autoStaffBox">
+                    <span>担当者</span>
+                    <strong>{autoMovementStaff ? pmPersonName(autoMovementStaff) : "未設定"}</strong>
+                  </div>
+                  <label>
+                    <span>移動日</span>
+                    <PMJapaneseDateInput value={movementForm.date} onChange={(date) => setMovementForm({ ...movementForm, date })} />
+                  </label>
+
+                  <label>
+                    <span>種類</span>
+                    <select value={movementForm.moveType} onChange={(e) => setMovementForm({ ...movementForm, moveType: e.target.value })}>
+                      {PM_MOVE_TYPES.map((item) => (
+                        <option key={item.key} value={item.key}>{item.label}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>科</span>
+                    <select value={movementForm.department} onChange={(e) => setMovementForm({ ...movementForm, department: e.target.value })}>
+                      {PM_DEPARTMENTS.filter((dept) => dept.key !== "stopped").map((dept) => (
+                        <option key={dept.key} value={dept.key}>{dept.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <label className="memoInlineField">
+                  <input
+                    value={movementForm.note}
+                    placeholder="メモ"
+                    onChange={(e) => setMovementForm({ ...movementForm, note: e.target.value })}
+                  />
+                </label>
+
+                <button className="primaryButton" type="submit">患者移動を登録</button>
+              </form>
+            </div>
+          )}
+
+          {movementView === "waiting" && (
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <strong style={{ display: "block", fontSize: "16px" }}>移動待ち</strong>
+                  <span style={{ display: "block", marginTop: "3px", color: "#64748b", fontSize: "13px" }}>
+                    登録済みで、まだ患者人数に反映していない予定です。
+                  </span>
+                </div>
+                <span
+                  style={{
+                    flex: "0 0 auto",
+                    padding: "5px 9px",
+                    borderRadius: "999px",
+                    background: "#eff6ff",
+                    color: "#1d4ed8",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {pendingMovements.filter((movement) => movement.profession === profession).length}件
+                </span>
+              </div>
+
+              <div className="movementList">
+                {pendingMovements.filter((movement) => movement.profession === profession).length === 0 ? (
+                  <div
+                    className="emptyText"
+                    style={{
+                      padding: "24px 12px",
+                      border: "1px dashed #cbd5e1",
+                      borderRadius: "10px",
+                      textAlign: "center",
+                      background: "#f8fafc",
+                    }}
+                  >
+                    移動待ちの患者はいません。
+                  </div>
+                ) : (
+                  visibleStaff.map((person) => {
+                    const personMovements = pendingMovements
+                      .filter((m) => m.profession === profession && m.staffId === person.id)
+                      .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+                    if (personMovements.length === 0) return null;
+                    return (
+                      <div className="movementCard" key={person.id}>
+                        <div className="movementCardHeader">{pmPersonName(person)}</div>
+                        {personMovements.map((movement) => (
+                          <div className="movementItem" key={movement.id}>
+                            <strong>{pmDisplayDate(movement.date)} {pmDepartmentShort(movement.department)} {pmMoveShort(movement.moveType)}</strong>
+                            {movement.note && <small>{movement.note}</small>}
+                            <div className="movementItemActions">
+                              <button className="editButton" type="button" onClick={() => setEditMovement({ ...movement })}>編集</button>
+                              <button className="deleteButton" type="button" onClick={() => deleteMovement(movement.id)}>削除</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
         </section>
       )}
 
