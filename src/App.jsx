@@ -64,6 +64,7 @@ const ANNOUNCEMENT_TYPES = {
 };
 
 const SATURDAY_GROUP_KEYS = ["A", "B", "C", "D"];
+// App21: 土曜勤務の変更をchangeGroupId単位で保存し、同日の複数変更を選択解除できる。
 const LEAVE_SELECT_VISIBLE_STYLE = {
   color: "#0f172a",
   WebkitTextFillColor: "#0f172a",
@@ -1958,48 +1959,33 @@ function openSaturdayRestoreDialog(date) {
 async function resetSaturdayOverrideForDate(date) {
   if (!date || saturdayRestoreSubmitting) return;
 
-  const preview = saturdayRestorePreview(date);
-  if (!preview || preview.staffIds.length === 0) {
-    alert("復元する土曜勤務を計算できません。設定を確認してください。");
+  const groups = saturdayUndoGroupsForDate(date);
+  const groupIds = groups.map((group) => group.changeGroupId);
+
+  if (groupIds.length === 0) {
+    alert("この日に解除できる個別変更はありません。");
     return;
   }
 
   setSaturdayRestoreSubmitting(true);
 
-  const restoredOverride = {
-    date,
-    staffIds: preview.staffIds,
-    note: "",
-    updatedAt: Date.now(),
-    changeGroupId: makeId("saturday-day-restore"),
-    previousStaffIds: [],
-    previousNote: "",
-    previousOverride: null,
-    changedBy: loginUser?.id || "",
-    changedByName: loginUser ? personName(loginUser) : "",
-    restoredFromBase: true,
-  };
-
-  const nextOverrides = [
-    ...saturdayOverrides.filter((item) => item.date !== date),
-    restoredOverride,
-  ].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
-
   try {
+    const nextOverrides = rebuildSaturdayOverridesWithoutGroups(groupIds);
     await saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
     setSaturdayOverrides(nextOverrides);
-    setSaturdayUndoSelectedDates((prev) =>
-      prev.filter((targetDate) => targetDate !== date)
-    );
 
+    const restoredSchedule = scheduleFromOverrideList(date, nextOverrides);
     if (saturdayForm.date === date) {
       setSaturdayForm((prev) => ({
         ...prev,
-        staffIds: preview.staffIds,
-        note: "",
+        staffIds: restoredSchedule.staffIds,
+        note: restoredSchedule.note,
       }));
     }
 
+    setSwapCandidateDate(null);
+    setSwapCandidateStaffIds([]);
+    setSwapTargetStaffId(null);
     setShowSaturdayRestoreDialog(false);
     setSaturdayRestoreTargetDate("");
   } catch (error) {
@@ -2010,143 +1996,224 @@ async function resetSaturdayOverrideForDate(date) {
   }
 }
 
-  function saturdayUndoItemsForDate(date) {
-    const target = saturdayOverrideForDate(date);
-    if (!target) return [];
+  function extractSaturdayChangeHistory(override) {
+    if (!override) return [];
 
-    const groupId = target.changeGroupId || null;
-    const related = groupId
-      ? saturdayOverrides.filter((item) => item.changeGroupId === groupId)
-      : [target];
+    if (Array.isArray(override.changeHistory) && override.changeHistory.length > 0) {
+      return override.changeHistory.map((entry) => ({
+        ...entry,
+        date: entry.date || override.date,
+        changeGroupId: entry.changeGroupId || override.changeGroupId || makeId("legacy-change"),
+        beforeStaffIds: pruneSaturdayStaffIds(entry.beforeStaffIds),
+        afterStaffIds: pruneSaturdayStaffIds(entry.afterStaffIds),
+        beforeNote: entry.beforeNote || "",
+        afterNote: entry.afterNote || "",
+        changedAt: Number(entry.changedAt || override.updatedAt || 0),
+      }));
+    }
 
-    return related
-      .map((item) => {
-        const baseIds = pruneSaturdayStaffIds(
-          saturdayGroups[saturdayBaseGroupKeyForDate(item.date)] || []
-        );
-        const beforeIds = Array.isArray(item.previousStaffIds)
-          ? pruneSaturdayStaffIds(item.previousStaffIds)
-          : item.previousOverride
-            ? pruneSaturdayStaffIds(item.previousOverride.staffIds)
-            : baseIds;
-        const afterIds = pruneSaturdayStaffIds(item.staffIds);
+    const chain = [];
+    let current = override;
+    const seen = new Set();
 
+    while (current) {
+      const changeGroupId = current.changeGroupId || `legacy-${current.date}-${current.updatedAt || chain.length}`;
+      const key = `${changeGroupId}:${current.date}`;
+      if (!seen.has(key)) {
+        const baseGroupKey = saturdayBaseGroupKeyForDate(current.date);
+        const fallbackBefore = pruneSaturdayStaffIds(saturdayGroups[baseGroupKey] || []);
+        chain.push({
+          date: current.date,
+          changeGroupId,
+          beforeStaffIds: Array.isArray(current.previousStaffIds)
+            ? pruneSaturdayStaffIds(current.previousStaffIds)
+            : current.previousOverride
+              ? pruneSaturdayStaffIds(current.previousOverride.staffIds)
+              : fallbackBefore,
+          afterStaffIds: pruneSaturdayStaffIds(current.staffIds),
+          beforeNote: current.previousNote || current.previousOverride?.note || "",
+          afterNote: current.note || "",
+          changedAt: Number(current.updatedAt || 0),
+          changedBy: current.changedBy || "",
+          changedByName: current.changedByName || "",
+        });
+        seen.add(key);
+      }
+      current = current.previousOverride || null;
+    }
+
+    return chain.sort((a, b) => a.changedAt - b.changedAt);
+  }
+
+  function allSaturdayChangeHistory() {
+    const byKey = new Map();
+    saturdayOverrides.forEach((override) => {
+      extractSaturdayChangeHistory(override).forEach((entry) => {
+        const key = `${entry.changeGroupId}:${entry.date}`;
+        const existing = byKey.get(key);
+        if (!existing || Number(existing.changedAt || 0) <= Number(entry.changedAt || 0)) {
+          byKey.set(key, entry);
+        }
+      });
+    });
+    return Array.from(byKey.values()).sort((a, b) => a.changedAt - b.changedAt);
+  }
+
+  function applySaturdayHistoryToBase(date, history) {
+    const volunteerDay = isYearEndNewYearVolunteerSaturday(date);
+    const baseGroupKey = volunteerDay ? null : saturdayBaseGroupKeyForDate(date);
+    let staffIds = volunteerDay
+      ? []
+      : pruneSaturdayStaffIds(saturdayGroups[baseGroupKey] || []);
+    let note = "";
+
+    history
+      .filter((entry) => entry.date === date)
+      .sort((a, b) => Number(a.changedAt || 0) - Number(b.changedAt || 0))
+      .forEach((entry) => {
+        const beforeIds = pruneSaturdayStaffIds(entry.beforeStaffIds);
+        const afterIds = pruneSaturdayStaffIds(entry.afterStaffIds);
         const removedIds = beforeIds.filter((id) => !afterIds.includes(id));
         const addedIds = afterIds.filter((id) => !beforeIds.includes(id));
 
-        return {
-          ...item,
-          displayDate: String(item.date || "").replaceAll("-", "/"),
-          removedIds,
-          addedIds,
-          // 解除時は「現在の基本班へ戻す」だけではなく、
-          // 変更直前の実際の出勤者一覧を復元する。
-          restoreStaffIds: beforeIds,
-          restoreNote: item.previousNote ?? item.previousOverride?.note ?? "",
-          // 変更前に個別overrideがなかった場合は、
-          // 固定人数のoverrideを作らず基本班の自動表示へ戻す。
-          restoreToBase: !item.previousOverride,
-        };
-      })
-      .filter((item) => item.removedIds.length > 0 || item.addedIds.length > 0)
+        staffIds = staffIds.filter((id) => !removedIds.includes(id));
+        addedIds.forEach((id) => {
+          if (!staffIds.includes(id)) staffIds.push(id);
+        });
+        note = entry.afterNote || note;
+      });
+
+    return { staffIds: pruneSaturdayStaffIds(staffIds), note };
+  }
+
+  function makeSaturdayOverrideFromHistory(date, history) {
+    const dateHistory = history
+      .filter((entry) => entry.date === date)
+      .sort((a, b) => Number(a.changedAt || 0) - Number(b.changedAt || 0));
+    if (dateHistory.length === 0) return null;
+
+    const rebuilt = applySaturdayHistoryToBase(date, dateHistory);
+    const latest = dateHistory[dateHistory.length - 1];
+
+    return {
+      date,
+      staffIds: rebuilt.staffIds,
+      note: rebuilt.note,
+      updatedAt: Number(latest.changedAt || Date.now()),
+      changeGroupId: latest.changeGroupId,
+      changeHistory: dateHistory,
+      previousStaffIds: latest.beforeStaffIds,
+      previousNote: latest.beforeNote || "",
+      previousOverride: null,
+      changedBy: latest.changedBy || "",
+      changedByName: latest.changedByName || "",
+    };
+  }
+
+  function rebuildSaturdayOverridesWithoutGroups(groupIds) {
+    const excluded = new Set(groupIds);
+    const remainingHistory = allSaturdayChangeHistory().filter(
+      (entry) => !excluded.has(entry.changeGroupId)
+    );
+    const dates = Array.from(new Set(remainingHistory.map((entry) => entry.date)));
+
+    return dates
+      .map((date) => makeSaturdayOverrideFromHistory(date, remainingHistory))
+      .filter(Boolean)
       .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
   }
 
+  function scheduleFromOverrideList(date, overrideList) {
+    const override = overrideList.find((item) => item.date === date && !item.disabled);
+    if (override) {
+      return {
+        staffIds: pruneSaturdayStaffIds(override.staffIds),
+        note: override.note || "",
+      };
+    }
+
+    if (isYearEndNewYearVolunteerSaturday(date)) return { staffIds: [], note: "" };
+    const groupKey = saturdayBaseGroupKeyForDate(date);
+    return {
+      staffIds: pruneSaturdayStaffIds(saturdayGroups[groupKey] || []),
+      note: "",
+    };
+  }
+
+  function saturdayUndoGroupsForDate(date) {
+    const history = allSaturdayChangeHistory();
+    const groupIds = Array.from(new Set(
+      history
+        .filter((entry) => entry.date === date)
+        .map((entry) => entry.changeGroupId)
+    ));
+
+    return groupIds.map((changeGroupId) => {
+      const entries = history
+        .filter((entry) => entry.changeGroupId === changeGroupId)
+        .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+
+      return {
+        changeGroupId,
+        entries,
+        dates: entries.map((entry) => entry.date),
+        changedAt: Math.max(...entries.map((entry) => Number(entry.changedAt || 0))),
+      };
+    }).sort((a, b) => b.changedAt - a.changedAt);
+  }
+
   function openSaturdayUndoDialog(date) {
-    const items = saturdayUndoItemsForDate(date);
-    if (items.length === 0) return;
+    const groups = saturdayUndoGroupsForDate(date);
+    if (groups.length === 0) {
+      alert("この日に解除できる個別変更はありません。");
+      return;
+    }
 
     setSaturdayUndoTargetDate(date);
-    setSaturdayUndoSelectedDates(items.map((item) => item.date));
+    setSaturdayUndoSelectedDates([]);
     setShowSaturdayUndoDialog(true);
   }
 
-  function toggleSaturdayUndoDate(date) {
+  function toggleSaturdayUndoDate(changeGroupId) {
     setSaturdayUndoSelectedDates((prev) =>
-      prev.includes(date)
-        ? prev.filter((item) => item !== date)
-        : [...prev, date]
+      prev.includes(changeGroupId)
+        ? prev.filter((item) => item !== changeGroupId)
+        : [...prev, changeGroupId]
     );
   }
 
-  function applySaturdayUndoSelection() {
-    const targetDates = Array.from(new Set(saturdayUndoSelectedDates));
-    if (targetDates.length === 0) {
+  async function applySaturdayUndoSelection() {
+    const targetGroupIds = Array.from(new Set(saturdayUndoSelectedDates));
+    if (targetGroupIds.length === 0) {
       alert("解除する変更を1件以上選択してください。");
       return;
     }
 
-    const undoItems = saturdayUndoItemsForDate(saturdayUndoTargetDate);
-    const itemsToRestore = undoItems.filter((item) =>
-      targetDates.includes(item.date)
-    );
+    const nextOverrides = rebuildSaturdayOverridesWithoutGroups(targetGroupIds);
 
-    setSaturdayOverrides((prev) => {
-      let nextOverrides = [...prev];
+    try {
+      await saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation);
+      setSaturdayOverrides(nextOverrides);
 
-      itemsToRestore.forEach((item) => {
-        nextOverrides = nextOverrides.filter(
-          (candidate) => candidate.date !== item.date
-        );
+      if (saturdayForm.date) {
+        const restored = scheduleFromOverrideList(saturdayForm.date, nextOverrides);
+        setSaturdayForm((prev) => ({
+          ...prev,
+          staffIds: restored.staffIds,
+          note: restored.note,
+        }));
+      }
 
-        const restoreStaffIds = pruneSaturdayStaffIds(item.restoreStaffIds);
-
-        if (!item.restoreToBase) {
-          // 変更前にも個別overrideが存在した場合だけ、その内容を復元する。
-          nextOverrides.push({
-            date: item.date,
-            staffIds: restoreStaffIds,
-            note: item.restoreNote || "",
-            updatedAt: Date.now(),
-            changeGroupId: makeId("saturday-undo"),
-            previousStaffIds: item.previousOverride?.previousStaffIds || [],
-            previousNote: item.previousOverride?.previousNote || "",
-            previousOverride: item.previousOverride?.previousOverride || null,
-            changedBy: loginUser?.id || "",
-            changedByName: loginUser ? personName(loginUser) : "",
-            restoredByUndo: true,
-          });
-        }
-        // 変更前に個別overrideがなかった場合は何も追加しない。
-        // その日付は基本グループの現在設定から自動表示される。
-      });
-
-      nextOverrides.sort((a, b) =>
-        String(a.date || "").localeCompare(String(b.date || ""))
-      );
-
-      saveSaturdaySettings(
-        saturdayGroups,
-        nextOverrides,
-        saturdayRotation
-      );
-
-      return nextOverrides;
-    });
-
-    if (targetDates.includes(saturdayForm.date)) {
-      const currentItem = itemsToRestore.find(
-        (item) => item.date === saturdayForm.date
-      );
-
-      const baseGroupKey = saturdayBaseGroupKeyForDate(saturdayForm.date);
-      const restoredStaffIds = currentItem?.restoreToBase
-        ? pruneSaturdayStaffIds(saturdayGroups[baseGroupKey] || [])
-        : pruneSaturdayStaffIds(currentItem?.restoreStaffIds);
-
-      setSaturdayForm((prev) => ({
-        ...prev,
-        staffIds: restoredStaffIds,
-        note: currentItem?.restoreToBase ? "" : currentItem?.restoreNote || "",
-      }));
+      setSwapCandidateDate(null);
+      setSwapCandidateStaffIds([]);
+      setSwapTargetStaffId(null);
+      setShowSaturdayUndoDialog(false);
+      setSaturdayUndoTargetDate("");
+      setSaturdayUndoSelectedDates([]);
+    } catch (error) {
+      console.error("Saturday grouped undo failed", error);
+      alert("個別変更を解除できませんでした。通信状況を確認して、もう一度お試しください。");
     }
-
-    setSwapCandidateDate(null);
-    setSwapCandidateStaffIds([]);
-    setSwapTargetStaffId(null);
-    setShowSaturdayUndoDialog(false);
-    setSaturdayUndoTargetDate("");
-    setSaturdayUndoSelectedDates([]);
   }
 
   function resetSaturdayOverride(date) {
@@ -2162,82 +2229,73 @@ async function resetSaturdayOverrideForDate(date) {
 
     const weekday = new Date(`${saturdayForm.date}T00:00:00`).getDay();
     if (weekday !== 6 && !confirm("選択日が土曜日ではありません。この日で登録しますか？")) return;
-if (pruneSaturdayStaffIds(saturdayForm.staffIds).length === 0 && !swapCandidateDate) {
-  alert("土曜出勤者を1名以上選択してください。");
-  return;
-}
-    setSaturdayOverrides((prev) => {
-      const changeGroupId = makeId("saturday-change");
-      const changedAt = Date.now();
+    if (pruneSaturdayStaffIds(saturdayForm.staffIds).length === 0 && !swapCandidateDate) {
+      alert("土曜出勤者を1名以上選択してください。");
+      return;
+    }
 
-      const previousByDate = new Map(
-        prev.map((item) => [item.date, item])
+    const changeGroupId = makeId("saturday-change");
+    const changedAt = Date.now();
+    const existingHistory = allSaturdayChangeHistory();
+    const newEntries = [];
+
+    const appendEntry = (date, nextStaffIds, nextNote) => {
+      const currentSchedule = saturdayScheduleForDate(date);
+      const beforeStaffIds = pruneSaturdayStaffIds(currentSchedule?.staffIds || []);
+      const afterStaffIds = pruneSaturdayStaffIds(nextStaffIds);
+      const beforeNote = currentSchedule?.note || "";
+      const afterNote = String(nextNote || "").trim();
+
+      if (arraysEqualByValue(beforeStaffIds, afterStaffIds) && beforeNote === afterNote) return;
+
+      newEntries.push({
+        date,
+        changeGroupId,
+        beforeStaffIds,
+        afterStaffIds,
+        beforeNote,
+        afterNote,
+        changedAt,
+        changedBy: loginUser?.id || "",
+        changedByName: loginUser ? personName(loginUser) : "",
+      });
+    };
+
+    appendEntry(saturdayForm.date, saturdayForm.staffIds, saturdayForm.note);
+
+    if (swapCandidateDate) {
+      appendEntry(
+        swapCandidateDate,
+        swapCandidateStaffIds,
+        saturdayScheduleForDate(swapCandidateDate)?.note || ""
       );
+    }
 
-      const upsert = (list, next) => {
-        const exists = list.some((item) => item.date === next.date);
-        if (exists) return list.map((item) => (item.date === next.date ? next : item));
-        return [...list, next];
-      };
+    if (newEntries.length === 0) {
+      alert("変更内容がありません。");
+      return;
+    }
 
-      const makeOverride = (date, staffIds, note) => {
-        const previousOverride = previousByDate.get(date) || null;
-        const baseGroupKey = saturdayBaseGroupKeyForDate(date);
-        const previousEffectiveStaffIds = previousOverride
-          ? pruneSaturdayStaffIds(previousOverride.staffIds)
-          : pruneSaturdayStaffIds(saturdayGroups[baseGroupKey] || []);
+    const nextHistory = [...existingHistory, ...newEntries];
+    const dates = Array.from(new Set(nextHistory.map((entry) => entry.date)));
+    const nextOverrides = dates
+      .map((date) => makeSaturdayOverrideFromHistory(date, nextHistory))
+      .filter(Boolean)
+      .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
 
-        return {
-          date,
-          staffIds: pruneSaturdayStaffIds(staffIds),
-          note: String(note || "").trim(),
-          updatedAt: changedAt,
-          changeGroupId,
-          previousStaffIds: previousEffectiveStaffIds,
-          previousNote: previousOverride?.note || "",
-          previousOverride: previousOverride
-            ? {
-                ...previousOverride,
-                previousOverride: previousOverride.previousOverride || null,
-              }
-            : null,
-          changedBy: loginUser?.id || "",
-          changedByName: loginUser ? personName(loginUser) : "",
-        };
-      };
-
-      let nextList = upsert(
-        prev,
-        makeOverride(
-          saturdayForm.date,
-          saturdayForm.staffIds,
-          saturdayForm.note
-        )
-      );
-
-      if (swapCandidateDate) {
-        const originalCandidateIds = saturdayScheduleForDate(swapCandidateDate)?.staffIds || [];
-
-        if (!arraysEqualByValue(originalCandidateIds, swapCandidateStaffIds)) {
-          nextList = upsert(
-            nextList,
-            makeOverride(
-              swapCandidateDate,
-              swapCandidateStaffIds,
-              saturdayScheduleForDate(swapCandidateDate)?.note || ""
-            )
-          );
-        }
-      }
-
-      nextList.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
-      saveSaturdaySettings(saturdayGroups, nextList, saturdayRotation);
-
-      return nextList;
-    });
-
-    setSelectedDate(saturdayForm.date);
-    setShowSaturdayEdit(false);
+    saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation)
+      .then(() => {
+        setSaturdayOverrides(nextOverrides);
+        setSelectedDate(saturdayForm.date);
+        setShowSaturdayEdit(false);
+        setSwapCandidateDate(null);
+        setSwapCandidateStaffIds([]);
+        setSwapTargetStaffId(null);
+      })
+      .catch((error) => {
+        console.error("Saturday schedule save failed", error);
+        alert("土曜勤務の変更を保存できませんでした。通信状況を確認して、もう一度お試しください。");
+      });
   }
 
 async function deleteSaturdaySchedule(date) {
@@ -3524,12 +3582,12 @@ if (staffLoaded && staff.length === 0) {
                 </p>
                 <p style={{ margin: "10px 0 0" }}>
                   <strong>この操作で変わるもの</strong><br />
-                  ・この日の出勤者<br />
-                  ・この日に保存されている個別変更
+                  ・この日に関係する個別変更<br />
+                  ・同じ交換・変更に連動しているほかの日の出勤者
                 </p>
                 <p style={{ margin: "10px 0 0" }}>
                   <strong>変わらないもの</strong><br />
-                  ・ほかの日の土曜勤務<br />
+                  ・この日と無関係な交換・変更<br />
                   ・A〜Dの所属<br />
                   ・ローテーションの開始日と開始グループ<br />
                   ・ほかの日の個別変更
@@ -3575,7 +3633,7 @@ if (staffLoaded && staff.length === 0) {
               <div>
                 <h2>個別変更を解除</h2>
                 <span className="modalSubLabel">
-                  解除する日付を選択してください。
+                  解除する交換・変更の組を選択してください。
                 </span>
               </div>
               <button
@@ -3588,40 +3646,47 @@ if (staffLoaded && staff.length === 0) {
             </div>
 
             <div className="staffCheckGrid">
-              {saturdayUndoItemsForDate(saturdayUndoTargetDate).map((item) => {
-                const removedNames = item.removedIds
-                  .map((id) => staff.find((person) => person.id === id))
-                  .filter(Boolean)
-                  .map((person) => personName(person))
-                  .join("、");
+              {saturdayUndoGroupsForDate(saturdayUndoTargetDate).map((group) => {
+                const changeLines = group.entries.map((entry) => {
+                  const removedNames = entry.beforeStaffIds
+                    .filter((id) => !entry.afterStaffIds.includes(id))
+                    .map((id) => staff.find((person) => person.id === id))
+                    .filter(Boolean)
+                    .map((person) => personName(person))
+                    .join("、");
 
-                const addedNames = item.addedIds
-                  .map((id) => staff.find((person) => person.id === id))
-                  .filter(Boolean)
-                  .map((person) => personName(person))
-                  .join("、");
+                  const addedNames = entry.afterStaffIds
+                    .filter((id) => !entry.beforeStaffIds.includes(id))
+                    .map((id) => staff.find((person) => person.id === id))
+                    .filter(Boolean)
+                    .map((person) => personName(person))
+                    .join("、");
 
-                const changeText =
-                  removedNames && addedNames
+                  const changeText = removedNames && addedNames
                     ? `${removedNames} ⇒ ${addedNames}`
                     : removedNames
                       ? `${removedNames} を解除`
                       : `${addedNames} を追加`;
 
+                  return `${String(entry.date || "").replaceAll("-", "/")}　${changeText}`;
+                });
+
                 return (
                   <label
                     className="staffCheckItem"
-                    key={`undo-${item.date}`}
+                    key={`undo-group-${group.changeGroupId}`}
                   >
                     <input
                       type="checkbox"
-                      checked={saturdayUndoSelectedDates.includes(item.date)}
-                      onChange={() => toggleSaturdayUndoDate(item.date)}
+                      checked={saturdayUndoSelectedDates.includes(group.changeGroupId)}
+                      onChange={() => toggleSaturdayUndoDate(group.changeGroupId)}
                     />
                     <span>
-                      <strong>{item.displayDate}</strong>
+                      <strong>{group.entries.length > 1 ? `${group.entries.length}日間の連動変更` : "個別変更"}</strong>
                       <br />
-                      <small>{changeText}</small>
+                      {changeLines.map((line) => (
+                        <small key={`${group.changeGroupId}-${line}`} style={{ display: "block" }}>{line}</small>
+                      ))}
                     </span>
                   </label>
                 );
@@ -3641,8 +3706,8 @@ if (staffLoaded && staff.length === 0) {
                 type="button"
                 onClick={() =>
                   setSaturdayUndoSelectedDates(
-                    saturdayUndoItemsForDate(saturdayUndoTargetDate).map(
-                      (item) => item.date
+                    saturdayUndoGroupsForDate(saturdayUndoTargetDate).map(
+                      (group) => group.changeGroupId
                     )
                   )
                 }
