@@ -35,12 +35,27 @@ const LEAVE_TYPES = {
   paid: "有休",
   child: "看護休暇",
   summer: "夏季休暇",
-    special: "特別休暇",
+  special: "特別休暇",
+  holiday: "休日出勤",
+  other: "その他予定",
+};
+
+// 過去データの表示互換用。新規登録の選択肢には表示しません。
+const LEGACY_LEAVE_TYPE_LABELS = {
   training: "研修",
   business: "出張",
   saturday: "土曜勤務",
-  holiday: "日祝勤務",
 };
+
+const REGISTER_TYPE_OPTIONS = [
+  ["compensatory", "代休"],
+  ["paid", "有休"],
+  ["child", "看護休暇"],
+  ["summer", "夏季休暇"],
+  ["special", "特別休暇"],
+  ["holiday", "休日出勤"],
+  ["other", "その他予定"],
+];
 
 const METHODS = {
   full: "終日",
@@ -381,12 +396,12 @@ function recordDisplay(record) {
   }
 
   if (record.type === "holiday") {
-    if (record.method === "morning") return "日祝勤務（午前）";
-    if (record.method === "afternoon") return "日祝勤務（午後）";
-    return "日祝勤務（終日）";
+    if (record.method === "morning") return "休日出勤（午前）";
+    if (record.method === "afternoon") return "休日出勤（午後）";
+    return "休日出勤（終日）";
   }
 
-  return LEAVE_TYPES[record.type] || "";
+  return LEAVE_TYPES[record.type] || LEGACY_LEAVE_TYPE_LABELS[record.type] || "";
 }
 
 function isLeaveLike(record) {
@@ -1416,6 +1431,10 @@ const loginUser = loginStaff
       }
     }
 
+    if (nextRecord.type === "other" && !String(nextRecord.note || "").trim()) {
+      return "予定の内容をメモに入力してください";
+    }
+
     if (nextRecord.type === "summer") {
       const used = records.filter(
         (r) =>
@@ -1438,6 +1457,7 @@ const loginUser = loginStaff
 
     let nextRecord = {
       ...form,
+      note: String(form.note || "").trim(),
       id: makeId(),
       createdAt: Date.now(),
     };
@@ -1487,7 +1507,7 @@ try {
   const code = error?.code || "unknown";
   const message = error?.message || "unknown";
   console.error("Leave record add failed", { code, message, error });
-  alert(`休暇・勤務登録に失敗しました。
+  alert(`休暇・特別勤務・個別予定登録に失敗しました。
 code: ${code}
 message: ${message}`);
   setRecordSubmitting(false);
@@ -1554,11 +1574,11 @@ try {
 
   function previewText() {
     if (form.type === "holiday") {
-      if (form.method === "morning") return "日祝勤務（午前）として登録";
-      if (form.method === "afternoon") return "日祝勤務（午後）として登録";
-      return "日祝勤務（終日）として登録";
+      if (form.method === "morning") return "休日出勤（午前）として登録";
+      if (form.method === "afternoon") return "休日出勤（午後）として登録";
+      return "休日出勤（終日）として登録";
     }
-    if (!["paid", "child"].includes(form.type)) return `${LEAVE_TYPES[form.type]}として登録`;
+    if (!["paid", "child"].includes(form.type)) return `${LEAVE_TYPES[form.type] || "予定"}として登録`;
     if (form.method === "full") return "計算結果：終日取得 1日";
     if (form.method === "morning") return "計算結果：時間休 3.5h";
     if (form.method === "afternoon") return "計算結果：時間休 4.25h";
@@ -2826,7 +2846,7 @@ if (staffLoaded && staff.length === 0) {
           >
             <div className="modalHeader">
               <div>
-                <h2>{dateModalMode === "form" ? "休暇・勤務登録" : selectedDate.replaceAll("-", "/")}</h2>
+                <h2>{dateModalMode === "form" ? "休暇・特別勤務・個別予定登録" : selectedDate.replaceAll("-", "/")}</h2>
                 <span className="modalSubLabel">{dateModalMode === "form" ? selectedDate.replaceAll("-", "/") : (displayScope === "mine" ? "自分の予定" : "全体表示")}</span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -3117,7 +3137,7 @@ if (staffLoaded && staff.length === 0) {
                 onClick={openLeaveFormInDateModal}
                 style={{ width: "100%" }}
               >
-                休暇・勤務を登録
+                休暇・特別勤務・個別予定登録
               </button>
             </div>
             </div>
@@ -3165,7 +3185,7 @@ if (staffLoaded && staff.length === 0) {
                 })
               }
             >
-              {Object.entries(LEAVE_TYPES).map(([key, value]) => (
+              {REGISTER_TYPE_OPTIONS.map(([key, value]) => (
                 <option key={key} value={key}>
                   {value}
                 </option>
@@ -3268,8 +3288,16 @@ if (staffLoaded && staff.length === 0) {
           )}
 
           <label className="wide">
-            <span>メモ</span>
-            <input placeholder="任意" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+            <span>
+              メモ{form.type === "other" ? "（必須）" : ""}
+            </span>
+            <input
+              placeholder={form.type === "other" ? "予定の内容を入力してください" : "任意"}
+              value={form.note}
+              required={form.type === "other"}
+              aria-required={form.type === "other"}
+              onChange={(e) => setForm({ ...form, note: e.target.value })}
+            />
           </label>
 
           {showBreakCheck && (
