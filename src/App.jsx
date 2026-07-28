@@ -2743,11 +2743,12 @@ if (staffLoaded && staff.length === 0) {
                       weekday === 6 ? "saturdayCell" : "",
                       holidayName ? "holidayCell" : "",
                       isToday ? "todayCell" : "",
-                      selectedDate === date ? "selected" : "",
                     ].join(" ")}
-                    style={isToday ? {
-                      border: "3px solid #2563eb",
-                    } : undefined}
+                    style={{
+                      ...(isToday ? { border: "3px solid #2563eb" } : {}),
+                      outline: "none",
+                      boxShadow: "none",
+                    }}
                   >
                     <div className="dayHeader">
                       <span className="dayNumber">{day}</span>
