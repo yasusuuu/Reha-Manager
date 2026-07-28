@@ -7290,6 +7290,15 @@ function PMAssignmentTable({
     []
   );
 
+  function getStickyTableWidth(scrollElement) {
+    const stickyName = scrollElement.querySelector(".stickyName");
+    const stickyTotal = scrollElement.querySelector(".stickyTotal");
+    return (
+      (stickyName instanceof HTMLElement ? stickyName.offsetWidth : 0) +
+      (stickyTotal instanceof HTMLElement ? stickyTotal.offsetWidth : 0)
+    );
+  }
+
   function jumpToDepartment(departmentKey) {
     const scrollElement = tableScrollRef.current;
     if (!scrollElement) return;
@@ -7306,19 +7315,29 @@ function PMAssignmentTable({
     if (!(alignmentTarget instanceof HTMLElement)) return;
 
     // 選択した科の左隣を「合計」のすぐ右へ配置する。
-    // 選択科そのものが画面内に十分見えるため、- / + 操作時の追加スクロールを減らせる。
-    const stickyName = scrollElement.querySelector(".stickyName");
-    const stickyTotal = scrollElement.querySelector(".stickyTotal");
-    const stickyWidth =
-      (stickyName instanceof HTMLElement ? stickyName.offsetWidth : 0) +
-      (stickyTotal instanceof HTMLElement ? stickyTotal.offsetWidth : 0);
     const destination = Math.max(
       0,
-      alignmentTarget.offsetLeft - stickyWidth - 4
+      alignmentTarget.offsetLeft - getStickyTableWidth(scrollElement) - 4
     );
 
     scrollElement.scrollTo({ left: destination, behavior: "smooth" });
     setVisibleDepartment(departmentKey);
+  }
+
+  function jumpToMovementColumn() {
+    const scrollElement = tableScrollRef.current;
+    if (!scrollElement) return;
+
+    const movementHeader = scrollElement.querySelector("th.moveCol");
+    if (!(movementHeader instanceof HTMLElement)) return;
+
+    // 患者入力画面は開かず、患者管理表内の「患者移動」列だけへ移動する。
+    const destination = Math.max(
+      0,
+      movementHeader.offsetLeft - getStickyTableWidth(scrollElement) - 4
+    );
+    scrollElement.scrollTo({ left: destination, behavior: "smooth" });
+    setVisibleDepartment("movement");
   }
 
   useEffect(() => {
@@ -7353,6 +7372,17 @@ function PMAssignmentTable({
             nearestKey = dept.key;
           }
         });
+
+        const movementHeader = scrollElement.querySelector("th.moveCol");
+        if (movementHeader instanceof HTMLElement) {
+          const movementDistance = Math.abs(
+            movementHeader.getBoundingClientRect().left - guideX
+          );
+          if (movementDistance < nearestDistance) {
+            nearestDistance = movementDistance;
+            nearestKey = "movement";
+          }
+        }
 
         setVisibleDepartment((current) =>
           current === nearestKey ? current : nearestKey
@@ -7465,17 +7495,22 @@ function PMAssignmentTable({
         })}
         <button
           type="button"
-          aria-label="患者移動を開く"
-          title="患者移動"
-          onClick={onOpenMovement}
+          aria-pressed={visibleDepartment === "movement"}
+          aria-label="患者移動列へ移動"
+          title="患者移動列へ移動"
+          onClick={jumpToMovementColumn}
           style={{
             minWidth: 0,
             height: "28px",
             padding: "0 1px",
-            border: "1px solid #93c5fd",
+            border:
+              visibleDepartment === "movement"
+                ? "1px solid #0f766e"
+                : "1px solid #93c5fd",
             borderRadius: "5px",
-            background: "#eff6ff",
-            color: "#1d4ed8",
+            background:
+              visibleDepartment === "movement" ? "#0f766e" : "#eff6ff",
+            color: visibleDepartment === "movement" ? "#ffffff" : "#1d4ed8",
             fontSize: "clamp(10px, 2.7vw, 12px)",
             fontWeight: 700,
             lineHeight: 1,
