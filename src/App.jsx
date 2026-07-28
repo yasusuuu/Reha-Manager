@@ -7303,6 +7303,14 @@ function PMAssignmentTable({
     const scrollElement = tableScrollRef.current;
     if (!scrollElement) return;
 
+    // 「整」は表の横スクロールを左端まで戻す。
+    // それ以外は、選択した科の左隣を「合計」のすぐ右へ配置する。
+    if (departmentKey === "ortho") {
+      scrollElement.scrollTo({ left: 0, behavior: "smooth" });
+      setVisibleDepartment(departmentKey);
+      return;
+    }
+
     const selectedIndex = jumpDepartments.findIndex(
       (dept) => dept.key === departmentKey
     );
@@ -7314,7 +7322,6 @@ function PMAssignmentTable({
     );
     if (!(alignmentTarget instanceof HTMLElement)) return;
 
-    // 選択した科の左隣を「合計」のすぐ右へ配置する。
     const destination = Math.max(
       0,
       alignmentTarget.offsetLeft - getStickyTableWidth(scrollElement) - 4
