@@ -7277,6 +7277,87 @@ function PMAssignmentTable({
   const [noteEditMode, setNoteEditMode] = useState(false);
   const [noteEditValue, setNoteEditValue] = useState("");
 
+  // 患者管理表の科別ジャンプ用。ページ全体ではなく、表の横スクロールだけを動かす。
+  const tableScrollRef = useRef(null);
+  const [visibleDepartment, setVisibleDepartment] = useState("ortho");
+  const jumpDepartments = useMemo(
+    () => PM_DEPARTMENTS.filter((dept) => PM_COUNT_CHECK_FIELDS.includes(dept.key)),
+    []
+  );
+
+  function jumpToDepartment(departmentKey) {
+    const scrollElement = tableScrollRef.current;
+    if (!scrollElement) return;
+
+    const target = scrollElement.querySelector(
+      `[data-pm-department="${departmentKey}"]`
+    );
+    if (!(target instanceof HTMLElement)) return;
+
+    // 氏名・合計の固定列に隠れないよう、少し手前の位置へ合わせる。
+    const stickyName = scrollElement.querySelector(".stickyName");
+    const stickyTotal = scrollElement.querySelector(".stickyTotal");
+    const stickyWidth =
+      (stickyName instanceof HTMLElement ? stickyName.offsetWidth : 0) +
+      (stickyTotal instanceof HTMLElement ? stickyTotal.offsetWidth : 0);
+    const destination = Math.max(0, target.offsetLeft - stickyWidth - 8);
+
+    scrollElement.scrollTo({ left: destination, behavior: "smooth" });
+    setVisibleDepartment(departmentKey);
+  }
+
+  useEffect(() => {
+    const scrollElement = tableScrollRef.current;
+    if (!scrollElement) return undefined;
+
+    let frameId = 0;
+    const updateVisibleDepartment = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        const containerRect = scrollElement.getBoundingClientRect();
+        const stickyName = scrollElement.querySelector(".stickyName");
+        const stickyTotal = scrollElement.querySelector(".stickyTotal");
+        const stickyWidth =
+          (stickyName instanceof HTMLElement ? stickyName.offsetWidth : 0) +
+          (stickyTotal instanceof HTMLElement ? stickyTotal.offsetWidth : 0);
+        const guideX = containerRect.left + stickyWidth + 12;
+
+        let nearestKey = jumpDepartments[0]?.key || "ortho";
+        let nearestDistance = Number.POSITIVE_INFINITY;
+
+        jumpDepartments.forEach((dept) => {
+          const header = scrollElement.querySelector(
+            `[data-pm-department="${dept.key}"]`
+          );
+          if (!(header instanceof HTMLElement)) return;
+
+          const rect = header.getBoundingClientRect();
+          const distance = Math.abs(rect.left - guideX);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestKey = dept.key;
+          }
+        });
+
+        setVisibleDepartment((current) =>
+          current === nearestKey ? current : nearestKey
+        );
+      });
+    };
+
+    updateVisibleDepartment();
+    scrollElement.addEventListener("scroll", updateVisibleDepartment, {
+      passive: true,
+    });
+    window.addEventListener("resize", updateVisibleDepartment);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      scrollElement.removeEventListener("scroll", updateVisibleDepartment);
+      window.removeEventListener("resize", updateVisibleDepartment);
+    };
+  }, [jumpDepartments, staffList.length, tableDensity]);
+
   const compactNameMeta = useMemo(() => {
     const lastNameCounts = {};
     const lastInitialCounts = {};
@@ -7325,14 +7406,62 @@ function PMAssignmentTable({
           {sectionActions}
         </div>
       )}
-      <div className="excelScroll">
+
+      <nav
+        aria-label="診療科へ移動"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(9, minmax(0, 1fr))",
+          gap: "2px",
+          width: "100%",
+          padding: "4px 4px 6px",
+          boxSizing: "border-box",
+          overflow: "hidden",
+        }}
+      >
+        {jumpDepartments.map((dept) => {
+          const isSelected = visibleDepartment === dept.key;
+          return (
+            <button
+              key={dept.key}
+              type="button"
+              aria-pressed={isSelected}
+              aria-label={`${dept.label}列へ移動`}
+              onClick={() => jumpToDepartment(dept.key)}
+              style={{
+                minWidth: 0,
+                height: "32px",
+                padding: "0 1px",
+                border: isSelected ? "1px solid #0f766e" : "1px solid #cbd5e1",
+                borderRadius: "6px",
+                background: isSelected ? "#0f766e" : "#f8fafc",
+                color: isSelected ? "#ffffff" : "#334155",
+                fontSize: "clamp(10px, 2.7vw, 12px)",
+                fontWeight: isSelected ? 700 : 600,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+                cursor: "pointer",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {dept.short}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="excelScroll" ref={tableScrollRef}>
         <table className="assignmentTable">
           <thead>
             <tr>
               <th className="stickyName nameCol">氏名</th>
               <th className="totalCol stickyTotal">合計</th>
               {PM_DEPARTMENTS.map((dept) => (
-                <th key={dept.key} className={`deptHead ${dept.key} sep-${dept.key} ${activeDeptKey === dept.key ? "activeDeptGuide" : ""}`}>
+                <th
+                  key={dept.key}
+                  data-pm-department={dept.key}
+                  className={`deptHead ${dept.key} sep-${dept.key} ${activeDeptKey === dept.key ? "activeDeptGuide" : ""}`}
+                >
                   <span>{dept.short}</span>
                   {dept.key === "outpatient" && (
                     <button
