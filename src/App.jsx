@@ -5994,6 +5994,10 @@ function markChanged(staffId, department) {
       setActiveCell={setActiveCell}
       onEditMovement={setEditMovement}
       onClearDueMovements={openMovementClearDialog}
+      onOpenMovement={() => {
+        setMovementView("new");
+        setView("move");
+      }}
       sectionActions={!fullTable && (
         <>
           <button
@@ -7265,6 +7269,7 @@ function PMAssignmentTable({
   setActiveCell,
   onEditMovement,
   onClearDueMovements,
+  onOpenMovement,
   sectionActions,
 }) {
   const [activeStaffId, activeDeptKey] = activeCell ? activeCell.split(":") : [null, null];
@@ -7289,18 +7294,28 @@ function PMAssignmentTable({
     const scrollElement = tableScrollRef.current;
     if (!scrollElement) return;
 
-    const target = scrollElement.querySelector(
-      `[data-pm-department="${departmentKey}"]`
+    const selectedIndex = jumpDepartments.findIndex(
+      (dept) => dept.key === departmentKey
     );
-    if (!(target instanceof HTMLElement)) return;
+    const leftDepartment =
+      selectedIndex > 0 ? jumpDepartments[selectedIndex - 1] : null;
+    const alignmentKey = leftDepartment?.key || departmentKey;
+    const alignmentTarget = scrollElement.querySelector(
+      `[data-pm-department="${alignmentKey}"]`
+    );
+    if (!(alignmentTarget instanceof HTMLElement)) return;
 
-    // 氏名・合計の固定列に隠れないよう、少し手前の位置へ合わせる。
+    // 選択した科の左隣を「合計」のすぐ右へ配置する。
+    // 選択科そのものが画面内に十分見えるため、- / + 操作時の追加スクロールを減らせる。
     const stickyName = scrollElement.querySelector(".stickyName");
     const stickyTotal = scrollElement.querySelector(".stickyTotal");
     const stickyWidth =
       (stickyName instanceof HTMLElement ? stickyName.offsetWidth : 0) +
       (stickyTotal instanceof HTMLElement ? stickyTotal.offsetWidth : 0);
-    const destination = Math.max(0, target.offsetLeft - stickyWidth - 8);
+    const destination = Math.max(
+      0,
+      alignmentTarget.offsetLeft - stickyWidth - 4
+    );
 
     scrollElement.scrollTo({ left: destination, behavior: "smooth" });
     setVisibleDepartment(departmentKey);
@@ -7411,10 +7426,10 @@ function PMAssignmentTable({
         aria-label="診療科へ移動"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(9, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(10, minmax(0, 1fr))",
           gap: "2px",
           width: "100%",
-          padding: "4px 4px 6px",
+          padding: "2px 4px 4px",
           boxSizing: "border-box",
           overflow: "hidden",
         }}
@@ -7430,10 +7445,10 @@ function PMAssignmentTable({
               onClick={() => jumpToDepartment(dept.key)}
               style={{
                 minWidth: 0,
-                height: "32px",
+                height: "28px",
                 padding: "0 1px",
                 border: isSelected ? "1px solid #0f766e" : "1px solid #cbd5e1",
-                borderRadius: "6px",
+                borderRadius: "5px",
                 background: isSelected ? "#0f766e" : "#f8fafc",
                 color: isSelected ? "#ffffff" : "#334155",
                 fontSize: "clamp(10px, 2.7vw, 12px)",
@@ -7448,6 +7463,29 @@ function PMAssignmentTable({
             </button>
           );
         })}
+        <button
+          type="button"
+          aria-label="患者移動を開く"
+          title="患者移動"
+          onClick={onOpenMovement}
+          style={{
+            minWidth: 0,
+            height: "28px",
+            padding: "0 1px",
+            border: "1px solid #93c5fd",
+            borderRadius: "5px",
+            background: "#eff6ff",
+            color: "#1d4ed8",
+            fontSize: "clamp(10px, 2.7vw, 12px)",
+            fontWeight: 700,
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+            cursor: "pointer",
+            WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          移
+        </button>
       </nav>
 
       <div className="excelScroll" ref={tableScrollRef}>
