@@ -2726,49 +2726,11 @@ if (staffLoaded && staff.length === 0) {
                       selectedDate === date ? "selected" : "",
                     ].join(" ")}
                     style={isToday ? {
-                      position: "relative",
                       border: "3px solid #2563eb",
                     } : undefined}
                   >
-                    {isToday && (
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          position: "absolute",
-                          top: "3px",
-                          right: "3px",
-                          zIndex: 1,
-                          padding: "1px 5px",
-                          borderRadius: "999px",
-                          fontSize: "9px",
-                          lineHeight: 1.35,
-                          fontWeight: 800,
-                          color: "#ffffff",
-                          background: "#2563eb",
-                          boxShadow: "0 1px 3px rgba(37, 99, 235, 0.3)",
-                        }}
-                      >
-                        今日
-                      </span>
-                    )}
                     <div className="dayHeader">
-                      <span
-                        className="dayNumber"
-                        style={isToday ? {
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          minWidth: "24px",
-                          height: "24px",
-                          padding: "0 5px",
-                          borderRadius: "999px",
-                          color: "#ffffff",
-                          background: "#2563eb",
-                          fontWeight: 800,
-                        } : undefined}
-                      >
-                        {day}
-                      </span>
+                      <span className="dayNumber">{day}</span>
                       {canShowSaturdayForDate(date) && <span className="saturdayMini">土勤</span>}
                       {dayAnnouncements.length > 0 && <span className="announcementMini">予{dayAnnouncements.length}</span>}
                     </div>
