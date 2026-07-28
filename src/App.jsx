@@ -64,7 +64,7 @@ const ANNOUNCEMENT_TYPES = {
 };
 
 const SATURDAY_GROUP_KEYS = ["A", "B", "C", "D"];
-// App26: カレンダー上部を圧縮し、全体・自分切替の選択状態を明確化。
+// App29: 日付タップで休暇・勤務登録を直接開く動作を復旧。
 // 土曜勤務の変更・解除・復元ロジック自体は既存処理を利用する。
 const LEAVE_SELECT_VISIBLE_STYLE = {
   color: "#0f172a",
@@ -1012,6 +1012,7 @@ const [saturdayRotation, setSaturdayRotation] = useState({
   const [showAnnouncementEdit, setShowAnnouncementEdit] = useState(false);
   const [showSaturdayEdit, setShowSaturdayEdit] = useState(false);
   const [showLeaveForm, setShowLeaveForm] = useState(false);
+  const [dateModalMode, setDateModalMode] = useState("schedule");
   const [recordSubmitting, setRecordSubmitting] = useState(false);
   const [showSaturdayGroupSettings, setShowSaturdayGroupSettings] = useState(false);
   const [swapTargetStaffId, setSwapTargetStaffId] = useState(null);
@@ -1493,6 +1494,7 @@ message: ${message}`);
   return;
 }
 setSelectedDate(nextRecord.date);
+setDateModalMode("schedule");
 setForm((prev) => ({ ...prev, note: "" }));
 setRecordSubmitting(false);
 }
@@ -1578,20 +1580,24 @@ try {
   }
 
   function openLeaveFormForDate(date) {
+    setSelectedDate(date);
+    setDateModalMode("schedule");
+    setShowLeaveForm(false);
+  }
+
+  function openLeaveFormInDateModal() {
+    if (!selectedDate) return;
     setForm((prev) => ({
       ...prev,
-      date,
+      date: selectedDate,
       staffId: isAdmin ? (prev.staffId || loginUser?.id || activeStaff[0]?.id || "") : (loginUser?.id || ""),
     }));
-    setShowLeaveForm(true);
-    setSelectedDate(null);
+    setDateModalMode("form");
+  }
 
-    window.setTimeout(() => {
-      document.querySelector(".leaveEntryCard")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 50);
+  function closeDateModal() {
+    setSelectedDate(null);
+    setDateModalMode("schedule");
   }
 
   function addStaff() {
@@ -2614,174 +2620,6 @@ if (staffLoaded && staff.length === 0) {
         onDelete={deleteAnnouncement}
       />
 
-      {showLeaveForm && (
-        <section className="card leaveEntryCard open">
-        <div className="formGrid">
-          <label>
-            <span>職員</span>
-            <select
-              className="leaveSelectControl"
-              style={LEAVE_SELECT_VISIBLE_STYLE}
-              value={isAdmin ? form.staffId : loginId}
-              disabled={!isAdmin}
-              onChange={(e) => setForm({ ...form, staffId: e.target.value })}
-            >
-              {activeStaff.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {personName(s)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span>日付</span>
-            <JapaneseDateInput value={form.date} onChange={(date) => setForm({ ...form, date })} />
-          </label>
-
-          <label>
-            <span>種別</span>
-            <select
-              className="leaveSelectControl"
-              style={LEAVE_SELECT_VISIBLE_STYLE}
-              value={form.type}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  type: e.target.value,
-                  method: ["paid", "child"].includes(e.target.value)
-                    ? form.method
-                    : e.target.value === "holiday" && ["full", "morning", "afternoon"].includes(form.method)
-                      ? form.method
-                      : "full",
-                })
-              }
-            >
-              {Object.entries(LEAVE_TYPES).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {showMethod && (
-            <label>
-              <span>取得方法</span>
-              <select
-                className="leaveSelectControl"
-                style={LEAVE_SELECT_VISIBLE_STYLE}
-                value={form.method}
-                onChange={(e) => setForm({ ...form, method: e.target.value })}
-              >
-                {methodOptions.map(([key, value]) => (
-                  <option key={key} value={key}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          {showTimeInputs && (
-            <>
-              <label className="wide">
-                <span>開始</span>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
-                    gap: "8px",
-                    alignItems: "center",
-                  }}
-                >
-                  <select
-                    className="leaveSelectControl"
-                    style={LEAVE_SELECT_VISIBLE_STYLE}
-                    value={String(Number(startHour))}
-                    onChange={(e) => changeStartPart("hour", e.target.value)}
-                  >
-                    {startHourOptions.map((hour) => (
-                      <option key={`start-hour-${hour}`} value={hour}>{hour}</option>
-                    ))}
-                  </select>
-                  <span>時</span>
-
-                  <select
-                    className="leaveSelectControl"
-                    style={LEAVE_SELECT_VISIBLE_STYLE}
-                    value={startMinute}
-                    onChange={(e) => changeStartPart("minute", e.target.value)}
-                  >
-                    {startMinuteOptions.map((minute) => (
-                      <option key={`start-minute-${minute}`} value={minute}>{minute}</option>
-                    ))}
-                  </select>
-                  <span>分</span>
-                </div>
-              </label>
-
-              <label className="wide">
-                <span>終了</span>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
-                    gap: "8px",
-                    alignItems: "center",
-                  }}
-                >
-                  <select
-                    className="leaveSelectControl"
-                    style={LEAVE_SELECT_VISIBLE_STYLE}
-                    value={String(Number(endHour))}
-                    onChange={(e) => changeEndPart("hour", e.target.value)}
-                  >
-                    {endHourOptions.map((hour) => (
-                      <option key={`end-hour-${hour}`} value={hour}>{hour}</option>
-                    ))}
-                  </select>
-                  <span>時</span>
-
-                  <select
-                    className="leaveSelectControl"
-                    style={LEAVE_SELECT_VISIBLE_STYLE}
-                    value={endMinute}
-                    onChange={(e) => changeEndPart("minute", e.target.value)}
-                  >
-                    {endMinuteOptions.map((minute) => (
-                      <option key={`end-minute-${minute}`} value={minute}>{minute}</option>
-                    ))}
-                  </select>
-                  <span>分</span>
-                </div>
-              </label>
-            </>
-          )}
-
-          <label className="wide">
-            <span>メモ</span>
-            <input placeholder="任意" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
-          </label>
-
-          {showBreakCheck && (
-            <label className="checkRow wide">
-              <input
-                type="checkbox"
-                checked={form.deductBreak}
-                onChange={(e) => setForm({ ...form, deductBreak: e.target.checked })}
-              />
-              <span>昼休憩（12:00〜13:00）を控除する</span>
-            </label>
-          )}
-        </div>
-
-        <div className="previewBox">{previewText()}</div>
-        <button className="primaryButton" type="button" onClick={addRecord} disabled={recordSubmitting}>
-          {recordSubmitting ? "登録中..." : "登録する"}
-        </button>
-        </section>
-      )}
 
       {view === "calendar" ? (
         <>
@@ -2871,22 +2709,66 @@ if (staffLoaded && staff.length === 0) {
                 const dayAnnouncements = announcementsForDate(date);
                 const weekday = new Date(`${date}T00:00:00`).getDay();
                 const holidayName = holidays[date];
+                const isToday = date === todayKey();
 
                 return (
                   <button
                     key={date}
                     type="button"
-                    onClick={() => toggleDate(date)}
+                    onClick={() => openLeaveFormForDate(date)}
+                    aria-current={isToday ? "date" : undefined}
                     className={[
                       "calendarCell",
                       weekday === 0 ? "sunday" : "",
                       weekday === 6 ? "saturdayCell" : "",
                       holidayName ? "holidayCell" : "",
+                      isToday ? "todayCell" : "",
                       selectedDate === date ? "selected" : "",
                     ].join(" ")}
+                    style={isToday ? {
+                      position: "relative",
+                      border: "3px solid #2563eb",
+                    } : undefined}
                   >
+                    {isToday && (
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          top: "3px",
+                          right: "3px",
+                          zIndex: 1,
+                          padding: "1px 5px",
+                          borderRadius: "999px",
+                          fontSize: "9px",
+                          lineHeight: 1.35,
+                          fontWeight: 800,
+                          color: "#ffffff",
+                          background: "#2563eb",
+                          boxShadow: "0 1px 3px rgba(37, 99, 235, 0.3)",
+                        }}
+                      >
+                        今日
+                      </span>
+                    )}
                     <div className="dayHeader">
-                      <span className="dayNumber">{day}</span>
+                      <span
+                        className="dayNumber"
+                        style={isToday ? {
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: "24px",
+                          height: "24px",
+                          padding: "0 5px",
+                          borderRadius: "999px",
+                          color: "#ffffff",
+                          background: "#2563eb",
+                          fontWeight: 800,
+                        } : undefined}
+                      >
+                        {day}
+                      </span>
                       {canShowSaturdayForDate(date) && <span className="saturdayMini">土勤</span>}
                       {dayAnnouncements.length > 0 && <span className="announcementMini">予{dayAnnouncements.length}</span>}
                     </div>
@@ -2968,7 +2850,7 @@ if (staffLoaded && staff.length === 0) {
       )}
 
       {selectedDate && (
-        <div className="modalBackdrop" onClick={() => setSelectedDate(null)}>
+        <div className="modalBackdrop" onClick={closeDateModal}>
           <div
             className="dayModal"
             onClick={(e) => e.stopPropagation()}
@@ -2982,14 +2864,22 @@ if (staffLoaded && staff.length === 0) {
           >
             <div className="modalHeader">
               <div>
-                <h2>{selectedDate.replaceAll("-", "/")}</h2>
-                <span className="modalSubLabel">{displayScope === "mine" ? "自分の予定" : "全体表示"}</span>
+                <h2>{dateModalMode === "form" ? "休暇・勤務登録" : selectedDate.replaceAll("-", "/")}</h2>
+                <span className="modalSubLabel">{dateModalMode === "form" ? selectedDate.replaceAll("-", "/") : (displayScope === "mine" ? "自分の予定" : "全体表示")}</span>
               </div>
-              <button className="closeButton" type="button" onClick={() => setSelectedDate(null)}>
-                ×
-              </button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {dateModalMode === "form" && (
+                  <button type="button" className="secondaryButton" onClick={() => setDateModalMode("schedule")}>
+                    ← 戻る
+                  </button>
+                )}
+                <button className="closeButton" type="button" onClick={closeDateModal}>
+                  ×
+                </button>
+              </div>
             </div>
 
+            <div style={{ display: dateModalMode === "schedule" ? "contents" : "none" }}>
             {selectedRecords().length === 0 && selectedAnnouncements().length === 0 && new Date(`${selectedDate}T00:00:00`).getDay() !== 6 && !holidays[selectedDate] ? (
               <p className="emptyText">この日の登録はありません。</p>
             ) : (
@@ -3255,6 +3145,187 @@ if (staffLoaded && staff.length === 0) {
                     ))}
                   </section>
                 )}
+              </div>
+            )}
+
+            <div style={{ marginTop: "12px", flexShrink: 0 }}>
+              <button
+                type="button"
+                className="primaryButton"
+                onClick={openLeaveFormInDateModal}
+                style={{ width: "100%" }}
+              >
+                休暇・勤務を登録
+              </button>
+            </div>
+            </div>
+
+            {dateModalMode === "form" && (
+              <div style={{ overflowY: "auto", paddingRight: "2px" }}>
+                <div className="formGrid">
+          <label>
+            <span>職員</span>
+            <select
+              className="leaveSelectControl"
+              style={LEAVE_SELECT_VISIBLE_STYLE}
+              value={isAdmin ? form.staffId : loginId}
+              disabled={!isAdmin}
+              onChange={(e) => setForm({ ...form, staffId: e.target.value })}
+            >
+              {activeStaff.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {personName(s)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>日付</span>
+            <JapaneseDateInput value={form.date} onChange={(date) => setForm({ ...form, date })} />
+          </label>
+
+          <label>
+            <span>種別</span>
+            <select
+              className="leaveSelectControl"
+              style={LEAVE_SELECT_VISIBLE_STYLE}
+              value={form.type}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  type: e.target.value,
+                  method: ["paid", "child"].includes(e.target.value)
+                    ? form.method
+                    : e.target.value === "holiday" && ["full", "morning", "afternoon"].includes(form.method)
+                      ? form.method
+                      : "full",
+                })
+              }
+            >
+              {Object.entries(LEAVE_TYPES).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {showMethod && (
+            <label>
+              <span>取得方法</span>
+              <select
+                className="leaveSelectControl"
+                style={LEAVE_SELECT_VISIBLE_STYLE}
+                value={form.method}
+                onChange={(e) => setForm({ ...form, method: e.target.value })}
+              >
+                {methodOptions.map(([key, value]) => (
+                  <option key={key} value={key}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {showTimeInputs && (
+            <>
+              <label className="wide">
+                <span>開始</span>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
+                    gap: "8px",
+                    alignItems: "center",
+                  }}
+                >
+                  <select
+                    className="leaveSelectControl"
+                    style={LEAVE_SELECT_VISIBLE_STYLE}
+                    value={String(Number(startHour))}
+                    onChange={(e) => changeStartPart("hour", e.target.value)}
+                  >
+                    {startHourOptions.map((hour) => (
+                      <option key={`start-hour-${hour}`} value={hour}>{hour}</option>
+                    ))}
+                  </select>
+                  <span>時</span>
+
+                  <select
+                    className="leaveSelectControl"
+                    style={LEAVE_SELECT_VISIBLE_STYLE}
+                    value={startMinute}
+                    onChange={(e) => changeStartPart("minute", e.target.value)}
+                  >
+                    {startMinuteOptions.map((minute) => (
+                      <option key={`start-minute-${minute}`} value={minute}>{minute}</option>
+                    ))}
+                  </select>
+                  <span>分</span>
+                </div>
+              </label>
+
+              <label className="wide">
+                <span>終了</span>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
+                    gap: "8px",
+                    alignItems: "center",
+                  }}
+                >
+                  <select
+                    className="leaveSelectControl"
+                    style={LEAVE_SELECT_VISIBLE_STYLE}
+                    value={String(Number(endHour))}
+                    onChange={(e) => changeEndPart("hour", e.target.value)}
+                  >
+                    {endHourOptions.map((hour) => (
+                      <option key={`end-hour-${hour}`} value={hour}>{hour}</option>
+                    ))}
+                  </select>
+                  <span>時</span>
+
+                  <select
+                    className="leaveSelectControl"
+                    style={LEAVE_SELECT_VISIBLE_STYLE}
+                    value={endMinute}
+                    onChange={(e) => changeEndPart("minute", e.target.value)}
+                  >
+                    {endMinuteOptions.map((minute) => (
+                      <option key={`end-minute-${minute}`} value={minute}>{minute}</option>
+                    ))}
+                  </select>
+                  <span>分</span>
+                </div>
+              </label>
+            </>
+          )}
+
+          <label className="wide">
+            <span>メモ</span>
+            <input placeholder="任意" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          </label>
+
+          {showBreakCheck && (
+            <label className="checkRow wide">
+              <input
+                type="checkbox"
+                checked={form.deductBreak}
+                onChange={(e) => setForm({ ...form, deductBreak: e.target.checked })}
+              />
+              <span>昼休憩（12:00〜13:00）を控除する</span>
+            </label>
+          )}
+        </div>
+
+        <div className="previewBox">{previewText()}</div>
+        <button className="primaryButton" type="button" onClick={addRecord} disabled={recordSubmitting}>
+          {recordSubmitting ? "登録中..." : "登録する"}
+        </button>
               </div>
             )}
 
