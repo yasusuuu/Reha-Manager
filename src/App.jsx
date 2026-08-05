@@ -5129,8 +5129,22 @@ function markChanged(staffId, department) {
       },
     ]);
 
+    // 入力内容は日付・種類・科を維持し、メモだけ初期化する。
     setMovementForm((prev) => ({ ...prev, note: "" }));
-    setMovementView("waiting");
+
+    // 登録後は「移動待ち」へ切り替えず、患者管理表へ戻る。
+    setMovementView("new");
+    setView("table");
+    setPatientSaveStatus("dirty");
+
+    // 画面が管理表へ切り替わった後に、未保存であることを案内する。
+    window.setTimeout(() => {
+      alert(
+        "患者移動を登録しました。\n\n" +
+        "この変更はまだ保存されていません。\n" +
+        "患者管理表の「保存」ボタンを押して確定してください。"
+      );
+    }, 50);
   }
 
   function addPmDays(dateKey, amount) {
