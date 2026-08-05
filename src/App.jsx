@@ -5241,7 +5241,6 @@ function markChanged(staffId, department) {
     const scopeLabel = movementClearScopeLabel(scope);
 
     if (due.length === 0) {
-      alert(`${scopeLabel}の患者移動はありません。`);
       return;
     }
 
