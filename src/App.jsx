@@ -616,6 +616,7 @@ const TUTORIAL_GUIDES = {
     description: "時間休を15:15〜17:15で登録する流れを練習します。",
     steps: [
       { target: "leave-calendar-day", event: "leave-date", text: "登録したい日付をカレンダーからタップしてください。" },
+      { target: "leave-open-form", event: "leave-open-form", text: "「休暇・特別勤務・個別予定登録」をタップしてください。" },
       { target: "leave-type", event: "leave-paid", text: "種別で「有休」を選んでください。" },
       { target: "leave-method", event: "leave-time", text: "取得方法で「時間休」を選んでください。" },
       { target: "leave-start-hour", event: "leave-start-hour-15", text: "開始時刻を15時にしてください。" },
@@ -639,11 +640,11 @@ const TUTORIAL_GUIDES = {
   },
   patientCount: {
     title: "患者人数を変更する",
-    description: "ログイン者の神経内科を+1し、保存するところまで練習します。",
+    description: "神経内科を+1し、保存するところまで練習します。",
     steps: [
       { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
       { target: "jump-neuro-internal", event: "jump-neuro-internal", text: "科別スキップの「神内」をタップしてください。" },
-      { target: "tutorial-neuro-cell", event: "tutorial-neuro-cell", text: "ログイン者の神経内科セルをタップしてください。" },
+      { target: "tutorial-neuro-cell", event: "tutorial-neuro-cell", text: "神経内科のセルをタップしてください。" },
       { target: "tutorial-neuro-plus", event: "tutorial-neuro-plus", text: "＋を1回タップして神経内科を1人増やしてください。" },
       { target: "patient-save", event: "patient-save", text: "最後に「保存」をタップしてください。チュートリアル中は本番には保存されません。" },
     ],
@@ -659,17 +660,21 @@ const TUTORIAL_GUIDES = {
       { target: "movement-department", event: "movement-internal", text: "科で「内科」を選んでください。" },
       { target: "movement-submit", event: "movement-submit", text: "「患者移動を登録」をタップしてください。" },
       { target: "patient-save", event: "patient-save", text: "管理表に戻ったら「保存」をタップしてください。チュートリアル中は本番には保存されません。" },
+      { target: "jump-movement", event: "jump-movement", text: "科別スキップの「移」をタップして、患者移動列へ移動してください。" },
+      { target: "movement-clear-table", event: "movement-clear-table", text: "管理表の「患者移動を消去」をタップしてください。登録した地域包括・内科の予定を人数へ反映する操作です。" },
+      { target: "movement-clear-confirm", event: "movement-clear-confirm", text: "対象件数を確認して「件を消去する」をタップしてください。内科の人数が1人減ります。" },
+      { target: "movement-undo", event: "movement-undo", text: "消去後に表示される「元に戻す」をタップしてください。消去直前の人数と患者移動予定に戻せます。" },
     ],
   },
   countCheck: {
     title: "人数確認を使う",
-    description: "ログイン者の整形と内科を+1し、反映後に保存する流れを練習します。",
+    description: "確認モード行の整形と内科を+1し、反映後に保存する流れを練習します。",
     steps: [
       { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
       { target: "count-check", event: "count-check-open", text: "「人数確認」をタップしてください。チュートリアルでは増加が分かるよう現在値から開始します。" },
-      { target: "count-check-ortho-plus", event: "count-check-ortho-plus", text: "ログイン者の整形を＋1してください。" },
+      { target: "count-check-ortho-plus", event: "count-check-ortho-plus", text: "確認モード行の整形の「＋」を1回タップしてください。" },
       { target: "jump-internal", event: "jump-internal", text: "科別スキップの「内」をタップしてください。" },
-      { target: "count-check-internal-plus", event: "count-check-internal-plus", text: "ログイン者の内科を＋1してください。" },
+      { target: "count-check-internal-plus", event: "count-check-internal-plus", text: "確認モード行の内科の「＋」を1回タップしてください。" },
       { target: "count-check-apply", event: "count-check-apply", text: "「確認を反映」をタップしてください。" },
       { target: "count-check-confirm", event: "count-check-confirm", text: "内容を確認して、もう一度「確認を反映」をタップしてください。" },
       { target: "count-check-result", event: "count-check-result-seen", text: "整形と内科がそれぞれ1人増えたことを確認してください。2秒後に次へ進みます。" },
@@ -678,10 +683,10 @@ const TUTORIAL_GUIDES = {
   },
   adjustHistory: {
     title: "-/+履歴を確認する",
-    description: "ログイン者の整形を+1し、その履歴を確認します。",
+    description: "整形を+1し、その-/+履歴を確認します。",
     steps: [
       { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
-      { target: "tutorial-ortho-cell", event: "tutorial-ortho-cell", text: "ログイン者の整形セルをタップしてください。" },
+      { target: "tutorial-ortho-cell", event: "tutorial-ortho-cell", text: "整形セルをタップしてください。" },
       { target: "tutorial-ortho-plus", event: "tutorial-ortho-plus", text: "＋を1回タップしてください。" },
       { target: "adjust-history", event: "adjust-history-open", text: "「-/+履歴」をタップしてください。" },
       { target: "adjust-history-card", event: "adjust-history-seen", text: "下へスワイプして履歴を表示してください。履歴全体が見えると枠で強調され、2秒後に完了します。", noAutoScroll: true },
@@ -704,7 +709,9 @@ const TUTORIAL_GUIDES = {
       { target: "patient-move-tab", event: "patient-move-open", text: "「患者移動」をタップしてください。" },
       { target: "movement-waiting", event: "movement-waiting", text: "「移動待ち」をタップしてください。練習用の移動予定を確認します。" },
       { target: "movement-delete", event: "movement-delete", text: "「削除」は予定だけを取り消します。患者管理表の人数は変わりません。下の比較表示で人数を確認してから、削除をタップしてください。" },
-      { target: "movement-clear", event: "movement-clear", text: "「消去」は予定を実績として処理し、対象科の患者人数を1人減らしてから予定を消します。下の比較表示を確認して消去をタップしてください。" },
+      { target: "movement-clear", event: "movement-clear", text: "次に「消去」をタップしてください。消去は予定を患者人数へ反映する操作です。" },
+      { target: "movement-clear-confirm", event: "movement-clear-confirm", text: "対象件数を確認して「件を消去する」をタップしてください。対象科の人数が実際に1人減ります。" },
+      { target: "movement-undo", event: "movement-undo", text: "消去後の「元に戻す」をタップしてください。人数と移動予定が消去前へ戻ることも確認できます。" },
     ],
   },
 };
@@ -744,7 +751,7 @@ function TutorialGuidePanel({ guide, stepIndex, onMenu, onExit }) {
   if (!guide || !step) return null;
 
   return (
-    <aside className={`tutorialGuidePanel ${placement}`} role="status" aria-live="polite">
+    <aside className={`tutorialGuidePanel ${placement} ${step.target === "patient-landscape-close" ? "avoidLandscapeClose" : ""}`} role="status" aria-live="polite">
       <div className="tutorialGuideTop">
         <div>
           <strong>{guide.title}</strong>
@@ -3417,7 +3424,14 @@ if (staffLoaded && staff.length === 0) {
               <button
                 type="button"
                 className="primaryButton"
-                onClick={openLeaveFormInDateModal}
+                data-tutorial-target="leave-open-form"
+                onClick={() => {
+                  if (tutorialMode && tutorialGuideId === "leave") {
+                    setForm((prev) => ({ ...prev, type: "compensatory", method: "full", start: "08:30", end: "17:15" }));
+                  }
+                  openLeaveFormInDateModal();
+                  onTutorialEvent("leave-open-form");
+                }}
                 style={{ width: "100%" }}
               >
                 休暇・特別勤務・個別予定登録
@@ -3457,6 +3471,7 @@ if (staffLoaded && staff.length === 0) {
               style={LEAVE_SELECT_VISIBLE_STYLE}
               value={form.type}
               data-tutorial-target="leave-type"
+              onClick={() => { if (form.type === "paid") onTutorialEvent("leave-paid"); }}
               onChange={(e) => {
                 const nextType = e.target.value;
                 setForm({
@@ -5320,6 +5335,20 @@ useEffect(() => {
     )) || null;
   }, [staff, loginUser]);
 
+  useEffect(() => {
+    if (!tutorialMode || !tutorialGuideId || !loginPatientStaff?.id) return;
+    const guide = TUTORIAL_GUIDES[tutorialGuideId];
+    const step = guide?.steps?.[tutorialStep];
+    if (!step) return;
+
+    if (step.event === "tutorial-neuro-cell" && activeCell === `${loginPatientStaff.id}:neuroInternal`) {
+      onTutorialEvent("tutorial-neuro-cell");
+    }
+    if (step.event === "tutorial-ortho-cell" && activeCell === `${loginPatientStaff.id}:ortho`) {
+      onTutorialEvent("tutorial-ortho-cell");
+    }
+  }, [activeCell, tutorialMode, tutorialGuideId, tutorialStep, loginPatientStaff?.id]);
+
   const autoMovementStaff = (
     movementStaffOptions.find((person) => person.id === loginPatientStaff?.id)
     || movementStaffOptions.find((person) => person.id === movementForm.staffId)
@@ -6739,7 +6768,8 @@ function markChanged(staffId, department) {
           </span>
           <button
             type="button"
-            onClick={undoLastAppliedMovements}
+            data-tutorial-target="movement-undo"
+            onClick={() => { undoLastAppliedMovements(); onTutorialEvent("movement-undo"); }}
           >
             元に戻す
           </button>
@@ -6875,9 +6905,10 @@ function markChanged(staffId, department) {
                   </button>
                   <button
                     className="deleteButton"
+                    data-tutorial-target="movement-clear-confirm"
                     type="button"
                     disabled={movementClearTargets().length === 0}
-                    onClick={() => applyDueMovements(movementClearScope)}
+                    onClick={() => { applyDueMovements(movementClearScope); onTutorialEvent("movement-clear-confirm"); }}
                   >
                     {movementClearTargets().length}件を消去する
                   </button>
@@ -7193,6 +7224,8 @@ function markChanged(staffId, department) {
 
               {tutorialMode && tutorialGuideId === "deleteClear" && (() => {
                 const sampleMovement = pendingMovements.find((movement) => (
+                  !movement.done && movement.profession === profession && movement.tutorialOnly
+                )) || pendingMovements.find((movement) => (
                   !movement.done && movement.profession === profession
                 ));
                 const sampleStaff = sampleMovement
@@ -7248,7 +7281,10 @@ function markChanged(staffId, department) {
                     移動待ちの患者はいません。
                   </div>
                 ) : (
-                  visibleStaff.map((person) => {
+                  ((tutorialMode && tutorialGuideId === "deleteClear")
+                    ? staff.filter((person) => person.profession === profession && person.active !== false)
+                    : visibleStaff
+                  ).map((person) => {
                     const personMovements = pendingMovements
                       .filter((m) => m.profession === profession && m.staffId === person.id)
                       .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
@@ -8111,10 +8147,11 @@ function PMAssignmentTable({
         })}
         <button
           type="button"
+          data-tutorial-target="jump-movement"
           aria-pressed={visibleDepartment === "movement"}
           aria-label="患者移動列へ移動"
           title="患者移動列へ移動"
-          onClick={jumpToMovementColumn}
+          onClick={() => { jumpToMovementColumn(); onTutorialEvent("jump-movement"); }}
           style={{
             minWidth: 0,
             height: "28px",
@@ -8181,10 +8218,10 @@ function PMAssignmentTable({
                   <button
                     type="button"
                     className="clearDueButton"
-                    data-tutorial-target="movement-clear"
+                    data-tutorial-target="movement-clear-table"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onTutorialEvent("movement-clear");
+                      onTutorialEvent("movement-clear-table");
                       onClearDueMovements();
                     }}
                   >

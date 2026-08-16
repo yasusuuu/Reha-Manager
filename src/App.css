@@ -9312,3 +9312,31 @@ select.leaveSelectControl:disabled {
   .tutorialResultNotice strong { font-size: 12px; }
   .tutorialResultNotice span { font-size: 11px; padding: 3px 6px; }
 }
+
+/* =========================
+   チュートリアル操作修正 2026-08-16 v2
+   横画面の閉じるボタンをガイドで塞がない
+========================= */
+.tutorialGuidePanel.avoidLandscapeClose {
+  left: max(8px, env(safe-area-inset-left));
+  right: auto;
+  top: auto;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  transform: none;
+  width: min(360px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+}
+
+.tableFullscreen .fullscreenHeader button[data-tutorial-target="patient-landscape-close"] {
+  position: relative;
+  z-index: 10020;
+  pointer-events: auto !important;
+}
+
+@media (max-width: 560px) {
+  .tutorialGuidePanel.avoidLandscapeClose {
+    width: min(300px, calc(100vw - 12px));
+    left: 6px;
+    bottom: max(6px, env(safe-area-inset-bottom));
+  }
+}
