@@ -662,6 +662,25 @@ const TUTORIAL_GUIDES = {
       { target: "count-check-apply", event: "count-check-apply", text: "「確認を反映」を押すと、変更した科だけ通常人数へ転記されます。" },
     ],
   },
+  adjustHistory: {
+    title: "-/+履歴を確認する",
+    description: "患者人数を増減したあと、誰が・どの科を・いくつ変更したか履歴で確認します。",
+    steps: [
+      { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
+      { target: "patient-number-cell", event: "patient-number-cell", text: "どれか患者人数のセルをタップしてください。" },
+      { target: "patient-adjust-button", event: "patient-adjust", text: "− または ＋ を1回タップして人数を変更してください。" },
+      { target: "adjust-history", event: "adjust-history-open", text: "「-/+履歴」をタップしてください。直前の増減、対象者、科、更新者を確認できます。" },
+    ],
+  },
+  landscape: {
+    title: "横画面モードを使う",
+    description: "患者管理表を大きく表示し、スマホを横向きにして確認する方法を練習します。",
+    steps: [
+      { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
+      { target: "patient-landscape", event: "patient-landscape-open", text: "⛶ をタップしてください。管理表を横画面向けの全画面表示にします。" },
+      { target: "patient-landscape-close", event: "patient-landscape-close", text: "スマホを横向きにすると管理表を広く確認できます。確認できたら「閉じる」をタップしてください。" },
+    ],
+  },
   deleteClear: {
     title: "削除と消去の違いを確認する",
     description: "患者移動の「削除」と「消去」の違いを確認します。",
@@ -669,14 +688,15 @@ const TUTORIAL_GUIDES = {
       { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
       { target: "patient-move-tab", event: "patient-move-open", text: "「患者移動」をタップしてください。" },
       { target: "movement-waiting", event: "movement-waiting", text: "「移動待ち」をタップしてください。練習用の移動予定を確認します。" },
-      { target: "movement-delete", event: "movement-delete", text: "「削除」は移動予定だけを消し、患者人数には反映しません。削除ボタンをタップして警告を確認してください。" },
-      { target: "movement-clear", event: "movement-clear", text: "「消去」は患者人数へ反映してから予定を消します。消去ボタンをタップして違いを確認してください。" },
+      { target: "movement-delete", event: "movement-delete", text: "「削除」は予定だけを取り消します。患者管理表の人数は変わりません。下の比較表示で人数を確認してから、削除をタップしてください。" },
+      { target: "movement-clear", event: "movement-clear", text: "「消去」は予定を実績として処理し、対象科の患者人数を1人減らしてから予定を消します。下の比較表示を確認して消去をタップしてください。" },
     ],
   },
 };
 
 function TutorialGuidePanel({ guide, stepIndex, onMenu, onExit }) {
   const step = guide?.steps?.[stepIndex];
+  const [placement, setPlacement] = useState("bottom");
 
   useEffect(() => {
     document.querySelectorAll(".tutorialTargetPulse").forEach((node) => node.classList.remove("tutorialTargetPulse"));
@@ -690,6 +710,10 @@ function TutorialGuidePanel({ guide, stepIndex, onMenu, onExit }) {
         return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
       });
       if (!target) return;
+
+      const rect = target.getBoundingClientRect();
+      // 対象が画面上側ならガイドは下、下側なら上へ逃がす。
+      setPlacement(rect.top < window.innerHeight / 2 ? "bottom" : "top");
       target.classList.add("tutorialTargetPulse");
       target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
     }, 120);
@@ -703,7 +727,7 @@ function TutorialGuidePanel({ guide, stepIndex, onMenu, onExit }) {
   if (!guide || !step) return null;
 
   return (
-    <aside className="tutorialGuidePanel" role="status" aria-live="polite">
+    <aside className={`tutorialGuidePanel ${placement}`} role="status" aria-live="polite">
       <div className="tutorialGuideTop">
         <div>
           <strong>{guide.title}</strong>
@@ -4246,9 +4270,9 @@ if (staffLoaded && staff.length === 0) {
         </>
       )}
       {tutorialMode && (
-        <div className="tutorialModeBanner">
-          <strong>チュートリアルモード</strong>
-          <span>このモードの操作は本番データに保存されません。</span>
+        <div className={`tutorialModeBanner ${tutorialGuideId ? "guided" : "free"}`}>
+          <strong>チュートリアル</strong>
+          {!tutorialGuideId && <span>本番データには保存されません。</span>}
           <div>
             <button type="button" onClick={openTutorialMenu}>操作を選ぶ</button>
             <button type="button" onClick={exitTutorial}>終了</button>
@@ -4280,8 +4304,8 @@ if (staffLoaded && staff.length === 0) {
               ))}
             </div>
             <button type="button" className="tutorialFreeButton" onClick={() => { startTutorial(null); setShowTutorialCenter(false); }}>
-              自由に操作する
-              <small>ガイドなしで、本番と同じ画面を好きに触れます</small>
+              自由操作
+              <small>ガイドなしで本画面と同様の操作を自由に可能</small>
             </button>
             {tutorialMode && <button type="button" className="tutorialEndButton" onClick={exitTutorial}>チュートリアルを終了して本番へ戻る</button>}
           </div>
@@ -6384,7 +6408,14 @@ function markChanged(staffId, department) {
           >
             {patientSaving ? "保存中..." : patientSaveStatus === "dirty" ? "保存" : "保存済"}
           </button>
-          <button className="tabExpandBtn iconOnly" type="button" onClick={() => setFullTable(true)} aria-label="拡大表示" title="拡大表示">⛶</button>
+          <button
+            className="tabExpandBtn iconOnly"
+            data-tutorial-target="patient-landscape"
+            type="button"
+            onClick={() => { setFullTable(true); onTutorialEvent("patient-landscape-open"); }}
+            aria-label="横画面モード"
+            title="横画面モード"
+          >⛶</button>
           <button
             className={countCheckMode ? "adjustHistoryButton active" : "adjustHistoryButton"}
             data-tutorial-target="count-check"
@@ -6415,8 +6446,12 @@ function markChanged(staffId, department) {
           )}
           <button
             className={`adjustHistoryButton ${showTodayAdjustHistory ? "active" : ""}`}
+            data-tutorial-target="adjust-history"
             type="button"
-            onClick={() => setShowTodayAdjustHistory((prev) => !prev)}
+            onClick={() => {
+              setShowTodayAdjustHistory((prev) => !prev);
+              if (!showTodayAdjustHistory) onTutorialEvent("adjust-history-open");
+            }}
           >
             -/+履歴
           </button>
@@ -6851,7 +6886,11 @@ function markChanged(staffId, department) {
               <strong>{profession} 管理表</strong>
               <span>横向き表示推奨・横スクロールのみ</span>
             </div>
-            <button type="button" onClick={() => setFullTable(false)}>閉じる</button>
+            <button
+              type="button"
+              data-tutorial-target="patient-landscape-close"
+              onClick={() => { setFullTable(false); onTutorialEvent("patient-landscape-close"); }}
+            >閉じる</button>
           </div>
 
           <div className="fullscreenTableWrap">
@@ -7032,6 +7071,48 @@ function markChanged(staffId, department) {
                 </span>
                 </div>
               </div>
+
+              {tutorialMode && tutorialGuideId === "deleteClear" && (() => {
+                const sampleMovement = pendingMovements.find((movement) => (
+                  !movement.done && movement.profession === profession
+                ));
+                const sampleStaff = sampleMovement
+                  ? staff.find((person) => person.id === sampleMovement.staffId)
+                  : null;
+                const beforeCount = sampleMovement && sampleStaff
+                  ? Number(sampleStaff.counts?.[sampleMovement.department] || 0)
+                  : null;
+                const afterClearCount = beforeCount === null ? null : Math.max(0, beforeCount - 1);
+
+                return (
+                  <div className="tutorialDeleteClearCompare">
+                    <strong>削除と消去の違い</strong>
+                    {sampleMovement && sampleStaff ? (
+                      <>
+                        <div className="tutorialCompareCurrent">
+                          例：{pmPersonName(sampleStaff)} ／ {pmDepartmentShort(sampleMovement.department)}　現在 <b>{beforeCount}人</b>
+                        </div>
+                        <div className="tutorialCompareGrid">
+                          <div>
+                            <b>削除</b>
+                            <span>予定だけ削除</span>
+                            <strong>{beforeCount}人 → {beforeCount}人</strong>
+                            <small>人数は変わりません</small>
+                          </div>
+                          <div>
+                            <b>消去</b>
+                            <span>予定を人数へ反映</span>
+                            <strong>{beforeCount}人 → {afterClearCount}人</strong>
+                            <small>対象科を −1 します</small>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <span>チュートリアル用の患者移動を準備しています。</span>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="movementList">
                 {pendingMovements.filter((movement) => movement.profession === profession).length === 0 ? (
