@@ -8979,3 +8979,178 @@ select.leaveSelectControl:disabled {
 @media (max-width: 640px) {
   .systemStatusDetails { grid-template-columns: 1fr; }
 }
+
+/* =========================
+   チュートリアルモード
+========================= */
+.headerTutorialButton,
+.headerLogoutButton {
+  border: 1px solid rgba(255,255,255,.42);
+  border-radius: 10px;
+  min-height: 38px;
+  padding: 7px 10px;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.headerTutorialButton.active {
+  background: #f59e0b;
+  border-color: #fbbf24;
+  color: #422006;
+}
+
+.tutorialModeBanner {
+  position: fixed;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  z-index: 8800;
+  width: min(720px, calc(100vw - 16px));
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #422006;
+  box-shadow: 0 10px 28px rgba(120,53,15,.2);
+}
+
+.tutorialModeBanner strong { white-space: nowrap; }
+.tutorialModeBanner span { font-size: 12px; }
+.tutorialModeBanner > div { display: flex; gap: 5px; }
+.tutorialModeBanner button {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: #f59e0b;
+  color: #422006;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.tutorialCenterBackdrop { z-index: 9000; }
+.tutorialCenter { width: min(720px, 100%); }
+.tutorialSafetyNote {
+  margin: 12px 0;
+  padding: 11px 12px;
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  background: #fffbeb;
+  display: grid;
+  gap: 3px;
+}
+.tutorialSafetyNote strong { color: #92400e; }
+.tutorialSafetyNote span { color: #78350f; font-size: 12px; line-height: 1.5; }
+.tutorialGuideGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 8px;
+}
+.tutorialGuideCard {
+  position: relative;
+  min-height: 88px;
+  padding: 12px 12px 11px;
+  border: 1px solid #d6e1ec;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  text-align: left;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+.tutorialGuideCard:hover { background: #f8fafc; border-color: #93c5fd; }
+.tutorialGuideCard strong { font-size: 14px; padding-right: 22px; }
+.tutorialGuideCard small { color: #64748b; font-size: 11.5px; line-height: 1.4; }
+.tutorialGuideCheck {
+  position: absolute;
+  right: 9px;
+  top: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+}
+.tutorialFreeButton,
+.tutorialEndButton {
+  width: 100%;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 11px;
+  padding: 11px 12px;
+  font-weight: 850;
+}
+.tutorialFreeButton { background: #0f766e; color: #fff; display: grid; gap: 2px; }
+.tutorialFreeButton small { font-weight: 600; opacity: .9; }
+.tutorialEndButton { background: #f1f5f9; color: #334155; }
+
+.tutorialGuidePanel {
+  position: fixed;
+  z-index: 9100;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 16px));
+  padding: 12px;
+  border: 2px solid #f59e0b;
+  border-radius: 14px;
+  background: rgba(255,255,255,.98);
+  color: #0f172a;
+  box-shadow: 0 18px 45px rgba(15,23,42,.28);
+}
+.tutorialGuideTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tutorialGuideTop > div { display: grid; gap: 2px; }
+.tutorialGuideTop strong { font-size: 15px; }
+.tutorialGuideTop small { color: #64748b; font-size: 11px; }
+.tutorialGuideTop button,
+.tutorialExitInline {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 800;
+}
+.tutorialGuidePanel p { margin: 9px 0; line-height: 1.55; font-size: 13px; }
+.tutorialGuideProgress { height: 5px; border-radius: 999px; overflow: hidden; background: #e2e8f0; }
+.tutorialGuideProgress span { display: block; height: 100%; background: #f59e0b; transition: width .2s ease; }
+.tutorialExitInline { margin-top: 9px; font-size: 11px; }
+
+.tutorialTargetPulse {
+  position: relative;
+  z-index: 9050 !important;
+  outline: 4px solid #f59e0b !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 7px rgba(245,158,11,.22) !important;
+  animation: tutorialPulse 1.15s ease-in-out infinite !important;
+}
+@keyframes tutorialPulse {
+  0%,100% { box-shadow: 0 0 0 5px rgba(245,158,11,.18) !important; }
+  50% { box-shadow: 0 0 0 10px rgba(245,158,11,.08) !important; }
+}
+
+@media (max-width: 560px) {
+  .tutorialModeBanner {
+    top: 4px;
+    grid-template-columns: 1fr auto;
+    gap: 4px 8px;
+    padding: 6px 8px;
+  }
+  .tutorialModeBanner > span { grid-column: 1 / -1; grid-row: 2; font-size: 10.5px; }
+  .tutorialModeBanner > div { grid-column: 2; grid-row: 1; }
+  .tutorialModeBanner button { padding: 5px 7px; font-size: 11px; }
+  .tutorialGuideGrid { grid-template-columns: 1fr; }
+  .tutorialGuidePanel { padding: 10px; }
+  .tutorialGuidePanel p { font-size: 12px; }
+  .headerTutorialButton,
+  .headerLogoutButton { font-size: 11px; padding: 6px 7px; }
+}

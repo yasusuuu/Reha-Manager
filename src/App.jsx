@@ -609,6 +609,117 @@ function JapaneseDateInput({ value, onChange, allowClear = false, placeholder = 
   );
 }
 
+
+const TUTORIAL_GUIDES = {
+  leave: {
+    title: "休暇・勤務を登録する",
+    description: "カレンダーから日付を選び、休暇・勤務を登録する流れを練習します。",
+    steps: [
+      { target: "leave-calendar-day", event: "leave-date", text: "登録したい日付をカレンダーからタップしてください。" },
+      { target: "leave-type", event: "leave-type", text: "種別を選んでください。有休・代休・休日出勤などをここで選びます。" },
+      { target: "leave-submit", event: "leave-submit", text: "内容を確認して「登録する」をタップしてください。チュートリアル中は本番には保存されません。" },
+    ],
+  },
+  saturday: {
+    title: "土曜出勤を交換する",
+    description: "土曜日を選び、別日の勤務者と交換する操作を練習します。",
+    steps: [
+      { target: "saturday-calendar-day", event: "saturday-date", text: "交換したい土曜日をタップしてください。" },
+      { target: "saturday-change-button", event: "saturday-change-open", text: "「出勤日を変更」をタップしてください。" },
+      { target: "saturday-current-staff", event: "saturday-current-staff", text: "左側の現在の出勤者から、変更する職員を1名タップしてください。" },
+      { target: "saturday-candidate-date", event: "saturday-candidate-date", text: "交換候補となる別の土曜日をタップしてください。" },
+      { target: "saturday-candidate-staff", event: "saturday-candidate-staff", text: "交換相手をタップしてください。" },
+      { target: "saturday-save", event: "saturday-save", text: "交換後の内容を確認して保存してください。チュートリアル中は本番には保存されません。" },
+    ],
+  },
+  patientCount: {
+    title: "患者人数を変更する",
+    description: "患者管理表で人数を増減する操作を練習します。",
+    steps: [
+      { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
+      { target: "patient-number-cell", event: "patient-number-cell", text: "人数を変更したいセルをタップしてください。" },
+      { target: "patient-adjust-button", event: "patient-adjust", text: "表示された − / ＋ を使って人数を変更してください。" },
+      { target: "patient-save", event: "patient-save", text: "最後に保存をタップします。チュートリアル中はFirestoreには保存されません。" },
+    ],
+  },
+  movement: {
+    title: "患者移動を登録する",
+    description: "退院・回復期・地域包括・転院などの患者移動を登録します。",
+    steps: [
+      { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
+      { target: "patient-move-tab", event: "patient-move-open", text: "「患者移動」をタップしてください。" },
+      { target: "movement-new", event: "movement-new", text: "新規登録を開いてください。" },
+      { target: "movement-submit", event: "movement-submit", text: "内容を選び、「登録」をタップしてください。チュートリアル中は本番には保存されません。" },
+    ],
+  },
+  countCheck: {
+    title: "人数確認を使う",
+    description: "実人数を動かさず、0から患者数を数え直す機能を練習します。",
+    steps: [
+      { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
+      { target: "count-check", event: "count-check-open", text: "「人数確認」をタップしてください。確認値は本番人数とは別に扱われます。" },
+      { target: "patient-number-cell", event: "count-check-cell", text: "確認したい科のセルをタップして、0から人数を入力してください。" },
+      { target: "count-check-apply", event: "count-check-apply", text: "「確認を反映」を押すと、変更した科だけ通常人数へ転記されます。" },
+    ],
+  },
+  deleteClear: {
+    title: "削除と消去の違いを確認する",
+    description: "患者移動の「削除」と「消去」の違いを確認します。",
+    steps: [
+      { target: "patients-tab", event: "patients-open", text: "「患者振り分け」をタップしてください。" },
+      { target: "patient-move-tab", event: "patient-move-open", text: "「患者移動」をタップしてください。" },
+      { target: "movement-waiting", event: "movement-waiting", text: "「移動待ち」をタップしてください。練習用の移動予定を確認します。" },
+      { target: "movement-delete", event: "movement-delete", text: "「削除」は移動予定だけを消し、患者人数には反映しません。削除ボタンをタップして警告を確認してください。" },
+      { target: "movement-clear", event: "movement-clear", text: "「消去」は患者人数へ反映してから予定を消します。消去ボタンをタップして違いを確認してください。" },
+    ],
+  },
+};
+
+function TutorialGuidePanel({ guide, stepIndex, onMenu, onExit }) {
+  const step = guide?.steps?.[stepIndex];
+
+  useEffect(() => {
+    document.querySelectorAll(".tutorialTargetPulse").forEach((node) => node.classList.remove("tutorialTargetPulse"));
+    if (!step?.target) return undefined;
+
+    const timer = window.setTimeout(() => {
+      const candidates = Array.from(document.querySelectorAll(`[data-tutorial-target="${step.target}"]`));
+      const target = candidates.find((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = window.getComputedStyle(node);
+        return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+      });
+      if (!target) return;
+      target.classList.add("tutorialTargetPulse");
+      target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.querySelectorAll(".tutorialTargetPulse").forEach((node) => node.classList.remove("tutorialTargetPulse"));
+    };
+  }, [step?.target, stepIndex, guide?.title]);
+
+  if (!guide || !step) return null;
+
+  return (
+    <aside className="tutorialGuidePanel" role="status" aria-live="polite">
+      <div className="tutorialGuideTop">
+        <div>
+          <strong>{guide.title}</strong>
+          <small>ステップ {stepIndex + 1} / {guide.steps.length}</small>
+        </div>
+        <button type="button" onClick={onMenu}>メニュー</button>
+      </div>
+      <p>{step.text}</p>
+      <div className="tutorialGuideProgress" aria-hidden="true">
+        <span style={{ width: `${((stepIndex + 1) / guide.steps.length) * 100}%` }} />
+      </div>
+      <button className="tutorialExitInline" type="button" onClick={onExit}>チュートリアルを終了</button>
+    </aside>
+  );
+}
+
 export default function App() {
   const [firebaseUser, setFirebaseUser] = useState(null);
 const [authLoading, setAuthLoading] = useState(true);
@@ -625,6 +736,69 @@ const [pwaInfo, setPwaInfo] = useState({
   version: typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0",
 });
 const [pwaChecking, setPwaChecking] = useState(false);
+
+const [tutorialMode, setTutorialMode] = useState(false);
+const [showTutorialCenter, setShowTutorialCenter] = useState(false);
+const [tutorialGuideId, setTutorialGuideId] = useState(null);
+const [tutorialStep, setTutorialStep] = useState(0);
+const [tutorialCompleted, setTutorialCompleted] = useState(() => new Set());
+const tutorialModeRef = useRef(false);
+
+useEffect(() => {
+  tutorialModeRef.current = tutorialMode;
+}, [tutorialMode]);
+
+function startTutorial(guideId = null) {
+  tutorialModeRef.current = true;
+  setTutorialMode(true);
+  setTutorialGuideId(guideId);
+  setTutorialStep(0);
+  setShowTutorialCenter(!guideId);
+  setSelectedDate(null);
+  setDateModalMode("schedule");
+}
+
+function openTutorialMenu() {
+  setShowTutorialCenter(true);
+}
+
+function chooseTutorialGuide(guideId) {
+  tutorialModeRef.current = true;
+  setTutorialMode(true);
+  setTutorialGuideId(guideId);
+  setTutorialStep(0);
+  setShowTutorialCenter(false);
+  setSelectedDate(null);
+  setDateModalMode("schedule");
+  setView("calendar");
+  setAppSection("leave");
+}
+
+function onTutorialEvent(eventName) {
+  if (!tutorialMode || !tutorialGuideId) return;
+  const guide = TUTORIAL_GUIDES[tutorialGuideId];
+  const currentStep = guide?.steps?.[tutorialStep];
+  if (!currentStep || currentStep.event !== eventName) return;
+
+  if (tutorialStep >= guide.steps.length - 1) {
+    setTutorialCompleted((prev) => new Set([...prev, tutorialGuideId]));
+    setTutorialGuideId(null);
+    setTutorialStep(0);
+    setShowTutorialCenter(true);
+    return;
+  }
+
+  setTutorialStep((prev) => prev + 1);
+}
+
+function exitTutorial() {
+  const ok = window.confirm(
+    "チュートリアルを終了します。\\n\\nチュートリアル中に行った変更はすべて破棄し、本番の最新データを読み直します。"
+  );
+  if (!ok) return;
+  window.location.reload();
+}
+
 
 useEffect(() => subscribePwaUpdate(setPwaInfo), []);
 
@@ -968,6 +1142,7 @@ useEffect(() => {
   );
 
   const unsubscribe = onSnapshot(recordsQuery, (snapshot) => {
+    if (tutorialModeRef.current) return;
     const nextRecords = snapshot.docs
       .map((recordDoc) => ({
         id: recordDoc.id,
@@ -985,6 +1160,7 @@ const [announcements, setAnnouncements] = useState([]);
 
 useEffect(() => {
   const unsubscribe = onSnapshot(collection(db, "announcements"), (snapshot) => {
+    if (tutorialModeRef.current) return;
     const nextAnnouncements = snapshot.docs
       .map((announcementDoc) => ({
         id: announcementDoc.id,
@@ -1072,12 +1248,13 @@ const [saturdayRotation, setSaturdayRotation] = useState({
 
   useEffect(() => {
     // Firestoreから読み込めた実スタッフだけを保存する。初期空配列やデモスタッフは保存しない。
-    if (!staffLoaded || staff.length === 0) return;
+    if (!staffLoaded || staff.length === 0 || tutorialModeRef.current) return;
     localStorage.setItem("leaveStaffV4", JSON.stringify(staff));
   }, [staff, staffLoaded]);
 
 useEffect(() => {
   const unsubscribe = onSnapshot(doc(db, "settings", "saturdayDuty"), (snapshot) => {
+    if (tutorialModeRef.current) return;
     if (!snapshot.exists()) return;
 
     const data = snapshot.data();
@@ -1490,6 +1667,18 @@ if (!nextRecord.staffId) {
       return;
     }
 
+if (tutorialModeRef.current) {
+  const { id, ...recordData } = nextRecord;
+  setRecords((prev) => [...prev, { id, ...recordData, createdBy: loginUser?.id || "", createdByName: loginUser ? personName(loginUser) : "" }]
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || ""))));
+  setSelectedDate(nextRecord.date);
+  setDateModalMode("schedule");
+  setForm((prev) => ({ ...prev, note: "" }));
+  setRecordSubmitting(false);
+  onTutorialEvent("leave-submit");
+  return;
+}
+
 try {
   const { id, ...recordData } = nextRecord;
   const docRef = await addDoc(collection(db, "leaveRecords"), {
@@ -1526,6 +1715,11 @@ setRecordSubmitting(false);
     }
 
     if (!confirm("削除しますか？")) return;
+
+if (tutorialModeRef.current) {
+  setRecords((prev) => prev.filter((item) => item.id !== id));
+  return;
+}
 
 try {
   await deleteDoc(doc(db, "leaveRecords", id));
@@ -1673,6 +1867,18 @@ try {
       return;
     }
 
+    if (tutorialModeRef.current) {
+      setAnnouncements((prev) => [...prev, {
+        id: makeId("tutorial-announcement"), title, message: announcementForm.message.trim(),
+        priority: announcementForm.priority, scheduleType: announcementForm.scheduleType,
+        date: announcementForm.date, time: announcementForm.time, weekday: announcementForm.weekday,
+        nth: announcementForm.nth, endDate: announcementForm.endDate, createdAt: Date.now(),
+        createdBy: loginUser?.id || "", createdByName: loginUser ? personName(loginUser) : "",
+      }]);
+      setShowAnnouncementEdit(false);
+      return;
+    }
+
     await addDoc(collection(db, "announcements"), {
   title,
   message: announcementForm.message.trim(),
@@ -1705,6 +1911,11 @@ try {
 async function deleteAnnouncement(id) {
   if (!isAdmin) return;
   if (!confirm("このお知らせを削除しますか？")) return;
+
+  if (tutorialModeRef.current) {
+    setAnnouncements((prev) => prev.filter((item) => item.id !== id));
+    return;
+  }
 
   try {
     await deleteDoc(doc(db, "announcements", id));
@@ -1879,6 +2090,8 @@ async function deleteAnnouncement(id) {
   }
 
 async function saveSaturdaySettings(nextGroups, nextOverrides, nextRotation) {
+  if (tutorialModeRef.current) return;
+
   const cleanGroups = SATURDAY_GROUP_KEYS.reduce((acc, groupKey) => {
     acc[groupKey] = pruneSaturdayStaffIds(nextGroups?.[groupKey]);
     return acc;
@@ -2308,6 +2521,17 @@ async function resetSaturdayOverrideForDate(date) {
       .filter(Boolean)
       .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
 
+    if (tutorialModeRef.current) {
+      setSaturdayOverrides(nextOverrides);
+      setSelectedDate(saturdayForm.date);
+      setShowSaturdayEdit(false);
+      setSwapCandidateDate(null);
+      setSwapCandidateStaffIds([]);
+      setSwapTargetStaffId(null);
+      onTutorialEvent("saturday-save");
+      return;
+    }
+
     saveSaturdaySettings(saturdayGroups, nextOverrides, saturdayRotation)
       .then(() => {
         setSaturdayOverrides(nextOverrides);
@@ -2579,7 +2803,8 @@ if (staffLoaded && staff.length === 0) {
           <button
             type="button"
             className={appSection === "patients" ? "active" : ""}
-            onClick={() => setAppSection("patients")}
+            data-tutorial-target="patients-tab"
+            onClick={() => { setAppSection("patients"); onTutorialEvent("patients-open"); }}
           >
             患者振り分け
           </button>
@@ -2612,6 +2837,13 @@ if (staffLoaded && staff.length === 0) {
             </div>
           )}
 
+          <button
+            type="button"
+            className={`headerTutorialButton ${tutorialMode ? "active" : ""}`}
+            onClick={() => tutorialMode ? openTutorialMenu() : setShowTutorialCenter(true)}
+          >
+            {tutorialMode ? "チュートリアル中" : "チュートリアル"}
+          </button>
           <button type="button" className="headerLogoutButton" onClick={handleLogout}>
             ログアウト
           </button>
@@ -2630,6 +2862,10 @@ if (staffLoaded && staff.length === 0) {
   onPwaUpdateCheck={handlePwaUpdateCheck}
   onPwaApplyUpdate={handlePwaApplyUpdate}
   onPwaCacheClear={handlePwaCacheClear}
+  tutorialMode={tutorialMode}
+  tutorialGuideId={tutorialGuideId}
+  tutorialStep={tutorialStep}
+  onTutorialEvent={onTutorialEvent}
 />
  ) : (
    <>
@@ -2735,7 +2971,11 @@ if (staffLoaded && staff.length === 0) {
                   <button
                     key={date}
                     type="button"
-                    onClick={() => openLeaveFormForDate(date)}
+                    data-tutorial-target={weekday === 6 ? "saturday-calendar-day" : "leave-calendar-day"}
+                    onClick={() => {
+                      openLeaveFormForDate(date);
+                      onTutorialEvent(weekday === 6 ? "saturday-date" : "leave-date");
+                    }}
                     aria-current={isToday ? "date" : undefined}
                     className={[
                       "calendarCell",
@@ -2963,7 +3203,8 @@ if (staffLoaded && staff.length === 0) {
                         <button
                           type="button"
                           className="softMiniButton"
-                          onClick={() => openSaturdayEdit(selectedDate)}
+                          data-tutorial-target="saturday-change-button"
+                          onClick={() => { openSaturdayEdit(selectedDate); onTutorialEvent("saturday-change-open"); }}
                           style={{
                             width: "100%",
                             minWidth: 0,
@@ -3174,7 +3415,9 @@ if (staffLoaded && staff.length === 0) {
               className="leaveSelectControl"
               style={LEAVE_SELECT_VISIBLE_STYLE}
               value={form.type}
-              onChange={(e) =>
+              data-tutorial-target="leave-type"
+              onChange={(e) => {
+                onTutorialEvent("leave-type");
                 setForm({
                   ...form,
                   type: e.target.value,
@@ -3183,8 +3426,8 @@ if (staffLoaded && staff.length === 0) {
                     : e.target.value === "holiday" && ["full", "morning", "afternoon"].includes(form.method)
                       ? form.method
                       : "full",
-                })
-              }
+                });
+              }}
             >
               {REGISTER_TYPE_OPTIONS.map(([key, value]) => (
                 <option key={key} value={key}>
@@ -3314,7 +3557,7 @@ if (staffLoaded && staff.length === 0) {
         </div>
 
         <div className="previewBox">{previewText()}</div>
-        <button className="primaryButton" type="button" onClick={addRecord} disabled={recordSubmitting}>
+        <button className="primaryButton" data-tutorial-target="leave-submit" type="button" onClick={addRecord} disabled={recordSubmitting}>
           {recordSubmitting ? "登録中..." : "登録する"}
         </button>
               </div>
@@ -3335,6 +3578,18 @@ if (staffLoaded && staff.length === 0) {
             </div>
 
             <div style={{ display: "grid", gap: "10px", marginTop: "12px" }}>
+              <button
+                type="button"
+                className="softButton tutorialSettingsButton"
+                onClick={() => {
+                  setShowLeaveSettings(false);
+                  setShowTutorialCenter(true);
+                }}
+                style={{ minHeight: "48px", textAlign: "left" }}
+              >
+                チュートリアル
+              </button>
+
               <button
                 type="button"
                 className="softButton"
@@ -3630,9 +3885,10 @@ if (staffLoaded && staff.length === 0) {
                                 return (
                                   <button
                                     className={`saturdayPuzzleCard selected ${swapTargetStaffId === person.id ? "swapTarget" : ""}`}
+                                    data-tutorial-target="saturday-current-staff"
                                     key={person.id}
                                     type="button"
-                                    onClick={() => setSwapTargetStaffId((current) => (current === person.id ? null : person.id))}
+                                    onClick={() => { setSwapTargetStaffId((current) => (current === person.id ? null : person.id)); onTutorialEvent("saturday-current-staff"); }}
                                   >
                                     <strong>{personName(person)}</strong>
                                     <span>{person.job}</span>
@@ -3657,9 +3913,10 @@ if (staffLoaded && staff.length === 0) {
                             return (
                               <button
                                 className={`saturdayCandidateDate ${date === swapCandidateDate ? "selected" : ""}`}
+                                data-tutorial-target="saturday-candidate-date"
                                 key={date}
                                 type="button"
-                                onClick={() => selectSwapCandidate(date)}
+                                onClick={() => { selectSwapCandidate(date); onTutorialEvent("saturday-candidate-date"); }}
                               >
                                 <strong>{date.replaceAll("-", "/")}</strong>
                                 <small>
@@ -3710,9 +3967,10 @@ if (staffLoaded && staff.length === 0) {
         return (
           <button
             className={`saturdayPuzzleCard candidate ${swapTargetStaffId ? "tapReady" : ""}`}
+            data-tutorial-target="saturday-candidate-staff"
             key={person.id}
             type="button"
-            onClick={() => handleSaturdayTapSwap(person.id)}
+            onClick={() => { handleSaturdayTapSwap(person.id); onTutorialEvent("saturday-candidate-staff"); }}
           >
             <strong>{personName(person)}</strong>
             <span>{person.job}</span>
@@ -3736,7 +3994,7 @@ if (staffLoaded && staff.length === 0) {
               </div>
 
               <div className="overrideActions">
-                <button className="primaryButton" type="submit">この日の変更を保存</button>
+                <button className="primaryButton" data-tutorial-target="saturday-save" type="submit">この日の変更を保存</button>
                 {saturdayOverrideForDate(saturdayForm.date) && (
                   <button className="softButton" type="button" onClick={() => resetSaturdayOverride(saturdayForm.date)}>
                     個別変更を解除
@@ -3986,6 +4244,52 @@ if (staffLoaded && staff.length === 0) {
         </div>
       )}
         </>
+      )}
+      {tutorialMode && (
+        <div className="tutorialModeBanner">
+          <strong>チュートリアルモード</strong>
+          <span>このモードの操作は本番データに保存されません。</span>
+          <div>
+            <button type="button" onClick={openTutorialMenu}>操作を選ぶ</button>
+            <button type="button" onClick={exitTutorial}>終了</button>
+          </div>
+        </div>
+      )}
+
+      {showTutorialCenter && (
+        <div className="modalBackdrop tutorialCenterBackdrop" onClick={() => setShowTutorialCenter(false)}>
+          <div className="staffModal tutorialCenter" onClick={(event) => event.stopPropagation()}>
+            <div className="modalHeader">
+              <div>
+                <h2>チュートリアル</h2>
+                <span className="modalSubLabel">実際に画面を操作しながら使い方を確認できます。</span>
+              </div>
+              <button className="closeButton" type="button" onClick={() => setShowTutorialCenter(false)}>×</button>
+            </div>
+            <div className="tutorialSafetyNote">
+              <strong>本番データには反映されません</strong>
+              <span>チュートリアル中の登録・変更・削除・消去・保存は端末内だけで動作し、終了時に破棄されます。</span>
+            </div>
+            <div className="tutorialGuideGrid">
+              {Object.entries(TUTORIAL_GUIDES).map(([id, guide]) => (
+                <button key={id} type="button" className="tutorialGuideCard" onClick={() => chooseTutorialGuide(id)}>
+                  <span className="tutorialGuideCheck">{tutorialCompleted.has(id) ? "✓" : ""}</span>
+                  <strong>{guide.title}</strong>
+                  <small>{guide.description}</small>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="tutorialFreeButton" onClick={() => { startTutorial(null); setShowTutorialCenter(false); }}>
+              自由に操作する
+              <small>ガイドなしで、本番と同じ画面を好きに触れます</small>
+            </button>
+            {tutorialMode && <button type="button" className="tutorialEndButton" onClick={exitTutorial}>チュートリアルを終了して本番へ戻る</button>}
+          </div>
+        </div>
+      )}
+
+      {tutorialMode && tutorialGuideId && !showTutorialCenter && (
+        <TutorialGuidePanel guide={TUTORIAL_GUIDES[tutorialGuideId]} stepIndex={tutorialStep} onMenu={openTutorialMenu} onExit={exitTutorial} />
       )}
     </div>
   );
@@ -4463,8 +4767,17 @@ function FullPatientManager({
   onPwaUpdateCheck,
   onPwaApplyUpdate,
   onPwaCacheClear,
+  tutorialMode = false,
+  tutorialGuideId = null,
+  tutorialStep = 0,
+  onTutorialEvent = () => {},
 }) {
   const [view, setView] = useState("table");
+  const patientTutorialModeRef = useRef(tutorialMode);
+
+  useEffect(() => {
+    patientTutorialModeRef.current = tutorialMode;
+  }, [tutorialMode]);
   const [movementView, setMovementView] = useState("new");
 
   useEffect(() => {
@@ -4634,6 +4947,7 @@ useEffect(() => {
       }
 
       const data = snapshot.data();
+      if (patientTutorialModeRef.current) return;
       const incomingRevision = Number(data.revision || 0);
       const isInitialLoad = patientManagerDataRef.current === null;
       const isOwnSave = patientSavingRef.current && data.updatedBy === loginUser?.id;
@@ -4698,6 +5012,13 @@ function formatPatientManagerSize(bytes) {
 
 
 async function savePatientManagerData() {
+  if (patientTutorialModeRef.current) {
+    setPatientSaveStatus("saved");
+    patientSaveStatusRef.current = "saved";
+    onTutorialEvent("patient-save");
+    return;
+  }
+
   if (!patientDataReady || patientRemoteApplyingRef.current || patientSaving) return;
 
   if (patientRemoteUpdatePending) {
@@ -4781,6 +5102,11 @@ function downloadPatientManagerBackup() {
 }
 
 async function restorePatientManagerFromFile(event) {
+  if (patientTutorialModeRef.current) {
+    event.target.value = "";
+    alert("チュートリアル中はバックアップ復元を実行できません。");
+    return;
+  }
   const file = event.target.files?.[0];
   event.target.value = "";
   if (!file) return;
@@ -4943,6 +5269,32 @@ useEffect(() => {
     || movementStaffOptions[0]
     || null
   );
+
+
+  useEffect(() => {
+    if (!tutorialMode || tutorialGuideId !== "deleteClear" || !autoMovementStaff) return;
+    const hasTutorialTarget = movements.some((movement) => (
+      !movement.done && movement.profession === profession
+    ));
+    if (hasTutorialTarget) return;
+
+    setMovements((prev) => [
+      ...prev,
+      {
+        id: makeId("tutorial-movement"),
+        staffId: autoMovementStaff.id,
+        date: pmTodayKey(),
+        moveType: "discharge",
+        department: "ortho",
+        note: "チュートリアル用",
+        profession: autoMovementStaff.profession,
+        staffName: pmPersonName(autoMovementStaff),
+        done: false,
+        createdAt: new Date().toISOString(),
+        tutorialOnly: true,
+      },
+    ]);
+  }, [tutorialMode, tutorialGuideId, autoMovementStaff?.id, profession]);
 
   useEffect(() => {
     const nextStaffId = autoMovementStaff?.id || "";
@@ -5110,6 +5462,7 @@ function markChanged(staffId, department) {
 
   function registerMovement(e) {
     e.preventDefault();
+    onTutorialEvent("movement-submit");
     const targetStaff = autoMovementStaff || staff.find((person) => person.id === movementForm.staffId);
     if (!targetStaff) {
       alert("ログイン者に対応する担当者が見つかりません。職員編集を確認してください。");
@@ -5389,7 +5742,7 @@ function markChanged(staffId, department) {
   }
 
   function deleteMovement(id) {
-    if (!confirm("この患者移動を削除しますか？")) return;
+    if (!confirm("この患者移動予定を削除しますか？\n\n削除は患者人数に反映されません。")) return;
     setMovements((prev) => prev.filter((movement) => movement.id !== id));
   }
 
@@ -5456,6 +5809,7 @@ function markChanged(staffId, department) {
     setStaffForm({ lastName: "", firstName: "", profession, canCancerRehab: false });
     setShowStaffForm(false);
 
+    if (patientTutorialModeRef.current) return;
     try {
       const staffDoc = await addDoc(collection(db, "staff"), staffData);
       setStaff((prev) =>
@@ -5479,6 +5833,7 @@ function markChanged(staffId, department) {
     setStaff((prev) => prev.filter((person) => person.id !== id));
     setMovements((prev) => prev.filter((movement) => movement.staffId !== id));
 
+    if (patientTutorialModeRef.current) return;
     try {
       await deleteDoc(doc(db, "staff", id));
     } catch (error) {
@@ -5502,6 +5857,7 @@ function markChanged(staffId, department) {
       )
     );
 
+    if (patientTutorialModeRef.current) return;
     try {
       await updateDoc(doc(db, "staff", id), { displayNameMode: nextMode });
     } catch (error) {
@@ -5525,6 +5881,7 @@ function markChanged(staffId, department) {
       )
     );
 
+    if (patientTutorialModeRef.current) return;
     try {
       await updateDoc(doc(db, "staff", id), { canCancerRehab });
     } catch (error) {
@@ -5542,6 +5899,7 @@ function markChanged(staffId, department) {
       )
     );
 
+    if (patientTutorialModeRef.current) return;
     try {
       await updateDoc(doc(db, "staff", id), { visible });
     } catch (error) {
@@ -5571,6 +5929,7 @@ function markChanged(staffId, department) {
       })
     );
 
+    if (patientTutorialModeRef.current) return;
     try {
       await Promise.all([
         updateDoc(doc(db, "staff", a.id), { order: bOrder }),
@@ -6010,11 +6369,14 @@ function markChanged(staffId, department) {
       onOpenMovement={() => {
         setMovementView("new");
         setView("move");
+        onTutorialEvent("movement-new");
       }}
+      onTutorialEvent={onTutorialEvent}
       sectionActions={!fullTable && (
         <>
           <button
             className={`patientSaveButton ${patientSaveStatus === "dirty" ? "dirty" : "saved"}`}
+            data-tutorial-target="patient-save"
             type="button"
             onClick={savePatientManagerData}
             disabled={patientSaving || patientSaveStatus !== "dirty"}
@@ -6025,8 +6387,12 @@ function markChanged(staffId, department) {
           <button className="tabExpandBtn iconOnly" type="button" onClick={() => setFullTable(true)} aria-label="拡大表示" title="拡大表示">⛶</button>
           <button
             className={countCheckMode ? "adjustHistoryButton active" : "adjustHistoryButton"}
+            data-tutorial-target="count-check"
             type="button"
-            onClick={countCheckMode ? finishCountCheckMode : startCountCheckMode}
+            onClick={() => {
+              if (countCheckMode) finishCountCheckMode(); else startCountCheckMode();
+              if (!countCheckMode) onTutorialEvent("count-check-open");
+            }}
             title={countCheckMode ? "確認値を破棄して終了します" : "実人数を変更せずに0から数え直します"}
           >
             {countCheckMode ? "確認終了" : "人数確認"}
@@ -6034,8 +6400,9 @@ function markChanged(staffId, department) {
           {countCheckMode && (
             <button
               className="patientSaveButton dirty"
+              data-tutorial-target="count-check-apply"
               type="button"
-              onClick={openCountCheckApplyDialog}
+              onClick={() => { openCountCheckApplyDialog(); onTutorialEvent("count-check-apply"); }}
               disabled={changedCountCheckKeys.size === 0}
               title={
                 changedCountCheckKeys.size === 0
@@ -6246,7 +6613,7 @@ function markChanged(staffId, department) {
       <nav className="viewTabs">
         <div className="viewTabGroup">
           <button className={view === "table" ? "active" : ""} onClick={() => setView("table")}>管理表</button>
-          <button className={view === "move" ? "active" : ""} onClick={() => setView("move")}>患者移動</button>
+          <button data-tutorial-target="patient-move-tab" className={view === "move" ? "active" : ""} onClick={() => { setView("move"); onTutorialEvent("patient-move-open"); }}>患者移動</button>
         </div>
         <button className={view === "settings" ? "active settingsTabButton" : "settingsTabButton"} aria-label="患者振り分け設定" title="患者振り分け設定" onClick={() => setView("settings")}>
           <img alt="" src="data:image/png;base64,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" />
@@ -6517,7 +6884,8 @@ function markChanged(staffId, department) {
               type="button"
               role="tab"
               aria-selected={movementView === "new"}
-              onClick={() => setMovementView("new")}
+              data-tutorial-target="movement-new"
+              onClick={() => { setMovementView("new"); onTutorialEvent("movement-new"); }}
               style={{
                 minHeight: "42px",
                 border: movementView === "new" ? "1px solid #2563eb" : "1px solid transparent",
@@ -6534,7 +6902,8 @@ function markChanged(staffId, department) {
               type="button"
               role="tab"
               aria-selected={movementView === "waiting"}
-              onClick={() => setMovementView("waiting")}
+              data-tutorial-target="movement-waiting"
+              onClick={() => { setMovementView("waiting"); onTutorialEvent("movement-waiting"); }}
               style={{
                 minHeight: "42px",
                 border: movementView === "waiting" ? "1px solid #2563eb" : "1px solid transparent",
@@ -6616,7 +6985,7 @@ function markChanged(staffId, department) {
                   />
                 </label>
 
-                <button className="primaryButton" type="submit">患者移動を登録</button>
+                <button className="primaryButton" data-tutorial-target="movement-submit" type="submit">患者移動を登録</button>
               </form>
             </div>
           )}
@@ -6638,6 +7007,16 @@ function markChanged(staffId, department) {
                     登録済みで、まだ患者人数に反映していない予定です。
                   </span>
                 </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                  <button
+                    type="button"
+                    className="deleteButton"
+                    data-tutorial-target="movement-clear"
+                    onClick={() => { onTutorialEvent("movement-clear"); openMovementClearDialog(); }}
+                    style={{ padding: "6px 9px", fontSize: "12px", whiteSpace: "nowrap" }}
+                  >
+                    消去
+                  </button>
                 <span
                   style={{
                     flex: "0 0 auto",
@@ -6651,6 +7030,7 @@ function markChanged(staffId, department) {
                 >
                   {pendingMovements.filter((movement) => movement.profession === profession).length}件
                 </span>
+                </div>
               </div>
 
               <div className="movementList">
@@ -6682,7 +7062,7 @@ function markChanged(staffId, department) {
                             {movement.note && <small>{movement.note}</small>}
                             <div className="movementItemActions">
                               <button className="editButton" type="button" onClick={() => setEditMovement({ ...movement })}>編集</button>
-                              <button className="deleteButton" type="button" onClick={() => deleteMovement(movement.id)}>削除</button>
+                              <button className="deleteButton" data-tutorial-target="movement-delete" type="button" onClick={() => { onTutorialEvent("movement-delete"); deleteMovement(movement.id); }}>削除</button>
                             </div>
                           </div>
                         ))}
@@ -7283,6 +7663,7 @@ function PMAssignmentTable({
   onEditMovement,
   onClearDueMovements,
   onOpenMovement,
+  onTutorialEvent = () => {},
   sectionActions,
 }) {
   const [activeStaffId, activeDeptKey] = activeCell ? activeCell.split(":") : [null, null];
@@ -7585,8 +7966,10 @@ function PMAssignmentTable({
                   <button
                     type="button"
                     className="clearDueButton"
+                    data-tutorial-target="movement-clear"
                     onClick={(e) => {
                       e.stopPropagation();
+                      onTutorialEvent("movement-clear");
                       onClearDueMovements();
                     }}
                   >
@@ -7666,7 +8049,8 @@ function PMAssignmentTable({
                     >
                       {isAllowed ? (
                         <div
-                          onClick={(event) => event.stopPropagation()}
+                          data-tutorial-target="patient-number-cell"
+                          onClick={(event) => { event.stopPropagation(); onTutorialEvent("count-check-cell"); }}
                           style={{
                             display: "grid",
                             gridTemplateColumns: "22px minmax(24px, 1fr) 22px",
@@ -7678,9 +8062,8 @@ function PMAssignmentTable({
                           <button
                             type="button"
                             className="inlineBtn minus"
-                            onClick={() =>
-                              quickAdjustCountCheck(countCheckStaff.id, dept.key, -1)
-                            }
+                            data-tutorial-target="patient-adjust-button"
+                            onClick={() => { quickAdjustCountCheck(countCheckStaff.id, dept.key, -1); onTutorialEvent("patient-adjust"); }}
                           >
                             −
                           </button>
@@ -7707,9 +8090,8 @@ function PMAssignmentTable({
                           <button
                             type="button"
                             className="inlineBtn plus"
-                            onClick={() =>
-                              quickAdjustCountCheck(countCheckStaff.id, dept.key, 1)
-                            }
+                            data-tutorial-target="patient-adjust-button"
+                            onClick={() => { quickAdjustCountCheck(countCheckStaff.id, dept.key, 1); onTutorialEvent("patient-adjust"); }}
                           >
                             ＋
                           </button>
@@ -7782,9 +8164,13 @@ function PMAssignmentTable({
                     return (
                       <td
                         key={dept.key}
+                        data-tutorial-target={disabled ? undefined : "patient-number-cell"}
                         className={`numberCell dept-${dept.key} sep-${dept.key} ${changed ? "changed" : ""} ${stoppedSource ? "stoppedSource" : ""} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === dept.key ? "tColGuide" : ""} ${isActive ? "tActiveCell" : ""}`}
                         onClick={() => {
-                          if (!disabled) setActiveCell(isActive ? null : cellKey);
+                          if (!disabled) {
+                            setActiveCell(isActive ? null : cellKey);
+                            onTutorialEvent("patient-number-cell");
+                          }
                         }}
                       >
                       {disabled ? (
@@ -7820,9 +8206,9 @@ function PMAssignmentTable({
                           </div>
                         ) : isActive && !disabled ? (
                           <div className="inlineAdjust" onClick={(e) => e.stopPropagation()}>
-                            <button type="button" className="inlineBtn minus" onClick={() => quickAdjust(person.id, dept.key, -1)}>−</button>
+                            <button type="button" className="inlineBtn minus" data-tutorial-target="patient-adjust-button" onClick={() => { quickAdjust(person.id, dept.key, -1); onTutorialEvent("patient-adjust"); }}>−</button>
                             <span className="inlineValue">{value}</span>
-                            <button type="button" className="inlineBtn plus" onClick={() => quickAdjust(person.id, dept.key, 1)}>＋</button>
+                            <button type="button" className="inlineBtn plus" data-tutorial-target="patient-adjust-button" onClick={() => { quickAdjust(person.id, dept.key, 1); onTutorialEvent("patient-adjust"); }}>＋</button>
                           </div>
                         ) : (
                           <div className="plainNumberLine">
@@ -7835,7 +8221,10 @@ function PMAssignmentTable({
                               readOnly={dept.key === "stopped"}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (!disabled) setActiveCell(cellKey);
+                                if (!disabled) {
+                                  setActiveCell(cellKey);
+                                  onTutorialEvent("patient-number-cell");
+                                }
                               }}
                               onFocus={() => {
                                 if (!disabled) setActiveCell(cellKey);
