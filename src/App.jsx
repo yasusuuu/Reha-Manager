@@ -623,50 +623,6 @@ function JapaneseDateInput({ value, onChange, allowClear = false, placeholder = 
 }
 
 
-const ORTHO_CONFERENCE_QUARTERS = [
-  { key: "Q1", label: "4〜6月", startMonth: 4, endMonth: 6 },
-  { key: "Q2", label: "7〜9月", startMonth: 7, endMonth: 9 },
-  { key: "Q3", label: "10〜12月", startMonth: 10, endMonth: 12 },
-  { key: "Q4", label: "1〜3月", startMonth: 1, endMonth: 3 },
-];
-
-function orthoConferenceQuarterKey(dateStr) {
-  if (!dateStr) return "Q1";
-  const d = new Date(`${dateStr}T00:00:00`);
-  const month = d.getMonth() + 1;
-  if (month >= 4 && month <= 6) return "Q1";
-  if (month >= 7 && month <= 9) return "Q2";
-  if (month >= 10 && month <= 12) return "Q3";
-  return "Q4";
-}
-
-function orthoConferenceQuarterBounds(fy, quarterKey) {
-  if (quarterKey === "Q1") return [`${fy}-04-01`, `${fy}-06-30`];
-  if (quarterKey === "Q2") return [`${fy}-07-01`, `${fy}-09-30`];
-  if (quarterKey === "Q3") return [`${fy}-10-01`, `${fy}-12-31`];
-  return [`${fy + 1}-01-01`, `${fy + 1}-03-31`];
-}
-
-function defaultOrthoConferenceSettings(fy = fiscalYear(todayKey())) {
-  const emptyQuarter = () => ({ PT: [], OT: [] });
-  return {
-    enabled: true,
-    fiscalYear: fy,
-    weekday: 3,
-    time: "",
-    participantCounts: { PT: 2, OT: 1 },
-    quarterRosters: {
-      Q1: emptyQuarter(),
-      Q2: emptyQuarter(),
-      Q3: emptyQuarter(),
-      Q4: emptyQuarter(),
-    },
-    swaps: [],
-    cancelledDates: [],
-  };
-}
-
-
 const TUTORIAL_GUIDES = {
   leave: {
     title: "休暇・勤務を登録する",
@@ -1299,15 +1255,6 @@ const [saturdayRotation, setSaturdayRotation] = useState({
 const [compensatorySettings, setCompensatorySettings] = useState(() => ({
   startDate: `${fiscalYear(todayKey())}-04-01`,
 }));
-const [orthoConferenceSettings, setOrthoConferenceSettings] = useState(() =>
-  defaultOrthoConferenceSettings(fiscalYear(todayKey()))
-);
-const [showOrthoConferenceSettings, setShowOrthoConferenceSettings] = useState(false);
-const [showOrthoConferenceSwap, setShowOrthoConferenceSwap] = useState(false);
-const [orthoSwapJob, setOrthoSwapJob] = useState("PT");
-const [orthoSwapSourceStaffId, setOrthoSwapSourceStaffId] = useState("");
-const [orthoSwapCandidateDate, setOrthoSwapCandidateDate] = useState("");
-const [orthoSwapCandidateStaffId, setOrthoSwapCandidateStaffId] = useState("");
 
   const [holidays, setHolidays] = useState(() => {
     try {
@@ -1420,30 +1367,6 @@ useEffect(() => {
   return () => unsubscribe();
 }, []);
 
-useEffect(() => {
-  const unsubscribe = onSnapshot(doc(db, "settings", "orthopedicConference"), (snapshot) => {
-    if (tutorialModeRef.current) return;
-    if (!snapshot.exists()) return;
-    const data = snapshot.data();
-    const fy = Number(data.fiscalYear || fiscalYear(todayKey()));
-    const base = defaultOrthoConferenceSettings(fy);
-    setOrthoConferenceSettings({
-      ...base,
-      ...data,
-      participantCounts: { ...base.participantCounts, ...(data.participantCounts || {}) },
-      quarterRosters: {
-        Q1: { ...base.quarterRosters.Q1, ...(data.quarterRosters?.Q1 || {}) },
-        Q2: { ...base.quarterRosters.Q2, ...(data.quarterRosters?.Q2 || {}) },
-        Q3: { ...base.quarterRosters.Q3, ...(data.quarterRosters?.Q3 || {}) },
-        Q4: { ...base.quarterRosters.Q4, ...(data.quarterRosters?.Q4 || {}) },
-      },
-      swaps: Array.isArray(data.swaps) ? data.swaps : [],
-      cancelledDates: Array.isArray(data.cancelledDates) ? data.cancelledDates : [],
-    });
-  });
-  return () => unsubscribe();
-}, []);
-
   useEffect(() => {
     let active = true;
 
@@ -1490,335 +1413,6 @@ const loginUser = loginStaff
   : staff.find((s) => s.id === loginId) || staff[0];
   const isAdmin = loginUser?.role === "admin";
   const currentFy = fiscalYear(`${year}-${pad(month)}-01`);
-
-  function conferenceRosterFor(date, job) {
-    const fy = fiscalYear(date);
-    if (fy !== Number(orthoConferenceSettings.fiscalYear || fy)) return [];
-    const quarterKey = orthoConferenceQuarterKey(date);
-    const roster = orthoConferenceSettings.quarterRosters?.[quarterKey]?.[job] || [];
-    const valid = new Set(activeStaff.filter((person) => person.job === job).map((person) => person.id));
-    return Array.from(new Set(roster)).filter((id) => valid.has(id));
-  }
-
-  function conferenceDateIsEligible(date) {
-    const d = new Date(`${date}T00:00:00`);
-    if (Number.isNaN(d.getTime())) return false;
-    const weekday = Number(orthoConferenceSettings.weekday ?? 3);
-    if (d.getDay() !== weekday) return false;
-    const fy = fiscalYear(date);
-    const quarterKey = orthoConferenceQuarterKey(date);
-    const [startStr, endStr] = orthoConferenceQuarterBounds(fy, quarterKey);
-    return date >= startStr && date <= endStr;
-  }
-
-  function isConferenceCancelled(date) {
-    return (orthoConferenceSettings.cancelledDates || []).includes(date);
-  }
-
-  // 中止日は開催回数に数えない。
-  // そのため中止日に予定されていたローテーション順は、次の開催日にそのまま繰り越される。
-  function conferenceRotationIndexForDate(date) {
-    if (!conferenceDateIsEligible(date)) return -1;
-    const fy = fiscalYear(date);
-    const quarterKey = orthoConferenceQuarterKey(date);
-    const [startStr] = orthoConferenceQuarterBounds(fy, quarterKey);
-    const weekday = Number(orthoConferenceSettings.weekday ?? 3);
-    const cancelled = new Set(orthoConferenceSettings.cancelledDates || []);
-    let index = 0;
-
-    for (let cursor = new Date(`${startStr}T00:00:00`); toDateKey(cursor) < date; cursor = addDateDays(cursor, 1)) {
-      if (cursor.getDay() !== weekday) continue;
-      const key = toDateKey(cursor);
-      if (cancelled.has(key)) continue;
-      index += 1;
-    }
-    return index;
-  }
-
-  function conferenceOccurrenceIndex(date) {
-    if (!conferenceDateIsEligible(date) || isConferenceCancelled(date)) return -1;
-    return conferenceRotationIndexForDate(date);
-  }
-
-  function conferenceBaseStaffIdsAtRotationIndex(date, job, index) {
-    if (!orthoConferenceSettings.enabled || index < 0) return [];
-    const roster = conferenceRosterFor(date, job);
-    if (roster.length === 0) return [];
-    const count = Math.min(Math.max(1, Number(orthoConferenceSettings.participantCounts?.[job] || 1)), roster.length);
-    return Array.from({ length: count }, (_, offset) => roster[(index + offset) % roster.length]);
-  }
-
-  function baseConferenceStaffIdsForDate(date, job) {
-    const index = conferenceOccurrenceIndex(date);
-    return conferenceBaseStaffIdsAtRotationIndex(date, job, index);
-  }
-
-  function cancelledConferencePlannedStaffIdsForDate(date, job) {
-    if (!isConferenceCancelled(date)) return [];
-    return conferenceBaseStaffIdsAtRotationIndex(date, job, conferenceRotationIndexForDate(date));
-  }
-
-  function conferenceStaffIdsForDate(date, job, swaps = orthoConferenceSettings.swaps || []) {
-    let ids = [...baseConferenceStaffIdsForDate(date, job)];
-    [...swaps]
-      .filter((swap) => swap.job === job && !swap.disabled)
-      .sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0))
-      .forEach((swap) => {
-        if (swap.leftDate === date) {
-          ids = ids.map((id) => id === swap.leftStaffId ? swap.rightStaffId : id);
-        } else if (swap.rightDate === date) {
-          ids = ids.map((id) => id === swap.rightStaffId ? swap.leftStaffId : id);
-        }
-      });
-    return Array.from(new Set(ids));
-  }
-
-  function conferencePeopleForDate(date, job) {
-    return conferenceStaffIdsForDate(date, job)
-      .map((id) => activeStaff.find((person) => person.id === id))
-      .filter(Boolean);
-  }
-
-  function conferenceScheduleForDate(date) {
-    if (!conferenceDateIsEligible(date) || !orthoConferenceSettings.enabled) return null;
-
-    if (isConferenceCancelled(date)) {
-      const plannedPT = cancelledConferencePlannedStaffIdsForDate(date, "PT")
-        .map((id) => activeStaff.find((person) => person.id === id))
-        .filter(Boolean);
-      const plannedOT = cancelledConferencePlannedStaffIdsForDate(date, "OT")
-        .map((id) => activeStaff.find((person) => person.id === id))
-        .filter(Boolean);
-      if (plannedPT.length === 0 && plannedOT.length === 0) return null;
-      return {
-        date,
-        PT: [],
-        OT: [],
-        plannedPT,
-        plannedOT,
-        cancelled: true,
-        time: orthoConferenceSettings.time || "",
-      };
-    }
-
-    const PT = conferencePeopleForDate(date, "PT");
-    const OT = conferencePeopleForDate(date, "OT");
-    if (PT.length === 0 && OT.length === 0) return null;
-    return { date, PT, OT, plannedPT: PT, plannedOT: OT, cancelled: false, time: orthoConferenceSettings.time || "" };
-  }
-
-  function conferenceVisibleForDate(date) {
-    const schedule = conferenceScheduleForDate(date);
-    if (!schedule) return false;
-    if (displayScope !== "mine") return true;
-    const people = schedule.cancelled
-      ? [...(schedule.plannedPT || []), ...(schedule.plannedOT || [])]
-      : [...schedule.PT, ...schedule.OT];
-    return people.some((person) => person.id === loginId);
-  }
-
-  function conferenceCandidateDates(baseDate, job) {
-    if (!baseDate) return [];
-    const fy = fiscalYear(baseDate);
-    const quarterKey = orthoConferenceQuarterKey(baseDate);
-    const [, endStr] = orthoConferenceQuarterBounds(fy, quarterKey);
-    const result = [];
-    for (let cursor = addDateDays(new Date(`${baseDate}T00:00:00`), 1); toDateKey(cursor) <= endStr; cursor = addDateDays(cursor, 1)) {
-      const key = toDateKey(cursor);
-      if (conferenceOccurrenceIndex(key) < 0) continue;
-      if (conferenceStaffIdsForDate(key, job).length > 0) result.push(key);
-    }
-    return result;
-  }
-
-  function conferenceFairnessPreview(quarterKey, job) {
-    const fy = Number(orthoConferenceSettings.fiscalYear || currentFy);
-    const [startStr, endStr] = orthoConferenceQuarterBounds(fy, quarterKey);
-    const roster = orthoConferenceSettings.quarterRosters?.[quarterKey]?.[job] || [];
-    const counts = Object.fromEntries(roster.map((id) => [id, 0]));
-    for (let cursor = new Date(`${startStr}T00:00:00`); toDateKey(cursor) <= endStr; cursor = addDateDays(cursor, 1)) {
-      const key = toDateKey(cursor);
-      if (conferenceOccurrenceIndex(key) < 0) continue;
-      baseConferenceStaffIdsForDate(key, job).forEach((id) => {
-        if (Object.prototype.hasOwnProperty.call(counts, id)) counts[id] += 1;
-      });
-    }
-    const values = Object.values(counts);
-    const diff = values.length ? Math.max(...values) - Math.min(...values) : 0;
-    return { counts, diff };
-  }
-
-  async function persistConferenceSettings(nextSettings) {
-    setOrthoConferenceSettings(nextSettings);
-    if (tutorialModeRef.current) return;
-    const audit = {
-      updatedAt: Date.now(),
-      updatedBy: loginUser?.id || "",
-      updatedByName: loginUser ? personName(loginUser) : "",
-    };
-    if (isAdmin) {
-      await setDoc(doc(db, "settings", "orthopedicConference"), {
-        ...nextSettings,
-        ...audit,
-      }, { merge: true });
-      return;
-    }
-    await updateDoc(doc(db, "settings", "orthopedicConference"), {
-      swaps: nextSettings.swaps || [],
-      cancelledDates: nextSettings.cancelledDates || [],
-      ...audit,
-    });
-  }
-
-  async function toggleConferenceCancellation(date) {
-    if (!date || !conferenceDateIsEligible(date)) return;
-    const cancelled = isConferenceCancelled(date);
-    const nextCancelledDates = cancelled
-      ? (orthoConferenceSettings.cancelledDates || []).filter((item) => item !== date)
-      : Array.from(new Set([...(orthoConferenceSettings.cancelledDates || []), date])).sort();
-
-    if (!cancelled) {
-      const schedule = conferenceScheduleForDate(date);
-      const ptNames = (schedule?.plannedPT || schedule?.PT || []).map(personName).join("・") || "なし";
-      const otNames = (schedule?.plannedOT || schedule?.OT || []).map(personName).join("・") || "なし";
-      const confirmed = window.confirm(
-        `この日の整形カンファレンスを中止します。\n\n` +
-        `PT予定：${ptNames}\nOT予定：${otNames}\n\n` +
-        "この回のローテーションは進めず、予定されていた順番は次回開催日に自動で繰り越されます。"
-      );
-      if (!confirmed) return;
-    } else {
-      const confirmed = window.confirm(
-        "この日の整形カンファレンス中止を解除しますか？\n解除すると、この日を開催回として再びローテーションに含め、以降の担当も自動で再計算されます。"
-      );
-      if (!confirmed) return;
-    }
-
-    try {
-      await persistConferenceSettings({
-        ...orthoConferenceSettings,
-        cancelledDates: nextCancelledDates,
-      });
-    } catch (error) {
-      console.error("Orthopedic conference cancellation save failed", error);
-      alert(cancelled ? "中止を解除できませんでした。" : "中止を保存できませんでした。");
-    }
-  }
-
-  function openConferenceSwap(date) {
-    const schedule = conferenceScheduleForDate(date);
-    if (!schedule) return;
-    const preferredJob = schedule[loginUser?.job]?.some((person) => person.id === loginUser?.id)
-      ? loginUser.job
-      : (schedule.PT.length > 0 ? "PT" : "OT");
-    setOrthoSwapJob(preferredJob);
-    setOrthoSwapSourceStaffId("");
-    setOrthoSwapCandidateDate("");
-    setOrthoSwapCandidateStaffId("");
-    setShowOrthoConferenceSwap(true);
-  }
-
-  async function saveConferenceSwap() {
-    if (!selectedDate || !orthoSwapSourceStaffId || !orthoSwapCandidateDate || !orthoSwapCandidateStaffId) {
-      alert("交換する参加者と候補日・交換相手を選択してください。");
-      return;
-    }
-    if (orthoSwapSourceStaffId === orthoSwapCandidateStaffId) {
-      alert("同じ職員同士は交換できません。");
-      return;
-    }
-    const leftIds = conferenceStaffIdsForDate(selectedDate, orthoSwapJob);
-    const rightIds = conferenceStaffIdsForDate(orthoSwapCandidateDate, orthoSwapJob);
-    if (!leftIds.includes(orthoSwapSourceStaffId) || !rightIds.includes(orthoSwapCandidateStaffId)) {
-      alert("現在の参加予定を確認して、もう一度選択してください。");
-      return;
-    }
-    if (leftIds.includes(orthoSwapCandidateStaffId) || rightIds.includes(orthoSwapSourceStaffId)) {
-      alert("交換すると同じ日に同一職員が重複するため、この組み合わせは選べません。");
-      return;
-    }
-    const swap = {
-      id: makeId("ortho-conf-swap"),
-      job: orthoSwapJob,
-      leftDate: selectedDate,
-      leftStaffId: orthoSwapSourceStaffId,
-      rightDate: orthoSwapCandidateDate,
-      rightStaffId: orthoSwapCandidateStaffId,
-      createdAt: Date.now(),
-      createdBy: loginUser?.id || "",
-      createdByName: loginUser ? personName(loginUser) : "",
-    };
-    try {
-      await persistConferenceSettings({
-        ...orthoConferenceSettings,
-        swaps: [...(orthoConferenceSettings.swaps || []), swap],
-      });
-      setShowOrthoConferenceSwap(false);
-    } catch (error) {
-      console.error("Orthopedic conference swap save failed", error);
-      alert("整形カンファレンスの交換を保存できませんでした。");
-    }
-  }
-
-  async function undoLatestConferenceSwap(date) {
-    const swaps = orthoConferenceSettings.swaps || [];
-    const candidates = swaps
-      .filter((swap) => !swap.disabled && (swap.leftDate === date || swap.rightDate === date))
-      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
-    if (candidates.length === 0) {
-      alert("この日に解除できる個別変更はありません。");
-      return;
-    }
-    const target = candidates[0];
-    if (!window.confirm("この整形カンファレンスの交換を解除しますか？交換した相手側の日付も元に戻ります。")) return;
-    await persistConferenceSettings({
-      ...orthoConferenceSettings,
-      swaps: swaps.filter((swap) => swap.id !== target.id),
-    });
-  }
-
-  async function restoreConferenceDate(date) {
-    const swaps = orthoConferenceSettings.swaps || [];
-    const targets = swaps.filter((swap) => !swap.disabled && (swap.leftDate === date || swap.rightDate === date));
-    if (targets.length === 0) {
-      alert("この日は基本ローテーションのままです。");
-      return;
-    }
-    if (!window.confirm("この日に関係する整形カンファレンスの個別変更をすべて解除しますか？交換相手側の日付も基本ローテーションへ戻ります。")) return;
-    const targetIds = new Set(targets.map((swap) => swap.id));
-    await persistConferenceSettings({
-      ...orthoConferenceSettings,
-      swaps: swaps.filter((swap) => !targetIds.has(swap.id)),
-    });
-  }
-
-  function updateConferenceRoster(quarterKey, job, staffId, checked) {
-    if (!isAdmin) return;
-    const current = orthoConferenceSettings.quarterRosters?.[quarterKey]?.[job] || [];
-    const next = checked ? Array.from(new Set([...current, staffId])) : current.filter((id) => id !== staffId);
-    setOrthoConferenceSettings((prev) => ({
-      ...prev,
-      quarterRosters: {
-        ...prev.quarterRosters,
-        [quarterKey]: { ...prev.quarterRosters[quarterKey], [job]: next },
-      },
-    }));
-  }
-
-  async function saveConferenceConfig() {
-    if (!isAdmin) return;
-    try {
-      await persistConferenceSettings({
-        ...orthoConferenceSettings,
-        fiscalYear: currentFy,
-      });
-      setShowOrthoConferenceSettings(false);
-    } catch (error) {
-      console.error("Orthopedic conference settings save failed", error);
-      alert("整形カンファレンス設定を保存できませんでした。");
-    }
-  }
-
   const todayAnnouncements = useMemo(() => expandAnnouncements(announcements, todayKey()), [announcements]);
 
   useEffect(() => {
@@ -3597,7 +3191,6 @@ if (staffLoaded && staff.length === 0) {
                 const count = countByJob(date);
                 const holidayWork = holidayWorkCountByJob(date);
                 const dayAnnouncements = announcementsForDate(date);
-                const dayConference = conferenceScheduleForDate(date);
                 const weekday = new Date(`${date}T00:00:00`).getDay();
                 const holidayName = holidays[date];
                 const isToday = date === todayKey();
@@ -3633,11 +3226,6 @@ if (staffLoaded && staff.length === 0) {
                       <span className="dayNumber">{day}</span>
                       {canShowSaturdayForDate(date) && <span className="saturdayMini">土勤</span>}
                       {dayAnnouncements.length > 0 && <span className="announcementMini">予{dayAnnouncements.length}</span>}
-                      {dayConference && conferenceVisibleForDate(date) && (
-                        <span className={`conferenceMini ${dayConference.cancelled ? "cancelled" : ""}`}>
-                          {dayConference.cancelled ? "整カン中止" : "整カン"}
-                        </span>
-                      )}
                     </div>
 
                     <div className="dayCounts">
@@ -3747,7 +3335,7 @@ if (staffLoaded && staff.length === 0) {
             </div>
 
             <div style={{ display: dateModalMode === "schedule" ? "contents" : "none" }}>
-            {selectedRecords().length === 0 && selectedAnnouncements().length === 0 && new Date(`${selectedDate}T00:00:00`).getDay() !== 6 && !holidays[selectedDate] && !conferenceVisibleForDate(selectedDate) ? (
+            {selectedRecords().length === 0 && selectedAnnouncements().length === 0 && new Date(`${selectedDate}T00:00:00`).getDay() !== 6 && !holidays[selectedDate] ? (
               <p className="emptyText">この日の登録はありません。</p>
             ) : (
               <div
@@ -3818,56 +3406,6 @@ if (staffLoaded && staff.length === 0) {
                     </div>
                   </div>
                 )}
-
-                {conferenceScheduleForDate(selectedDate) && conferenceVisibleForDate(selectedDate) && (() => {
-                  const schedule = conferenceScheduleForDate(selectedDate);
-                  return (
-                    <section className={`detailItem orthoConferenceDetail ${schedule.cancelled ? "cancelled" : ""}`} aria-label="整形カンファレンス">
-                      <div className="orthoConferenceBody">
-                        <div className="orthoConferenceTitleRow">
-                          <div>
-                            <strong>
-                              {schedule.cancelled
-                                ? "整形カンファレンス（中止）"
-                                : (displayScope === "mine" ? "整形カンファレンス（参加）" : "整形カンファレンス")}
-                            </strong>
-                            {schedule.time && <small>{schedule.time}</small>}
-                            {schedule.cancelled && <small className="orthoConferenceCarryover">担当順は次回開催日に繰り越されます</small>}
-                          </div>
-                          <div className="orthoConferenceActions">
-                            {schedule.cancelled ? (
-                              <button type="button" className="softMiniButton" onClick={() => toggleConferenceCancellation(selectedDate)}>中止を解除</button>
-                            ) : (
-                              <>
-                                <button type="button" className="softMiniButton" onClick={() => openConferenceSwap(selectedDate)}>担当を変更</button>
-                                <button type="button" className="deleteButton compactAction" onClick={() => undoLatestConferenceSwap(selectedDate)}>個別変更解除</button>
-                                <button type="button" className="softMiniButton" onClick={() => restoreConferenceDate(selectedDate)}>この日を元に戻す</button>
-                                <button type="button" className="conferenceCancelButton" onClick={() => toggleConferenceCancellation(selectedDate)}>中止</button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="orthoConferenceJobGrid">
-                          {["PT", "OT"].map((job) => {
-                            const people = schedule.cancelled
-                              ? (job === "PT" ? schedule.plannedPT : schedule.plannedOT)
-                              : conferencePeopleForDate(selectedDate, job);
-                            return (
-                              <div className="orthoConferenceJob" key={job}>
-                                <b>{job}</b>
-                                <span>
-                                  {schedule.cancelled ? "中止（予定：" : ""}
-                                  {people.length ? people.map(personName).join("・") : "該当なし"}
-                                  {schedule.cancelled ? "）" : ""}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </section>
-                  );
-                })()}
 
                 {new Date(`${selectedDate}T00:00:00`).getDay() === 6 && (
                   <>
@@ -4370,18 +3908,6 @@ if (staffLoaded && staff.length === 0) {
                 className="softButton"
                 onClick={() => {
                   setShowLeaveSettings(false);
-                  setShowOrthoConferenceSettings(true);
-                }}
-                style={{ minHeight: "48px", textAlign: "left" }}
-              >
-                整形カンファレンス設定
-              </button>
-
-              <button
-                type="button"
-                className="softButton"
-                onClick={() => {
-                  setShowLeaveSettings(false);
                   setShowStaffEdit(true);
                 }}
                 style={{ minHeight: "48px", textAlign: "left" }}
@@ -4415,151 +3941,6 @@ if (staffLoaded && staff.length === 0) {
                 土曜出勤設定
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {showOrthoConferenceSettings && (
-        <div className="modalBackdrop" onClick={() => setShowOrthoConferenceSettings(false)}>
-          <div className="staffModal orthoConferenceSettingsModal" onClick={(event) => event.stopPropagation()}>
-            <div className="modalHeader">
-              <div>
-                <h2>整形カンファレンス設定</h2>
-                <span className="modalSubLabel">3か月ごとに対象者を設定し、各開催日の参加回数が均等になるよう自動ローテーションします。</span>
-              </div>
-              <button className="closeButton" type="button" onClick={() => setShowOrthoConferenceSettings(false)}>×</button>
-            </div>
-
-            <div className="orthoConferenceBasicSettings">
-              <label>
-                <span>開催曜日</span>
-                <select disabled={!isAdmin} value={orthoConferenceSettings.weekday} onChange={(e) => setOrthoConferenceSettings((prev) => ({ ...prev, weekday: Number(e.target.value) }))}>
-                  {WEEKDAYS.map((label, index) => <option value={index} key={label}>{label}曜日</option>)}
-                </select>
-              </label>
-              <label>
-                <span>時間（任意）</span>
-                <input disabled={!isAdmin} type="time" value={orthoConferenceSettings.time || ""} onChange={(e) => setOrthoConferenceSettings((prev) => ({ ...prev, time: e.target.value }))} />
-              </label>
-              <label>
-                <span>PT 1回参加人数</span>
-                <input disabled={!isAdmin} type="number" min="1" max="10" value={orthoConferenceSettings.participantCounts?.PT || 2} onChange={(e) => setOrthoConferenceSettings((prev) => ({ ...prev, participantCounts: { ...prev.participantCounts, PT: Math.max(1, Number(e.target.value || 1)) } }))} />
-              </label>
-              <label>
-                <span>OT 1回参加人数</span>
-                <input disabled={!isAdmin} type="number" min="1" max="10" value={orthoConferenceSettings.participantCounts?.OT || 1} onChange={(e) => setOrthoConferenceSettings((prev) => ({ ...prev, participantCounts: { ...prev.participantCounts, OT: Math.max(1, Number(e.target.value || 1)) } }))} />
-              </label>
-            </div>
-
-            <p className="settingHelp">PTは現在「3名中2名参加」で運用できます。人数が4名以上に増えても、登録した対象者の中から設定人数を順番に選び、1周期で参加回数が均等になります。OTも同じ仕組みで1名参加に設定できます。</p>
-
-            <div className="orthoQuarterList">
-              {ORTHO_CONFERENCE_QUARTERS.map((quarter) => (
-                <section className="orthoQuarterCard" key={quarter.key}>
-                  <h3>{quarter.label}</h3>
-                  <div className="orthoQuarterJobs">
-                    {["PT", "OT"].map((job) => (
-                      <div key={job} className="orthoQuarterJob">
-                        <h4>{job} 対象者</h4>
-                        <div className="orthoStaffChecks">
-                          {activeStaff.filter((person) => person.job === job).map((person) => {
-                            const checked = (orthoConferenceSettings.quarterRosters?.[quarter.key]?.[job] || []).includes(person.id);
-                            return (
-                              <label key={person.id}>
-                                <input type="checkbox" disabled={!isAdmin} checked={checked} onChange={(e) => updateConferenceRoster(quarter.key, job, person.id, e.target.checked)} />
-                                <span>{personName(person)}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                        {(() => {
-                          const preview = conferenceFairnessPreview(quarter.key, job);
-                          const roster = orthoConferenceSettings.quarterRosters?.[quarter.key]?.[job] || [];
-                          if (roster.length === 0) return <small className="orthoFairnessPreview">対象者を選択してください。</small>;
-                          return (
-                            <small className="orthoFairnessPreview">
-                              参加予定：{roster.map((id) => `${personName(activeStaff.find((person) => person.id === id))} ${preview.counts[id] || 0}回`).join(" / ")}
-                              <b> 最大差 {preview.diff}回</b>
-                            </small>
-                          );
-                        })()}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-
-            {isAdmin && <button type="button" className="primaryButton" onClick={saveConferenceConfig}>設定を保存</button>}
-          </div>
-        </div>
-      )}
-
-      {showOrthoConferenceSwap && selectedDate && (
-        <div className="modalBackdrop" onClick={() => setShowOrthoConferenceSwap(false)}>
-          <div className="staffModal orthoConferenceSwapModal" onClick={(event) => event.stopPropagation()}>
-            <div className="modalHeader">
-              <div>
-                <h2>整形カンファレンス担当変更</h2>
-                <span className="modalSubLabel">{displayDate(selectedDate)} と先の開催日の参加者を1対1で交換します。双方の参加回数は変わりません。</span>
-              </div>
-              <button className="closeButton" type="button" onClick={() => setShowOrthoConferenceSwap(false)}>×</button>
-            </div>
-
-            <div className="orthoSwapJobTabs">
-              {["PT", "OT"].map((job) => (
-                <button key={job} type="button" className={orthoSwapJob === job ? "active" : ""} onClick={() => { setOrthoSwapJob(job); setOrthoSwapSourceStaffId(""); setOrthoSwapCandidateDate(""); setOrthoSwapCandidateStaffId(""); }}>{job}</button>
-              ))}
-            </div>
-
-            <div className="orthoSwapGrid">
-              <section>
-                <h3>{displayDate(selectedDate)} の参加者</h3>
-                <div className="orthoSwapPeople">
-                  {conferencePeopleForDate(selectedDate, orthoSwapJob).map((person) => (
-                    <button type="button" key={person.id} className={orthoSwapSourceStaffId === person.id ? "selected" : ""} onClick={() => setOrthoSwapSourceStaffId(person.id)}>{personName(person)}</button>
-                  ))}
-                </div>
-              </section>
-
-              <section>
-                <h3>交換する先の週</h3>
-                <div className="orthoCandidateDates">
-                  {conferenceCandidateDates(selectedDate, orthoSwapJob).map((date) => (
-                    <button type="button" key={date} className={orthoSwapCandidateDate === date ? "selected" : ""} onClick={() => { setOrthoSwapCandidateDate(date); setOrthoSwapCandidateStaffId(""); }}>
-                      <strong>{dateLabel(date)}</strong>
-                      <small>{conferencePeopleForDate(date, orthoSwapJob).map(personName).join("・")}</small>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            </div>
-
-            {orthoSwapCandidateDate && (
-              <section className="orthoSwapCandidatePeople">
-                <h3>{dateLabel(orthoSwapCandidateDate)} の交換相手</h3>
-                <div className="orthoSwapPeople">
-                  {conferencePeopleForDate(orthoSwapCandidateDate, orthoSwapJob).map((person) => {
-                    const leftIds = conferenceStaffIdsForDate(selectedDate, orthoSwapJob);
-                    const disabled = person.id === orthoSwapSourceStaffId || leftIds.includes(person.id);
-                    return (
-                      <button type="button" key={person.id} disabled={disabled} className={orthoSwapCandidateStaffId === person.id ? "selected" : ""} onClick={() => setOrthoSwapCandidateStaffId(person.id)}>{personName(person)}</button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            <div className="orthoSwapSummary">
-              {orthoSwapSourceStaffId && orthoSwapCandidateDate && orthoSwapCandidateStaffId ? (
-                <>
-                  <strong>交換内容</strong>
-                  <span>{displayDate(selectedDate)}：{personName(activeStaff.find((p) => p.id === orthoSwapSourceStaffId))} → {personName(activeStaff.find((p) => p.id === orthoSwapCandidateStaffId))}</span>
-                  <span>{displayDate(orthoSwapCandidateDate)}：{personName(activeStaff.find((p) => p.id === orthoSwapCandidateStaffId))} → {personName(activeStaff.find((p) => p.id === orthoSwapSourceStaffId))}</span>
-                </>
-              ) : <span>現在の参加者 → 先の開催日 → 交換相手の順に選択してください。</span>}
-            </div>
-            <button type="button" className="primaryButton" onClick={saveConferenceSwap}>交換を保存</button>
           </div>
         </div>
       )}
