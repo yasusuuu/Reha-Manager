@@ -9340,3 +9340,108 @@ select.leaveSelectControl:disabled {
     bottom: max(6px, env(safe-area-inset-bottom));
   }
 }
+
+/* =========================
+   代休元勤務日の管理
+========================= */
+.compensatorySourceBox {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.compensatorySourceBox > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.compensatorySourceBox > label > span {
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.compensatorySourceHelp {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.compensatorySourceHelp strong {
+  color: #1e40af;
+  font-size: 13px;
+}
+
+.compensatorySourceHelp small {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.compensatoryCandidateRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.compensatoryCandidateRow > span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.compensatoryCandidateRow button {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.compensatoryCandidateRow button.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.compensatorySettingsCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 0.7fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #d8e2ee;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.compensatorySettingsCard > div:first-child {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.compensatorySettingsCard strong {
+  color: #0f172a;
+}
+
+.compensatorySettingsCard small,
+.compensatorySettingsDate {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .compensatorySettingsCard {
+    grid-template-columns: 1fr;
+  }
+}

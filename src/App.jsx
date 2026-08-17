@@ -375,7 +375,20 @@ function expandAnnouncements(announcements, targetDateStr = todayKey()) {
   return items.sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
 }
 
+function sourceDateShortLabel(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return String(dateStr);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 function recordDisplay(record) {
+  if (record.type === "compensatory") {
+    return record.compensatorySourceDate
+      ? `代休(${sourceDateShortLabel(record.compensatorySourceDate)}出勤分)`
+      : "代休";
+  }
+
   if (record.type === "paid") {
     if (record.method === "full") return "有休";
     if (record.method === "morning") return "午前休";
@@ -624,6 +637,17 @@ const TUTORIAL_GUIDES = {
       { target: "leave-end-hour", event: "leave-end-hour-17", text: "終了時刻を17時にしてください。" },
       { target: "leave-end-minute", event: "leave-end-minute-15", text: "終了分を15分にしてください。これで15:15〜17:15です。" },
       { target: "leave-submit", event: "leave-submit", text: "「登録する」をタップしてください。チュートリアル中は本番には保存されません。" },
+    ],
+  },
+  compensatory: {
+    title: "代休を登録する",
+    description: "代休の取得日と、どの出勤日の代休かを確認して登録する流れを練習します。",
+    steps: [
+      { target: "leave-calendar-day", event: "compensatory-date", text: "代休を取得する日をカレンダーからタップしてください。" },
+      { target: "leave-open-form", event: "compensatory-open-form", text: "「休暇・特別勤務・個別予定登録」をタップしてください。" },
+      { target: "leave-type", event: "compensatory-type", text: "種別で「代休」を選んでください。" },
+      { target: "compensatory-source-calendar", event: "compensatory-source-confirm", text: "「対象となる出勤日」のカレンダーをタップし、自動選択された未消化の出勤日を確認して、その日付を選択してください。" },
+      { target: "leave-submit", event: "compensatory-submit", text: "表示が「代休(○/○出勤分)」になっていることを確認して、「登録する」をタップしてください。チュートリアル中は本番には保存されません。" },
     ],
   },
   saturday: {
@@ -1228,6 +1252,9 @@ const [saturdayRotation, setSaturdayRotation] = useState({
   startDate: "2026-04-04",
   startGroup: "A",
 });
+const [compensatorySettings, setCompensatorySettings] = useState(() => ({
+  startDate: `${fiscalYear(todayKey())}-04-01`,
+}));
 
   const [holidays, setHolidays] = useState(() => {
     try {
@@ -1273,6 +1300,7 @@ const [saturdayRotation, setSaturdayRotation] = useState({
     start: "08:30",
     end: "17:15",
     deductBreak: false,
+    compensatorySourceDate: "",
     note: "",
   });
 
@@ -1324,6 +1352,18 @@ useEffect(() => {
     }
   });
 
+  return () => unsubscribe();
+}, []);
+
+useEffect(() => {
+  const unsubscribe = onSnapshot(doc(db, "settings", "compensatoryLeave"), (snapshot) => {
+    if (tutorialModeRef.current) return;
+    if (!snapshot.exists()) return;
+    const data = snapshot.data();
+    if (data.startDate) {
+      setCompensatorySettings({ startDate: data.startDate });
+    }
+  });
   return () => unsubscribe();
 }, []);
 
@@ -1512,6 +1552,109 @@ const loginUser = loginStaff
     return people;
   }
 
+  function compensatoryConsumedRecord(staffId, sourceDate) {
+    if (!staffId || !sourceDate) return null;
+    return records.find((record) =>
+      record.staffId === staffId
+      && record.type === "compensatory"
+      && record.compensatorySourceDate === sourceDate
+    ) || null;
+  }
+
+  function isCompensatorySourceDateForStaff(date, staffId) {
+    if (!date || !staffId) return false;
+    if (date < compensatorySettings.startDate) return false;
+
+    const d = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return false;
+
+    if (d.getDay() === 6) {
+      const schedule = saturdayScheduleForDate(date);
+      if ((schedule?.staffIds || []).includes(staffId)) return true;
+    }
+
+    return records.some((record) =>
+      record.staffId === staffId
+      && record.type === "holiday"
+      && record.date === date
+    );
+  }
+
+  function compensatorySourceCandidates(staffId, leaveDate = form.date) {
+    if (!staffId) return [];
+    const targetFy = fiscalYear(leaveDate || todayKey());
+    const fyStart = `${targetFy}-04-01`;
+    const fyEnd = `${targetFy + 1}-03-31`;
+    const startDate = compensatorySettings.startDate > fyStart ? compensatorySettings.startDate : fyStart;
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${fyEnd}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return [];
+
+    const dates = [];
+    for (let d = new Date(start); d <= end; d = addDateDays(d, 1)) {
+      const key = toDateKey(d);
+      if (isCompensatorySourceDateForStaff(key, staffId)) dates.push(key);
+    }
+
+    return dates.sort(compareDateStr);
+  }
+
+  function unconsumedCompensatorySourceCandidates(staffId, leaveDate = form.date) {
+    return compensatorySourceCandidates(staffId, leaveDate).filter(
+      (date) => !compensatoryConsumedRecord(staffId, date)
+    );
+  }
+
+  function chooseCompensatorySourceDate(date) {
+    if (!date) {
+      setForm((prev) => ({ ...prev, compensatorySourceDate: "" }));
+      return;
+    }
+
+    const staffId = isAdmin ? form.staffId : (loginUser?.id || form.staffId);
+    const consumed = compensatoryConsumedRecord(staffId, date);
+    if (consumed) {
+      alert(`この勤務日の代休は消化済みです。\n${displayDate(consumed.date)} に代休として登録されています。`);
+      return;
+    }
+
+    if (!isCompensatorySourceDateForStaff(date, staffId)) {
+      alert("この日は代休対象の出勤日として確認できません。土曜出勤または休日出勤の日を選択してください。");
+      return;
+    }
+
+    setForm((prev) => ({ ...prev, compensatorySourceDate: date }));
+    if (tutorialGuideId === "compensatory") {
+      onTutorialEvent("compensatory-source-confirm");
+    }
+  }
+
+  async function updateCompensatoryStartDate(startDate) {
+    if (!isAdmin || !startDate) return;
+    const fy = fiscalYear(todayKey());
+    const minDate = `${fy}-04-01`;
+    const maxDate = `${fy + 1}-03-31`;
+    if (startDate < minDate || startDate > maxDate) {
+      alert(`代休管理開始日は現在年度（${displayDate(minDate)}〜${displayDate(maxDate)}）の範囲で設定してください。`);
+      return;
+    }
+
+    setCompensatorySettings({ startDate });
+    if (tutorialModeRef.current) return;
+
+    try {
+      await setDoc(doc(db, "settings", "compensatoryLeave"), {
+        startDate,
+        updatedAt: Date.now(),
+        updatedBy: loginUser?.id || "",
+        updatedByName: loginUser ? personName(loginUser) : "",
+      }, { merge: true });
+    } catch (error) {
+      console.error("Compensatory leave settings save failed", error);
+      alert("代休管理開始日の保存に失敗しました。");
+    }
+  }
+
   function saturdayBaseStaffForDate(date) {
     if (isYearEndNewYearVolunteerSaturday(date)) return [];
     const groupKey = saturdayBaseGroupKeyForDate(date);
@@ -1580,6 +1723,21 @@ const loginUser = loginStaff
     if (displayScope === "mine") return staffIds.includes(loginId);
     return staffIds.length > 0;
   }
+
+  useEffect(() => {
+    if (form.type !== "compensatory") return;
+    const staffId = isAdmin ? form.staffId : (loginUser?.id || form.staffId);
+    if (!staffId) return;
+
+    const available = unconsumedCompensatorySourceCandidates(staffId, form.date);
+    const current = form.compensatorySourceDate;
+    if (current && available.includes(current)) return;
+
+    const next = available[0] || "";
+    if (next !== current) {
+      setForm((prev) => ({ ...prev, compensatorySourceDate: next }));
+    }
+  }, [form.type, form.staffId, form.date, records, saturdayGroups, saturdayOverrides, saturdayRotation, compensatorySettings.startDate, loginUser?.id, isAdmin]);
 
   function countByJob(date) {
     const list = leaveRecordsForDate(date);
@@ -1660,6 +1818,24 @@ const loginUser = loginStaff
       return "予定の内容をメモに入力してください";
     }
 
+    if (nextRecord.type === "compensatory") {
+      if (!nextRecord.compensatorySourceDate) {
+        return "代休の対象となる出勤日を選択してください。";
+      }
+
+      const consumed = compensatoryConsumedRecord(
+        nextRecord.staffId,
+        nextRecord.compensatorySourceDate
+      );
+      if (consumed) {
+        return `この勤務日の代休は消化済みです。${displayDate(consumed.date)} に代休として登録されています。`;
+      }
+
+      if (!isCompensatorySourceDateForStaff(nextRecord.compensatorySourceDate, nextRecord.staffId)) {
+        return "選択した日は代休対象の出勤日として確認できません。";
+      }
+    }
+
     if (nextRecord.type === "summer") {
       const used = records.filter(
         (r) =>
@@ -1707,6 +1883,10 @@ if (!nextRecord.staffId) {
       nextRecord.method = "full";
     }
 
+    if (nextRecord.type !== "compensatory") {
+      delete nextRecord.compensatorySourceDate;
+    }
+
     const error = validateRecord(nextRecord);
 
     if (error) {
@@ -1723,7 +1903,7 @@ if (tutorialModeRef.current) {
   setDateModalMode("schedule");
   setForm((prev) => ({ ...prev, note: "" }));
   setRecordSubmitting(false);
-  onTutorialEvent("leave-submit");
+  onTutorialEvent(tutorialGuideId === "compensatory" ? "compensatory-submit" : "leave-submit");
   return;
 }
 
@@ -3022,7 +3202,11 @@ if (staffLoaded && staff.length === 0) {
                     data-tutorial-target={weekday === 6 ? "saturday-calendar-day" : "leave-calendar-day"}
                     onClick={() => {
                       openLeaveFormForDate(date);
-                      onTutorialEvent(weekday === 6 ? "saturday-date" : "leave-date");
+                      if (tutorialMode && tutorialGuideId === "compensatory") {
+                        onTutorialEvent("compensatory-date");
+                      } else {
+                        onTutorialEvent(weekday === 6 ? "saturday-date" : "leave-date");
+                      }
                     }}
                     aria-current={isToday ? "date" : undefined}
                     className={[
@@ -3429,8 +3613,12 @@ if (staffLoaded && staff.length === 0) {
                   if (tutorialMode && tutorialGuideId === "leave") {
                     setForm((prev) => ({ ...prev, type: "compensatory", method: "full", start: "08:30", end: "17:15" }));
                   }
+                  if (tutorialMode && tutorialGuideId === "compensatory") {
+                    // 「代休を選ぶ」操作を確実に体験できるよう、開始時は有休にしておく。
+                    setForm((prev) => ({ ...prev, type: "paid", method: "full", compensatorySourceDate: "" }));
+                  }
                   openLeaveFormInDateModal();
-                  onTutorialEvent("leave-open-form");
+                  onTutorialEvent(tutorialGuideId === "compensatory" ? "compensatory-open-form" : "leave-open-form");
                 }}
                 style={{ width: "100%" }}
               >
@@ -3477,6 +3665,7 @@ if (staffLoaded && staff.length === 0) {
                 setForm({
                   ...form,
                   type: nextType,
+                  compensatorySourceDate: nextType === "compensatory" ? form.compensatorySourceDate : "",
                   method: ["paid", "child"].includes(nextType)
                     ? form.method
                     : nextType === "holiday" && ["full", "morning", "afternoon"].includes(form.method)
@@ -3484,6 +3673,7 @@ if (staffLoaded && staff.length === 0) {
                       : "full",
                 });
                 if (nextType === "paid") onTutorialEvent("leave-paid");
+                if (nextType === "compensatory") onTutorialEvent("compensatory-type");
               }}
             >
               {REGISTER_TYPE_OPTIONS.map(([key, value]) => (
@@ -3597,6 +3787,48 @@ if (staffLoaded && staff.length === 0) {
             </>
           )}
 
+          {form.type === "compensatory" && (() => {
+            const targetStaffId = isAdmin ? form.staffId : (loginUser?.id || form.staffId);
+            const candidates = unconsumedCompensatorySourceCandidates(targetStaffId, form.date);
+            return (
+              <div className="wide compensatorySourceBox">
+                <label>
+                  <span>対象となる出勤日</span>
+                  <div data-tutorial-target="compensatory-source-calendar">
+                    <JapaneseDateInput
+                      value={form.compensatorySourceDate}
+                      onChange={chooseCompensatorySourceDate}
+                      placeholder="対象勤務日を選択"
+                    />
+                  </div>
+                </label>
+                <div className="compensatorySourceHelp">
+                  {form.compensatorySourceDate ? (
+                    <strong>代休({sourceDateShortLabel(form.compensatorySourceDate)}出勤分) として登録します</strong>
+                  ) : (
+                    <strong>未消化の代休対象日がありません</strong>
+                  )}
+                  <small>未消化の対象日がある場合は、最も古い日を自動選択します。未来の土曜出勤・休日出勤も選択できます。</small>
+                </div>
+                {candidates.length > 0 && (
+                  <div className="compensatoryCandidateRow" aria-label="未消化の代休対象日">
+                    <span>未消化：</span>
+                    {candidates.slice(0, 8).map((date) => (
+                      <button
+                        key={date}
+                        type="button"
+                        className={form.compensatorySourceDate === date ? "active" : ""}
+                        onClick={() => chooseCompensatorySourceDate(date)}
+                      >
+                        {sourceDateShortLabel(date)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <label className="wide">
             <span>
               メモ{form.type === "other" ? "（必須）" : ""}
@@ -3655,6 +3887,21 @@ if (staffLoaded && staff.length === 0) {
               >
                 チュートリアル
               </button>
+
+              <div className="compensatorySettingsCard">
+                <div>
+                  <strong>代休管理</strong>
+                  <small>この日以降の土曜出勤・休日出勤を代休元として扱います。</small>
+                </div>
+                {isAdmin ? (
+                  <JapaneseDateInput
+                    value={compensatorySettings.startDate}
+                    onChange={updateCompensatoryStartDate}
+                  />
+                ) : (
+                  <span className="compensatorySettingsDate">{displayDate(compensatorySettings.startDate)} 以降</span>
+                )}
+              </div>
 
               <button
                 type="button"
