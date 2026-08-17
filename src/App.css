@@ -9445,3 +9445,148 @@ select.leaveSelectControl:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================
+   整形カンファレンス
+========================= */
+.conferenceMini {
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.orthoConferenceDetail {
+  display: block;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+}
+
+.orthoConferenceBody { width: 100%; }
+.orthoConferenceTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.orthoConferenceTitleRow small { display: block; margin-top: 3px; color: #64748b; }
+.orthoConferenceActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  min-width: min(420px, 62%);
+}
+.orthoConferenceActions button {
+  width: 100%; min-width: 0; min-height: 36px; padding: 6px 5px; font-size: 11px; white-space: nowrap;
+}
+.orthoConferenceJobGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.orthoConferenceJob { background: rgba(255,255,255,.8); border: 1px solid #ddd6fe; border-radius: 10px; padding: 8px 10px; }
+.orthoConferenceJob b { display: block; color: #6d28d9; font-size: 12px; margin-bottom: 3px; }
+.orthoConferenceJob span { font-size: 13px; font-weight: 800; line-height: 1.4; }
+
+.orthoConferenceSettingsModal { width: min(980px, 100%); }
+.orthoConferenceBasicSettings { display: grid; grid-template-columns: repeat(4, minmax(130px,1fr)); gap: 10px; margin-top: 14px; }
+.orthoConferenceBasicSettings label { display: flex; flex-direction: column; gap: 5px; }
+.orthoConferenceBasicSettings label span { color: #64748b; font-size: 12px; font-weight: 800; text-align: center; }
+.orthoConferenceBasicSettings input,.orthoConferenceBasicSettings select { min-height: 42px; border: 1px solid #b8c7dc; border-radius: 10px; background: #fff; padding: 8px 10px; color: #0f172a; }
+.orthoQuarterList { display: grid; gap: 10px; }
+.orthoQuarterCard { border: 1px solid #dbe6f3; border-radius: 14px; padding: 12px; background: #f8fbff; }
+.orthoQuarterCard h3 { margin: 0 0 8px; font-size: 15px; }
+.orthoQuarterJobs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.orthoQuarterJob { background: #fff; border: 1px solid #e2e8f0; border-radius: 11px; padding: 9px; }
+.orthoQuarterJob h4 { margin: 0 0 7px; font-size: 13px; color: #334155; }
+.orthoStaffChecks { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+.orthoStaffChecks label { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.orthoStaffChecks label span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
+.orthoConferenceSwapModal { width: min(900px, 100%); }
+.orthoSwapJobTabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; margin: 12px 0; }
+.orthoSwapJobTabs button { border: 1px solid #d8e2ee; border-radius: 10px; background: #f8fafc; padding: 9px; font-weight: 900; }
+.orthoSwapJobTabs button.active { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+.orthoSwapGrid { display: grid; grid-template-columns: minmax(180px,.8fr) minmax(280px,1.2fr); gap: 12px; }
+.orthoSwapGrid section,.orthoSwapCandidatePeople { border: 1px solid #dbe6f3; border-radius: 12px; padding: 10px; background: #f8fbff; }
+.orthoSwapGrid h3,.orthoSwapCandidatePeople h3 { margin: 0 0 8px; font-size: 13px; }
+.orthoSwapPeople { display: grid; gap: 6px; }
+.orthoSwapPeople button { border: 1px solid #d7e2ee; border-radius: 9px; background: #fff; padding: 8px; font-weight: 800; text-align: left; }
+.orthoSwapPeople button.selected { background: #ede9fe; border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,.12); }
+.orthoSwapPeople button:disabled { opacity: .4; cursor: not-allowed; }
+.orthoCandidateDates { display: grid; gap: 6px; max-height: 300px; overflow: auto; }
+.orthoCandidateDates button { display: grid; gap: 2px; border: 1px solid #d7e2ee; border-radius: 9px; background: #fff; padding: 8px; text-align: left; }
+.orthoCandidateDates button.selected { background: #ede9fe; border-color: #8b5cf6; }
+.orthoCandidateDates small { color: #64748b; font-size: 11px; }
+.orthoSwapCandidatePeople { margin-top: 10px; }
+.orthoSwapSummary { display: grid; gap: 3px; margin-top: 10px; padding: 10px; border-radius: 10px; background: #f5f3ff; color: #4c1d95; font-size: 12px; }
+
+@media (max-width: 700px) {
+  .orthoConferenceTitleRow { display: block; }
+  .orthoConferenceActions { min-width: 0; width: 100%; margin-top: 8px; }
+  .orthoConferenceActions button { font-size: clamp(9px,2.6vw,11px); }
+  .orthoConferenceBasicSettings { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .orthoQuarterJobs,.orthoSwapGrid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .orthoConferenceJobGrid,.orthoStaffChecks { grid-template-columns: 1fr; }
+  .orthoConferenceBasicSettings { grid-template-columns: 1fr 1fr; }
+}
+.orthoFairnessPreview {
+  display: block;
+  margin-top: 7px;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.orthoFairnessPreview b {
+  color: #0f766e;
+  margin-left: 6px;
+}
+
+/* =========================
+   整形カンファレンス：中止・次回繰越
+========================= */
+.conferenceMini.cancelled {
+  color: #b91c1c !important;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  padding: 2px 5px;
+}
+
+.orthoConferenceDetail.cancelled {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.orthoConferenceCarryover {
+  display: block;
+  margin-top: 4px;
+  color: #b45309 !important;
+  font-weight: 800;
+}
+
+.conferenceCancelButton {
+  border: 0;
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .orthoConferenceActions {
+    gap: 5px;
+  }
+
+  .conferenceCancelButton,
+  .orthoConferenceActions .softMiniButton,
+  .orthoConferenceActions .deleteButton.compactAction {
+    min-width: 0;
+    padding-left: 7px;
+    padding-right: 7px;
+    font-size: 11px;
+  }
+}
