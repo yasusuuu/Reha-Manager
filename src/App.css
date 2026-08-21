@@ -9448,266 +9448,56 @@ select.leaveSelectControl:disabled {
 
 
 /* =========================================================
-   透析操作UI：従来デザインのまま患者移動欄へ重ねて表示
-   ※ dialysisAdjust / dialysisAdjustRow / inlineBtn の既存UIは変更しない
+   透析セル：外来セルと同じ表示・ハイライト・伸縮挙動
 ========================================================= */
 
-.patientModule .assignmentTable td.dialysisOverlayHost {
-  position: relative !important;
-  overflow: visible !important;
-}
-
-.patientModule .assignmentTable td.dialysisOverlayHost > .moveTagList {
-  position: relative;
-  z-index: 1;
-}
-
-/* 位置だけ変更。中身の見た目は従来の dialysisAdjust をそのまま使用 */
-.patientModule .dialysisMoveOverlayLegacy {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 250 !important;
-
-  background: #ffffff !important;
-  border-radius: 6px !important;
-  padding: 2px 4px !important;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15) !important;
-
-  /* 従来UIの幅を維持 */
-  width: max-content !important;
-  min-width: 112px !important;
-  overflow: visible !important;
-}
-
-/* スマホ時も従来の104px幅ルールを維持 */
-@media (max-width: 560px) {
-  .patientModule .dialysisMoveOverlayLegacy {
-    min-width: 104px !important;
-  }
-}
-
-
-/* =========================================================
-   透析操作UI：タップした透析セルの直上に表示
-   既存の見た目は維持し、表示位置だけ変更
-========================================================= */
-
-.patientModule .assignmentTable td.dialysisOverlayHost {
-  position: relative !important;
-  overflow: visible !important;
-}
-
-/* タップした透析セルの真上に浮かせる */
-.patientModule .dialysisCellTopOverlay {
-  position: absolute !important;
-  left: 50% !important;
-  bottom: calc(100% + 4px) !important;
-  top: auto !important;
-  transform: translateX(-50%) !important;
-  z-index: 500 !important;
-
-  width: max-content !important;
-  min-width: 112px !important;
-  margin: 0 !important;
-
-  background: #ffffff !important;
-  border-radius: 6px !important;
-  padding: 2px 4px !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22) !important;
-
-  overflow: visible !important;
-}
-
-/* 以前の患者移動欄上オーバーレイは使わない */
-.patientModule .dialysisMoveOverlayLegacy {
-  display: none !important;
-}
-
-@media (max-width: 560px) {
-  .patientModule .dialysisCellTopOverlay {
-    min-width: 104px !important;
-    bottom: calc(100% + 3px) !important;
-  }
-}
-
-
-/* =========================================================
-   透析操作UI：タップした透析セルそのものに重ねて表示
-========================================================= */
-
-.patientModule .assignmentTable td.dialysisOverlayHost {
-  position: relative !important;
-  overflow: visible !important;
-}
-
-/* 同じ透析セル内で現在値の上に重ねる */
-.patientModule .dialysisCellOverlay {
-  position: absolute !important;
-  inset: 1px !important;
-  transform: none !important;
-  z-index: 500 !important;
-
-  width: auto !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: center !important;
-
-  background: #ffffff !important;
-  border-radius: 5px !important;
-  padding: 1px 2px !important;
-  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.18) !important;
-
-  overflow: hidden !important;
-}
-
-/* 旧「セル直上」表示は無効 */
-.patientModule .dialysisCellTopOverlay {
-  display: none !important;
-}
-
-/* 従来の操作UIをセル内に収めるための最小調整 */
-.patientModule .dialysisCellOverlay .dialysisAdjustRow {
-  min-height: 0 !important;
-  line-height: 1 !important;
-}
-
-.patientModule .dialysisCellOverlay .inlineBtn {
-  min-width: 0 !important;
-}
-
-/* スマホでもセル外へ出さない */
-@media (max-width: 560px) {
-  .patientModule .dialysisCellOverlay {
-    inset: 1px !important;
-    min-width: 0 !important;
-    padding: 1px !important;
-  }
-}
-
-
-/* =========================================================
-   透析操作UI：透析セルをアンカーにしたポップアップ表示
-   - セル内には押し込まない
-   - 従来の操作UIデザインを維持
-   - スマホでも押しやすいサイズを確保
-========================================================= */
-
-.patientModule .assignmentTable td.dialysisOverlayHost {
-  position: relative !important;
-  overflow: visible !important;
-}
-
-/* 旧セル内オーバーレイは使わない */
-.patientModule .dialysisCellOverlay {
-  display: none !important;
-}
-
-/* タップした透析セルの近くに浮かせる */
-.patientModule .dialysisCellPopup {
-  position: absolute !important;
-  left: 50% !important;
-  bottom: calc(100% + 6px) !important;
-  top: auto !important;
-  right: auto !important;
-  transform: translateX(-50%) !important;
-  z-index: 900 !important;
-
-  width: max-content !important;
-  min-width: 132px !important;
+/* 外来の numberCell と同じ基本幅。
+   編集中は内容幅に応じて外来と同じように一時的に広がり、
+   閉じると通常幅へ戻る。 */
+.patientModule .assignmentTable th.dialysisCol,
+.patientModule .assignmentTable td.dialysisCol {
+  width: 54px !important;
+  min-width: 54px !important;
   max-width: none !important;
-  margin: 0 !important;
-
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-
-  background: #ffffff !important;
-  border: 1px solid #93c5fd !important;
-  border-radius: 9px !important;
-  padding: 6px !important;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22) !important;
-
-  overflow: visible !important;
-  white-space: nowrap !important;
 }
 
-/* 既存の行UIを維持しつつ、タップしやすくする */
-.patientModule .dialysisCellPopup .dialysisAdjustRow {
-  display: grid !important;
-  grid-template-columns: 44px 30px 24px 30px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 4px !important;
-  min-height: 30px !important;
-  line-height: 1 !important;
+/* active時の背景・十字ハイライトは外来と同じルールをそのまま使う */
+.patientModule .assignmentTable td.dialysisCol.numberCell {
+  position: relative !important;
 }
 
-.patientModule .dialysisCellPopup .dialysisAdjustRow > span {
-  font-size: 11px !important;
-  font-weight: 900 !important;
-  color: #475569 !important;
-  text-align: center !important;
+.patientModule .assignmentTable td.dialysisCol.numberCell.tActiveCell {
+  z-index: 20 !important;
 }
 
-.patientModule .dialysisCellPopup .dialysisAdjustRow > b {
-  font-size: 14px !important;
-  font-weight: 900 !important;
-  color: #0f172a !important;
-  text-align: center !important;
-}
-
-.patientModule .dialysisCellPopup .inlineBtn {
-  width: 30px !important;
-  height: 30px !important;
-  min-width: 30px !important;
-  min-height: 30px !important;
+/* 外来のoutpatientAdjustをそのまま使用。
+   透析だけ白背景や独自shadowを追加しない。 */
+.patientModule .dialysisCol .outpatientAdjust {
+  position: static !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
   padding: 0 !important;
-  border-radius: 7px !important;
-  font-size: 16px !important;
-  line-height: 1 !important;
+  box-shadow: none !important;
 }
 
-/* ポップアップ下の小さなアンカー */
-.patientModule .dialysisCellPopup::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -6px;
-  transform: translateX(-50%);
-  width: 10px;
-  height: 10px;
-  background: #ffffff;
-  border-right: 1px solid #93c5fd;
-  border-bottom: 1px solid #93c5fd;
-  transform: translateX(-50%) rotate(45deg);
+/* 月水金/火木土の文字だけ外来より少し長いため列幅のみ確保 */
+.patientModule .dialysisCol .dialysisAdjustRow {
+  grid-template-columns: 42px 22px 22px 22px !important;
 }
 
-/* スマホでも十分なタップ領域を確保 */
 @media (max-width: 560px) {
-  .patientModule .dialysisCellPopup {
-    min-width: 140px !important;
-    padding: 6px !important;
-    bottom: calc(100% + 7px) !important;
+  .patientModule .dialysisCol .dialysisAdjustRow {
+    grid-template-columns: 38px 20px 20px 20px !important;
   }
+}
 
-  .patientModule .dialysisCellPopup .dialysisAdjustRow {
-    grid-template-columns: 46px 32px 24px 32px !important;
-    gap: 4px !important;
-    min-height: 32px !important;
-  }
-
-  .patientModule .dialysisCellPopup .inlineBtn {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    min-height: 32px !important;
-    font-size: 17px !important;
-  }
+/* 過去に試した透析専用ポップアップ類は無効 */
+.patientModule .dialysisCellPopup,
+.patientModule .dialysisCellOverlay,
+.patientModule .dialysisCellTopOverlay,
+.patientModule .dialysisMoveOverlayLegacy,
+.patientModule .dialysisMoveOverlay {
+  display: none !important;
 }
 

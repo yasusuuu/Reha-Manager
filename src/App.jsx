@@ -8763,30 +8763,24 @@ function PMAssignmentTable({
                   })}
 
                   <td
-                    className={`dialysisCol dialysisOverlayHost ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
-                    onClick={() => setActiveCell(activeCell === `${person.id}:dialysis` ? null : `${person.id}:dialysis`)}
+                    className={`dialysisCol numberCell ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === "dialysis" ? "tColGuide" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
+                    onClick={() => {
+                      const cellKey = `${person.id}:dialysis`;
+                      setActiveCell(activeCell === cellKey ? null : cellKey);
+                    }}
                   >
-                    <div className="dialysisTagList">
-                      {PM_DIALYSIS_TYPES.filter((type) => pmDialysisDetail(person)[type.key] > 0).length === 0 ? (
-                        <span className="dialysisTotal">0</span>
-                      ) : (
-                        PM_DIALYSIS_TYPES.filter((type) => pmDialysisDetail(person)[type.key] > 0).map((type) => (
-                          <span className={`dialysisTag dialysis-${type.key}`} key={type.key}>
-                            {type.short}{pmDialysisDetail(person)[type.key]}
-                          </span>
-                        ))
-                      )}
-                    </div>
-
-                    {activeCell === `${person.id}:dialysis` && (
+                    {activeCell === `${person.id}:dialysis` ? (
                       <div
-                        className="dialysisAdjust dialysisCellPopup"
+                        className="outpatientAdjust"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {PM_DIALYSIS_TYPES.map((type) => {
                           const detail = pmDialysisDetail(person);
                           return (
-                            <div className="dialysisAdjustRow" key={type.key}>
+                            <div
+                              className="outpatientAdjustRow dialysisAdjustRow"
+                              key={type.key}
+                            >
                               <span>{type.short}</span>
                               <button
                                 type="button"
@@ -8807,9 +8801,27 @@ function PMAssignmentTable({
                           );
                         })}
                       </div>
+                    ) : (
+                      <div className="dialysisTagList">
+                        {PM_DIALYSIS_TYPES.filter(
+                          (type) => pmDialysisDetail(person)[type.key] > 0
+                        ).length === 0 ? (
+                          <span className="dialysisTotal">0</span>
+                        ) : (
+                          PM_DIALYSIS_TYPES.filter(
+                            (type) => pmDialysisDetail(person)[type.key] > 0
+                          ).map((type) => (
+                            <span
+                              className={`dialysisTag dialysis-${type.key}`}
+                              key={type.key}
+                            >
+                              {type.short}{pmDialysisDetail(person)[type.key]}
+                            </span>
+                          ))
+                        )}
+                      </div>
                     )}
                   </td>
-
                   <td className={`moveCol ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>
                     <div className="moveTagList">
                       {movementsForStaffDisplay(person.id).map((movement) => (
