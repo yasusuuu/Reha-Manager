@@ -9446,10 +9446,10 @@ select.leaveSelectControl:disabled {
   }
 }
 
+
 /* =========================================================
-   Dialysis edit overlay on movement cell - FINAL
-   透析セルをタップした時だけ、同じ行の患者移動欄の上に操作UIを重ねる。
-   行高・表幅を増やさず、通常時の患者移動表示はそのまま維持する。
+   透析操作UI：従来デザインのまま患者移動欄へ重ねて表示
+   ※ dialysisAdjust / dialysisAdjustRow / inlineBtn の既存UIは変更しない
 ========================================================= */
 
 .patientModule .assignmentTable td.dialysisOverlayHost {
@@ -9457,118 +9457,34 @@ select.leaveSelectControl:disabled {
   overflow: visible !important;
 }
 
-/* 患者移動タグは通常どおり表示。透析操作中は下に隠れる。 */
 .patientModule .assignmentTable td.dialysisOverlayHost > .moveTagList {
   position: relative;
   z-index: 1;
 }
 
-/* 透析操作パネル：患者移動セルの上に重ねる */
-.patientModule .dialysisMoveOverlay {
+/* 位置だけ変更。中身の見た目は従来の dialysisAdjust をそのまま使用 */
+.patientModule .dialysisMoveOverlayLegacy {
   position: absolute !important;
-  inset: 1px 2px !important;
-  z-index: 220 !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 250 !important;
 
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 7px !important;
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 2px 4px !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15) !important;
 
-  min-width: max-content !important;
-  padding: 3px 7px !important;
-
-  background: rgba(255, 255, 255, 0.98) !important;
-  border: 1px solid #93c5fd !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18) !important;
-
-  white-space: nowrap !important;
+  /* 従来UIの幅を維持 */
+  width: max-content !important;
+  min-width: 112px !important;
   overflow: visible !important;
 }
 
-/* 月水金 / 火木土 を横並びでコンパクト表示 */
-.patientModule .dialysisMoveOverlayRow {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 3px !important;
-  min-width: 0 !important;
-  white-space: nowrap !important;
-}
-
-.patientModule .dialysisMoveOverlayLabel {
-  color: #475569 !important;
-  font-size: 10px !important;
-  font-weight: 900 !important;
-  line-height: 1 !important;
-}
-
-.patientModule .dialysisMoveOverlayRow b {
-  min-width: 15px !important;
-  color: #0f172a !important;
-  font-size: 13px !important;
-  font-weight: 900 !important;
-  line-height: 1 !important;
-  text-align: center !important;
-}
-
-/* 既存inlineBtnを透析オーバーレイではさらにコンパクトに */
-.patientModule .dialysisMoveOverlay .inlineBtn {
-  width: 23px !important;
-  height: 23px !important;
-  min-width: 23px !important;
-  min-height: 23px !important;
-  padding: 0 !important;
-  border-radius: 6px !important;
-  font-size: 14px !important;
-  line-height: 1 !important;
-}
-
-.patientModule .dialysisMoveOverlay .inlineBtn:disabled {
-  opacity: 0.35 !important;
-  cursor: default !important;
-}
-
-/* 透析セル自体には操作パネルを出さず、常に現在値だけ表示 */
-.patientModule .assignmentTable td.dialysisCol {
-  cursor: pointer !important;
-}
-
-/* スマホ：患者移動セル内に確実に収め、行高を増やさない */
-@media (max-width: 760px) {
-  .patientModule .dialysisMoveOverlay {
-    left: 1px !important;
-    right: 1px !important;
-    gap: 4px !important;
-    padding: 2px 4px !important;
+/* スマホ時も従来の104px幅ルールを維持 */
+@media (max-width: 560px) {
+  .patientModule .dialysisMoveOverlayLegacy {
+    min-width: 104px !important;
   }
-
-  .patientModule .dialysisMoveOverlayRow {
-    gap: 2px !important;
-  }
-
-  .patientModule .dialysisMoveOverlayLabel {
-    font-size: 9px !important;
-  }
-
-  .patientModule .dialysisMoveOverlayRow b {
-    min-width: 13px !important;
-    font-size: 12px !important;
-  }
-
-  .patientModule .dialysisMoveOverlay .inlineBtn {
-    width: 21px !important;
-    height: 21px !important;
-    min-width: 21px !important;
-    min-height: 21px !important;
-    font-size: 13px !important;
-  }
-}
-
-/* 全画面表示でも同じ挙動を維持 */
-.patientModule .fullscreenTableWrap .dialysisMoveOverlay {
-  inset: 1px !important;
-  padding-top: 1px !important;
-  padding-bottom: 1px !important;
 }
 

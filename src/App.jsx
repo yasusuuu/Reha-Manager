@@ -8764,28 +8764,14 @@ function PMAssignmentTable({
 
                   <td
                     className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
-                    onClick={() =>
-                      setActiveCell(
-                        activeCell === `${person.id}:dialysis`
-                          ? null
-                          : `${person.id}:dialysis`
-                      )
-                    }
-                    title="タップして透析人数を変更"
+                    onClick={() => setActiveCell(activeCell === `${person.id}:dialysis` ? null : `${person.id}:dialysis`)}
                   >
                     <div className="dialysisTagList">
-                      {PM_DIALYSIS_TYPES.filter(
-                        (type) => pmDialysisDetail(person)[type.key] > 0
-                      ).length === 0 ? (
+                      {PM_DIALYSIS_TYPES.filter((type) => pmDialysisDetail(person)[type.key] > 0).length === 0 ? (
                         <span className="dialysisTotal">0</span>
                       ) : (
-                        PM_DIALYSIS_TYPES.filter(
-                          (type) => pmDialysisDetail(person)[type.key] > 0
-                        ).map((type) => (
-                          <span
-                            className={`dialysisTag dialysis-${type.key}`}
-                            key={type.key}
-                          >
+                        PM_DIALYSIS_TYPES.filter((type) => pmDialysisDetail(person)[type.key] > 0).map((type) => (
+                          <span className={`dialysisTag dialysis-${type.key}`} key={type.key}>
                             {type.short}{pmDialysisDetail(person)[type.key]}
                           </span>
                         ))
@@ -8793,18 +8779,13 @@ function PMAssignmentTable({
                     </div>
                   </td>
 
-                  <td
-                    className={`moveCol dialysisOverlayHost ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}
-                  >
+                  <td className={`moveCol dialysisOverlayHost ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>
                     <div className="moveTagList">
                       {movementsForStaffDisplay(person.id).map((movement) => (
                         <span
                           key={movement.id}
                           className={`moveTag move-${movement.moveType}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditMovement({ ...movement });
-                          }}
+                          onClick={(e) => { e.stopPropagation(); onEditMovement({ ...movement }); }}
                           style={{ cursor: "pointer" }}
                         >
                           {pmDisplayDate(movement.date)} {pmDepartmentShort(movement.department)} {pmMoveShort(movement.moveType)}
@@ -8814,23 +8795,18 @@ function PMAssignmentTable({
 
                     {activeCell === `${person.id}:dialysis` && (
                       <div
-                        className="dialysisMoveOverlay"
+                        className="dialysisAdjust dialysisMoveOverlayLegacy"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {PM_DIALYSIS_TYPES.map((type) => {
                           const detail = pmDialysisDetail(person);
                           return (
-                            <div className="dialysisMoveOverlayRow" key={type.key}>
-                              <span className="dialysisMoveOverlayLabel">
-                                {type.short}
-                              </span>
+                            <div className="dialysisAdjustRow" key={type.key}>
+                              <span>{type.short}</span>
                               <button
                                 type="button"
                                 className="inlineBtn minus"
-                                onClick={() =>
-                                  quickAdjustDialysis(person.id, type.key, -1)
-                                }
-                                disabled={Number(detail[type.key] || 0) <= 0}
+                                onClick={() => quickAdjustDialysis(person.id, type.key, -1)}
                               >
                                 −
                               </button>
@@ -8838,9 +8814,7 @@ function PMAssignmentTable({
                               <button
                                 type="button"
                                 className="inlineBtn plus"
-                                onClick={() =>
-                                  quickAdjustDialysis(person.id, type.key, 1)
-                                }
+                                onClick={() => quickAdjustDialysis(person.id, type.key, 1)}
                               >
                                 ＋
                               </button>
