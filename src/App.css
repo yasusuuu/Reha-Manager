@@ -9532,3 +9532,61 @@ select.leaveSelectControl:disabled {
   }
 }
 
+
+/* =========================================================
+   透析操作UI：タップした透析セルそのものに重ねて表示
+========================================================= */
+
+.patientModule .assignmentTable td.dialysisOverlayHost {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* 同じ透析セル内で現在値の上に重ねる */
+.patientModule .dialysisCellOverlay {
+  position: absolute !important;
+  inset: 1px !important;
+  transform: none !important;
+  z-index: 500 !important;
+
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+
+  background: #ffffff !important;
+  border-radius: 5px !important;
+  padding: 1px 2px !important;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.18) !important;
+
+  overflow: hidden !important;
+}
+
+/* 旧「セル直上」表示は無効 */
+.patientModule .dialysisCellTopOverlay {
+  display: none !important;
+}
+
+/* 従来の操作UIをセル内に収めるための最小調整 */
+.patientModule .dialysisCellOverlay .dialysisAdjustRow {
+  min-height: 0 !important;
+  line-height: 1 !important;
+}
+
+.patientModule .dialysisCellOverlay .inlineBtn {
+  min-width: 0 !important;
+}
+
+/* スマホでもセル外へ出さない */
+@media (max-width: 560px) {
+  .patientModule .dialysisCellOverlay {
+    inset: 1px !important;
+    min-width: 0 !important;
+    padding: 1px !important;
+  }
+}
+

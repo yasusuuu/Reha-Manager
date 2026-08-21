@@ -8780,7 +8780,7 @@ function PMAssignmentTable({
 
                     {activeCell === `${person.id}:dialysis` && (
                       <div
-                        className="dialysisAdjust dialysisCellTopOverlay"
+                        className="dialysisAdjust dialysisCellOverlay"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {PM_DIALYSIS_TYPES.map((type) => {
