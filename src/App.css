@@ -9488,3 +9488,47 @@ select.leaveSelectControl:disabled {
   }
 }
 
+
+/* =========================================================
+   透析操作UI：タップした透析セルの直上に表示
+   既存の見た目は維持し、表示位置だけ変更
+========================================================= */
+
+.patientModule .assignmentTable td.dialysisOverlayHost {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* タップした透析セルの真上に浮かせる */
+.patientModule .dialysisCellTopOverlay {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: calc(100% + 4px) !important;
+  top: auto !important;
+  transform: translateX(-50%) !important;
+  z-index: 500 !important;
+
+  width: max-content !important;
+  min-width: 112px !important;
+  margin: 0 !important;
+
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 2px 4px !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22) !important;
+
+  overflow: visible !important;
+}
+
+/* 以前の患者移動欄上オーバーレイは使わない */
+.patientModule .dialysisMoveOverlayLegacy {
+  display: none !important;
+}
+
+@media (max-width: 560px) {
+  .patientModule .dialysisCellTopOverlay {
+    min-width: 104px !important;
+    bottom: calc(100% + 3px) !important;
+  }
+}
+

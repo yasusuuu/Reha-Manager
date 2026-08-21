@@ -8763,7 +8763,7 @@ function PMAssignmentTable({
                   })}
 
                   <td
-                    className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
+                    className={`dialysisCol dialysisOverlayHost ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
                     onClick={() => setActiveCell(activeCell === `${person.id}:dialysis` ? null : `${person.id}:dialysis`)}
                   >
                     <div className="dialysisTagList">
@@ -8777,25 +8777,10 @@ function PMAssignmentTable({
                         ))
                       )}
                     </div>
-                  </td>
-
-                  <td className={`moveCol dialysisOverlayHost ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>
-                    <div className="moveTagList">
-                      {movementsForStaffDisplay(person.id).map((movement) => (
-                        <span
-                          key={movement.id}
-                          className={`moveTag move-${movement.moveType}`}
-                          onClick={(e) => { e.stopPropagation(); onEditMovement({ ...movement }); }}
-                          style={{ cursor: "pointer" }}
-                        >
-                          {pmDisplayDate(movement.date)} {pmDepartmentShort(movement.department)} {pmMoveShort(movement.moveType)}
-                        </span>
-                      ))}
-                    </div>
 
                     {activeCell === `${person.id}:dialysis` && (
                       <div
-                        className="dialysisAdjust dialysisMoveOverlayLegacy"
+                        className="dialysisAdjust dialysisCellTopOverlay"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {PM_DIALYSIS_TYPES.map((type) => {
@@ -8823,6 +8808,21 @@ function PMAssignmentTable({
                         })}
                       </div>
                     )}
+                  </td>
+
+                  <td className={`moveCol ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>
+                    <div className="moveTagList">
+                      {movementsForStaffDisplay(person.id).map((movement) => (
+                        <span
+                          key={movement.id}
+                          className={`moveTag move-${movement.moveType}`}
+                          onClick={(e) => { e.stopPropagation(); onEditMovement({ ...movement }); }}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {pmDisplayDate(movement.date)} {pmDepartmentShort(movement.department)} {pmMoveShort(movement.moveType)}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td
                     className={`noteCol ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}
