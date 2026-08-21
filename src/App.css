@@ -9590,3 +9590,124 @@ select.leaveSelectControl:disabled {
   }
 }
 
+
+/* =========================================================
+   透析操作UI：透析セルをアンカーにしたポップアップ表示
+   - セル内には押し込まない
+   - 従来の操作UIデザインを維持
+   - スマホでも押しやすいサイズを確保
+========================================================= */
+
+.patientModule .assignmentTable td.dialysisOverlayHost {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* 旧セル内オーバーレイは使わない */
+.patientModule .dialysisCellOverlay {
+  display: none !important;
+}
+
+/* タップした透析セルの近くに浮かせる */
+.patientModule .dialysisCellPopup {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: calc(100% + 6px) !important;
+  top: auto !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  z-index: 900 !important;
+
+  width: max-content !important;
+  min-width: 132px !important;
+  max-width: none !important;
+  margin: 0 !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+
+  background: #ffffff !important;
+  border: 1px solid #93c5fd !important;
+  border-radius: 9px !important;
+  padding: 6px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22) !important;
+
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+
+/* 既存の行UIを維持しつつ、タップしやすくする */
+.patientModule .dialysisCellPopup .dialysisAdjustRow {
+  display: grid !important;
+  grid-template-columns: 44px 30px 24px 30px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  min-height: 30px !important;
+  line-height: 1 !important;
+}
+
+.patientModule .dialysisCellPopup .dialysisAdjustRow > span {
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  color: #475569 !important;
+  text-align: center !important;
+}
+
+.patientModule .dialysisCellPopup .dialysisAdjustRow > b {
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  text-align: center !important;
+}
+
+.patientModule .dialysisCellPopup .inlineBtn {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  padding: 0 !important;
+  border-radius: 7px !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
+/* ポップアップ下の小さなアンカー */
+.patientModule .dialysisCellPopup::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-right: 1px solid #93c5fd;
+  border-bottom: 1px solid #93c5fd;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* スマホでも十分なタップ領域を確保 */
+@media (max-width: 560px) {
+  .patientModule .dialysisCellPopup {
+    min-width: 140px !important;
+    padding: 6px !important;
+    bottom: calc(100% + 7px) !important;
+  }
+
+  .patientModule .dialysisCellPopup .dialysisAdjustRow {
+    grid-template-columns: 46px 32px 24px 32px !important;
+    gap: 4px !important;
+    min-height: 32px !important;
+  }
+
+  .patientModule .dialysisCellPopup .inlineBtn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    font-size: 17px !important;
+  }
+}
+
