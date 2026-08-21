@@ -8763,48 +8763,92 @@ function PMAssignmentTable({
                   })}
 
                   <td
-                  className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
-                    onClick={() => setActiveCell(activeCell === `${person.id}:dialysis` ? null : `${person.id}:dialysis`)}
+                    className={`dialysisCol ${isChangedToday(person.id, "dialysis") ? "changed" : ""} ${activeCell === `${person.id}:dialysis` ? "tActiveCell" : ""}`}
+                    onClick={() =>
+                      setActiveCell(
+                        activeCell === `${person.id}:dialysis`
+                          ? null
+                          : `${person.id}:dialysis`
+                      )
+                    }
+                    title="タップして透析人数を変更"
                   >
-                    {activeCell === `${person.id}:dialysis` ? (
-                      <div className="dialysisAdjust" onClick={(e) => e.stopPropagation()}>
-                        {PM_DIALYSIS_TYPES.map((type) => {
-                          const detail = pmDialysisDetail(person);
-                          return (
-                            <div className="dialysisAdjustRow" key={type.key}>
-                              <span>{type.short}</span>
-                              <button type="button" className="inlineBtn minus" onClick={() => quickAdjustDialysis(person.id, type.key, -1)}>−</button>
-                              <b>{detail[type.key]}</b>
-                              <button type="button" className="inlineBtn plus" onClick={() => quickAdjustDialysis(person.id, type.key, 1)}>＋</button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="dialysisTagList">
-                        {PM_DIALYSIS_TYPES.filter((type) => pmDialysisDetail(person)[type.key] > 0).length === 0 ? (
-                          <span className="dialysisTotal">0</span>
-                        ) : (
-                          PM_DIALYSIS_TYPES.filter((type) => pmDialysisDetail(person)[type.key] > 0).map((type) => (
-                            <span className={`dialysisTag dialysis-${type.key}`} key={type.key}>{type.short}{pmDialysisDetail(person)[type.key]}</span>
-                          ))
-                        )}
-                      </div>
-                    )}
+                    <div className="dialysisTagList">
+                      {PM_DIALYSIS_TYPES.filter(
+                        (type) => pmDialysisDetail(person)[type.key] > 0
+                      ).length === 0 ? (
+                        <span className="dialysisTotal">0</span>
+                      ) : (
+                        PM_DIALYSIS_TYPES.filter(
+                          (type) => pmDialysisDetail(person)[type.key] > 0
+                        ).map((type) => (
+                          <span
+                            className={`dialysisTag dialysis-${type.key}`}
+                            key={type.key}
+                          >
+                            {type.short}{pmDialysisDetail(person)[type.key]}
+                          </span>
+                        ))
+                      )}
+                    </div>
                   </td>
-                  <td className={`moveCol ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>
+
+                  <td
+                    className={`moveCol dialysisOverlayHost ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}
+                  >
                     <div className="moveTagList">
                       {movementsForStaffDisplay(person.id).map((movement) => (
                         <span
                           key={movement.id}
                           className={`moveTag move-${movement.moveType}`}
-                          onClick={(e) => { e.stopPropagation(); onEditMovement({ ...movement }); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditMovement({ ...movement });
+                          }}
                           style={{ cursor: "pointer" }}
                         >
                           {pmDisplayDate(movement.date)} {pmDepartmentShort(movement.department)} {pmMoveShort(movement.moveType)}
                         </span>
                       ))}
                     </div>
+
+                    {activeCell === `${person.id}:dialysis` && (
+                      <div
+                        className="dialysisMoveOverlay"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {PM_DIALYSIS_TYPES.map((type) => {
+                          const detail = pmDialysisDetail(person);
+                          return (
+                            <div className="dialysisMoveOverlayRow" key={type.key}>
+                              <span className="dialysisMoveOverlayLabel">
+                                {type.short}
+                              </span>
+                              <button
+                                type="button"
+                                className="inlineBtn minus"
+                                onClick={() =>
+                                  quickAdjustDialysis(person.id, type.key, -1)
+                                }
+                                disabled={Number(detail[type.key] || 0) <= 0}
+                              >
+                                −
+                              </button>
+                              <b>{detail[type.key]}</b>
+                              <button
+                                type="button"
+                                className="inlineBtn plus"
+                                onClick={() =>
+                                  quickAdjustDialysis(person.id, type.key, 1)
+                                }
+                              >
+                                ＋
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </td>
                   <td
                     className={`noteCol ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}
