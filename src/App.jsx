@@ -375,6 +375,23 @@ function expandAnnouncements(announcements, targetDateStr = todayKey()) {
   return items.sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
 }
 
+const COMPENSATORY_DAY_MINUTES = 465; // 7時間45分
+
+function formatMinutesJa(minutes) {
+  const safe = Math.max(0, Math.round(Number(minutes) || 0));
+  const hours = Math.floor(safe / 60);
+  const mins = safe % 60;
+  if (hours > 0 && mins > 0) return `${hours}時間${mins}分`;
+  if (hours > 0) return `${hours}時間`;
+  return `${mins}分`;
+}
+
+function compensatoryRecordMinutes(record) {
+  if (!record || record.type !== "compensatory") return 0;
+  if (record.method === "time") return Math.max(0, Math.round(getHours(record) * 60));
+  return COMPENSATORY_DAY_MINUTES;
+}
+
 function sourceDateShortLabel(dateStr) {
   if (!dateStr) return "";
   const d = new Date(`${dateStr}T00:00:00`);
@@ -1552,13 +1569,28 @@ const loginUser = loginStaff
     return people;
   }
 
-  function compensatoryConsumedRecord(staffId, sourceDate) {
-    if (!staffId || !sourceDate) return null;
-    return records.find((record) =>
+  function compensatoryUsageRecords(staffId, sourceDate) {
+    if (!staffId || !sourceDate) return [];
+    return records.filter((record) =>
       record.staffId === staffId
       && record.type === "compensatory"
       && record.compensatorySourceDate === sourceDate
-    ) || null;
+    );
+  }
+
+  function compensatoryUsedMinutes(staffId, sourceDate) {
+    return compensatoryUsageRecords(staffId, sourceDate)
+      .reduce((sum, record) => sum + compensatoryRecordMinutes(record), 0);
+  }
+
+  function compensatoryRemainingMinutes(staffId, sourceDate) {
+    return Math.max(0, COMPENSATORY_DAY_MINUTES - compensatoryUsedMinutes(staffId, sourceDate));
+  }
+
+  function compensatoryConsumedRecord(staffId, sourceDate) {
+    const usage = compensatoryUsageRecords(staffId, sourceDate);
+    if (usage.length === 0) return null;
+    return compensatoryRemainingMinutes(staffId, sourceDate) <= 0 ? usage[usage.length - 1] : null;
   }
 
   function isCompensatorySourceDateForStaff(date, staffId) {
@@ -1601,7 +1633,7 @@ const loginUser = loginStaff
 
   function unconsumedCompensatorySourceCandidates(staffId, leaveDate = form.date) {
     return compensatorySourceCandidates(staffId, leaveDate).filter(
-      (date) => !compensatoryConsumedRecord(staffId, date)
+      (date) => compensatoryRemainingMinutes(staffId, date) > 0
     );
   }
 
@@ -1614,7 +1646,7 @@ const loginUser = loginStaff
     const staffId = isAdmin ? form.staffId : (loginUser?.id || form.staffId);
     const consumed = compensatoryConsumedRecord(staffId, date);
     if (consumed) {
-      alert(`この勤務日の代休は消化済みです。\n${displayDate(consumed.date)} に代休として登録されています。`);
+      alert(`この勤務日の代休は消化済みです。\n合計7時間45分を取得済みです。`);
       return;
     }
 
@@ -1786,7 +1818,7 @@ const loginUser = loginStaff
       return "同日に既に休暇があるため、終日の休暇は登録できません。";
     }
 
-    if (["paid", "child"].includes(nextRecord.type) && nextRecord.method === "time") {
+    if (["paid", "child", "compensatory"].includes(nextRecord.type) && nextRecord.method === "time") {
       const workStart = toMinutes("08:30");
       const workEnd = toMinutes("17:15");
       const startMinutes = toMinutes(nextRecord.start);
@@ -1798,7 +1830,9 @@ const loginUser = loginStaff
         endMinutes < workStart ||
         endMinutes > workEnd
       ) {
-        return "時間休は8:30〜17:15の範囲で入力してください。";
+        return nextRecord.type === "compensatory"
+          ? "時間単位の代休は8:30〜17:15の範囲で入力してください。"
+          : "時間休は8:30〜17:15の範囲で入力してください。";
       }
 
       if (endMinutes <= startMinutes) {
@@ -1806,7 +1840,7 @@ const loginUser = loginStaff
       }
 
       const duplicated = sameDay
-        .filter((r) => ["paid", "child"].includes(r.type) && r.method === "time")
+        .filter((r) => ["paid", "child", "compensatory"].includes(r.type) && r.method === "time")
         .some((r) => hasTimeOverlap(nextRecord, r));
 
       if (duplicated) {
@@ -1823,12 +1857,25 @@ const loginUser = loginStaff
         return "代休の対象となる出勤日を選択してください。";
       }
 
-      const consumed = compensatoryConsumedRecord(
+      const remaining = compensatoryRemainingMinutes(
         nextRecord.staffId,
         nextRecord.compensatorySourceDate
       );
-      if (consumed) {
-        return `この勤務日の代休は消化済みです。${displayDate(consumed.date)} に代休として登録されています。`;
+      if (remaining <= 0) {
+        return "この勤務日の代休は消化済みです。合計7時間45分を取得済みです。";
+      }
+
+      const requestedMinutes = nextRecord.method === "time"
+        ? Math.max(0, Math.round(getHours(nextRecord) * 60))
+        : COMPENSATORY_DAY_MINUTES;
+      if (requestedMinutes <= 0) {
+        return "取得する代休時間を指定してください。";
+      }
+      if (requestedMinutes % 15 !== 0) {
+        return "時間単位の代休は15分単位で指定してください。";
+      }
+      if (requestedMinutes > remaining) {
+        return `この勤務日の代休は残り${formatMinutesJa(remaining)}です。残時間を超えて取得できません。`;
       }
 
       if (!isCompensatorySourceDateForStaff(nextRecord.compensatorySourceDate, nextRecord.staffId)) {
@@ -1875,7 +1922,7 @@ if (!nextRecord.staffId) {
   return;
 }
 
-    if (!["paid", "child", "holiday"].includes(nextRecord.type)) {
+    if (!["paid", "child", "holiday", "compensatory"].includes(nextRecord.type)) {
       nextRecord.method = "full";
     }
 
@@ -2836,11 +2883,13 @@ async function deleteSaturdaySchedule(date) {
 }
 
   const visibleStaff = isAdmin ? activeStaff : activeStaff.filter((s) => s.id === loginId);
-  const showTimeInputs = ["paid", "child"].includes(form.type) && form.method === "time";
-  const showMethod = ["paid", "child", "holiday"].includes(form.type);
+  const showTimeInputs = ["paid", "child", "compensatory"].includes(form.type) && form.method === "time";
+  const showMethod = ["paid", "child", "holiday", "compensatory"].includes(form.type);
   const methodOptions = form.type === "holiday"
     ? Object.entries(HOLIDAY_WORK_METHODS)
-    : Object.entries(METHODS);
+    : form.type === "compensatory"
+      ? [["full", "1日（7時間45分）"], ["time", "時間単位（15分単位）"]]
+      : Object.entries(METHODS);
   const showBreakCheck =
     showTimeInputs &&
     overlapMinutes(toMinutes(form.start), toMinutes(form.end), toMinutes("12:00"), toMinutes("13:00")) > 0;
@@ -3808,7 +3857,22 @@ if (staffLoaded && staff.length === 0) {
                   ) : (
                     <strong>未消化の代休対象日がありません</strong>
                   )}
-                  <small>未消化の対象日がある場合は、最も古い日を自動選択します。未来の土曜出勤・休日出勤も選択できます。</small>
+                  {form.compensatorySourceDate && (() => {
+                    const remaining = compensatoryRemainingMinutes(targetStaffId, form.compensatorySourceDate);
+                    const requested = form.method === "time"
+                      ? Math.max(0, Math.round(calcTimeHours(form.start, form.end, form.deductBreak) * 60))
+                      : COMPENSATORY_DAY_MINUTES;
+                    const after = Math.max(0, remaining - requested);
+                    return (
+                      <div className="compensatoryRemaining">
+                        <strong>残り：{formatMinutesJa(remaining)}</strong>
+                        {form.method === "time" && requested > 0 && (
+                          <small>今回取得：{formatMinutesJa(requested)} ／ 取得後：{formatMinutesJa(after)}</small>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  <small>未消化または一部消化の対象日がある場合は、最も古い日を自動選択します。未来の土曜出勤・休日出勤も選択できます。</small>
                 </div>
                 {candidates.length > 0 && (
                   <div className="compensatoryCandidateRow" aria-label="未消化の代休対象日">
@@ -3820,7 +3884,7 @@ if (staffLoaded && staff.length === 0) {
                         className={form.compensatorySourceDate === date ? "active" : ""}
                         onClick={() => chooseCompensatorySourceDate(date)}
                       >
-                        {sourceDateShortLabel(date)}
+                        {sourceDateShortLabel(date)}（残{formatMinutesJa(compensatoryRemainingMinutes(targetStaffId, date))}）
                       </button>
                     ))}
                   </div>

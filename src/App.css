@@ -9501,3 +9501,13 @@ select.leaveSelectControl:disabled {
   display: none !important;
 }
 
+
+/* 代休：時間単位取得・残時間表示 */
+.compensatoryRemaining {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+.compensatoryRemaining strong { font-weight: 800; }
+.compensatoryRemaining small { display: block; }
