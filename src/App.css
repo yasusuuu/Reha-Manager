@@ -9446,68 +9446,180 @@ select.leaveSelectControl:disabled {
   }
 }
 
-
 /* =========================================================
-   透析セル：外来セルと同じ表示・ハイライト・伸縮挙動
+   Dialysis edit overlay on movement cell - FINAL
+   透析セルをタップした時だけ、同じ行の患者移動欄の上に操作UIを重ねる。
+   行高・表幅を増やさず、通常時の患者移動表示はそのまま維持する。
 ========================================================= */
 
-/* 外来の numberCell と同じ基本幅。
-   編集中は内容幅に応じて外来と同じように一時的に広がり、
-   閉じると通常幅へ戻る。 */
-.patientModule .assignmentTable th.dialysisCol,
-.patientModule .assignmentTable td.dialysisCol {
-  width: 54px !important;
-  min-width: 54px !important;
-  max-width: none !important;
-}
-
-/* active時の背景・十字ハイライトは外来と同じルールをそのまま使う */
-.patientModule .assignmentTable td.dialysisCol.numberCell {
+.patientModule .assignmentTable td.dialysisOverlayHost {
   position: relative !important;
+  overflow: visible !important;
 }
 
-.patientModule .assignmentTable td.dialysisCol.numberCell.tActiveCell {
-  z-index: 20 !important;
+/* 患者移動タグは通常どおり表示。透析操作中は下に隠れる。 */
+.patientModule .assignmentTable td.dialysisOverlayHost > .moveTagList {
+  position: relative;
+  z-index: 1;
 }
 
-/* 外来のoutpatientAdjustをそのまま使用。
-   透析だけ白背景や独自shadowを追加しない。 */
-.patientModule .dialysisCol .outpatientAdjust {
-  position: static !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
+/* 透析操作パネル：患者移動セルの上に重ねる */
+.patientModule .dialysisMoveOverlay {
+  position: absolute !important;
+  inset: 1px 2px !important;
+  z-index: 220 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+
+  min-width: max-content !important;
+  padding: 3px 7px !important;
+
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid #93c5fd !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18) !important;
+
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+/* 月水金 / 火木土 を横並びでコンパクト表示 */
+.patientModule .dialysisMoveOverlayRow {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+}
+
+.patientModule .dialysisMoveOverlayLabel {
+  color: #475569 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+.patientModule .dialysisMoveOverlayRow b {
+  min-width: 15px !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+
+/* 既存inlineBtnを透析オーバーレイではさらにコンパクトに */
+.patientModule .dialysisMoveOverlay .inlineBtn {
+  width: 23px !important;
+  height: 23px !important;
+  min-width: 23px !important;
+  min-height: 23px !important;
   padding: 0 !important;
-  box-shadow: none !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
 }
 
-/* 月水金/火木土の文字だけ外来より少し長いため列幅のみ確保 */
-.patientModule .dialysisCol .dialysisAdjustRow {
-  grid-template-columns: 42px 22px 22px 22px !important;
+.patientModule .dialysisMoveOverlay .inlineBtn:disabled {
+  opacity: 0.35 !important;
+  cursor: default !important;
 }
 
-@media (max-width: 560px) {
-  .patientModule .dialysisCol .dialysisAdjustRow {
-    grid-template-columns: 38px 20px 20px 20px !important;
+/* 透析セル自体には操作パネルを出さず、常に現在値だけ表示 */
+.patientModule .assignmentTable td.dialysisCol {
+  cursor: pointer !important;
+}
+
+/* スマホ：患者移動セル内に確実に収め、行高を増やさない */
+@media (max-width: 760px) {
+  .patientModule .dialysisMoveOverlay {
+    left: 1px !important;
+    right: 1px !important;
+    gap: 4px !important;
+    padding: 2px 4px !important;
+  }
+
+  .patientModule .dialysisMoveOverlayRow {
+    gap: 2px !important;
+  }
+
+  .patientModule .dialysisMoveOverlayLabel {
+    font-size: 9px !important;
+  }
+
+  .patientModule .dialysisMoveOverlayRow b {
+    min-width: 13px !important;
+    font-size: 12px !important;
+  }
+
+  .patientModule .dialysisMoveOverlay .inlineBtn {
+    width: 21px !important;
+    height: 21px !important;
+    min-width: 21px !important;
+    min-height: 21px !important;
+    font-size: 13px !important;
   }
 }
 
-/* 過去に試した透析専用ポップアップ類は無効 */
-.patientModule .dialysisCellPopup,
-.patientModule .dialysisCellOverlay,
-.patientModule .dialysisCellTopOverlay,
-.patientModule .dialysisMoveOverlayLegacy,
-.patientModule .dialysisMoveOverlay {
-  display: none !important;
+/* 全画面表示でも同じ挙動を維持 */
+.patientModule .fullscreenTableWrap .dialysisMoveOverlay {
+  inset: 1px !important;
+  padding-top: 1px !important;
+  padding-bottom: 1px !important;
 }
 
 
-/* 代休：時間単位取得・残時間表示 */
-.compensatoryRemaining {
+/* =========================================================
+   休出表示：縁なし白抜きカプセル + 通常PT/OTと同じ下端基準
+   ========================================================= */
+.calendarCell:has(.holidayWorkTags) .dayCounts {
+  margin-top: 0;
+}
+
+.calendarCell .holidayWorkTags {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 6px;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: auto;
 }
-.compensatoryRemaining strong { font-weight: 800; }
-.compensatoryRemaining small { display: block; }
+
+.calendarCell .holidayWorkTags span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  background: #ffffff;
+  color: #b91c1c;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 850px) {
+  .calendarCell .holidayWorkTags span {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+}
+
+@media (max-width: 560px) {
+  .calendarCell .holidayWorkTags {
+    gap: 3px;
+    margin-top: auto;
+  }
+
+  .calendarCell .holidayWorkTags span {
+    font-size: 10px;
+    padding: 3px 5px;
+  }
+}
