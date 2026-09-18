@@ -9573,18 +9573,32 @@ select.leaveSelectControl:disabled {
 }
 
 /* =========================================================
-   休出表示 最終調整
-   ・通常の人数表示と同じ縦位置
-   ・白背景 / 枠なし
-   ・カプセルではなく、わずかな角丸の矩形
+   人数表示UI統一
+   通常 PT/OT と休出 PT/OT の高さ・余白・角丸を共通化
    ========================================================= */
 
-/* 空要素が休出表示の縦位置を押し下げないようにする */
+/* 通常の青人数タグ：カプセルから少し四角寄りへ */
+.calendarCell .countBadge,
+.calendarCell .ptBadge,
+.calendarCell .staffCountBadge,
+.calendarCell .dayCounts > span {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 28px !important;
+  height: 28px !important;
+  padding: 0 8px !important;
+  border-radius: 5px !important;
+  line-height: 1 !important;
+}
+
+/* 空の人数領域で休出表示の位置を押し下げない */
 .calendarCell:has(.holidayWorkTags) .dayCounts:empty {
   display: none !important;
 }
 
-/* 通常の人数表示と同じ流れの中に置く */
+/* 休出も通常人数表示と同じ位置決め */
 .calendarCell .holidayWorkTags {
   display: flex !important;
   align-items: center !important;
@@ -9595,45 +9609,45 @@ select.leaveSelectControl:disabled {
   padding: 0 !important;
 }
 
-/* ほぼ四角。丸みは4pxだけ */
+/* 白背景＋赤文字。
+   高さ・上下左右余白・角丸は青人数タグと同じ規格。 */
 .calendarCell .holidayWorkTags span {
+  box-sizing: border-box !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  box-sizing: border-box !important;
 
   width: auto !important;
   min-width: 0 !important;
-  max-width: calc(100% - 4px) !important;
+  max-width: calc(100% - 2px) !important;
+  min-height: 28px !important;
+  height: 28px !important;
 
   margin: 0 !important;
-  padding: 4px 8px !important;
+  padding: 0 8px !important;
 
   background: #ffffff !important;
   color: #b91c1c !important;
   border: none !important;
-  border-radius: 4px !important;
+  border-radius: 5px !important;
   box-shadow: none !important;
 
   font-weight: 900 !important;
-  line-height: 1.2 !important;
+  line-height: 1 !important;
   white-space: nowrap !important;
 }
 
-/* モバイルでも形を崩さず、余白を残す */
-@media (max-width: 850px) {
-  .calendarCell .holidayWorkTags span {
-    padding: 4px 7px !important;
-  }
-}
-
+/* 小画面でも高さと左右余白の規格は変えない */
 @media (max-width: 560px) {
-  .calendarCell .holidayWorkTags {
-    gap: 3px !important;
-  }
-
+  .calendarCell .countBadge,
+  .calendarCell .ptBadge,
+  .calendarCell .staffCountBadge,
+  .calendarCell .dayCounts > span,
   .calendarCell .holidayWorkTags span {
-    padding: 4px 6px !important;
-    border-radius: 4px !important;
+    min-height: 28px !important;
+    height: 28px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    border-radius: 5px !important;
   }
 }
