@@ -9573,60 +9573,67 @@ select.leaveSelectControl:disabled {
 }
 
 /* =========================================================
-   休出表示：通常PT表示と同じ位置 + 余白のある白カプセル
+   休出表示 最終調整
+   ・通常の人数表示と同じ縦位置
+   ・白背景 / 枠なし
+   ・カプセルではなく、わずかな角丸の矩形
    ========================================================= */
 
-/* dayCounts が空でも flex の auto margin を持たせない。
-   休出タグを通常の PT/OT カプセルと同じ表示位置へ置く。 */
+/* 空要素が休出表示の縦位置を押し下げないようにする */
 .calendarCell:has(.holidayWorkTags) .dayCounts:empty {
   display: none !important;
 }
 
+/* 通常の人数表示と同じ流れの中に置く */
 .calendarCell .holidayWorkTags {
   display: flex !important;
   align-items: center !important;
-  gap: 5px !important;
+  justify-content: flex-start !important;
   flex-wrap: wrap !important;
-  margin-top: 0 !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* 白・縁なし。文字の周囲に十分なカプセル余白を確保 */
+/* ほぼ四角。丸みは4pxだけ */
 .calendarCell .holidayWorkTags span {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: fit-content !important;
-  max-width: calc(100% - 2px) !important;
   box-sizing: border-box !important;
+
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: calc(100% - 4px) !important;
+
+  margin: 0 !important;
+  padding: 4px 8px !important;
+
   background: #ffffff !important;
   color: #b91c1c !important;
-  border: 0 !important;
-  border-radius: 999px !important;
-  padding: 5px 10px !important;
-  font-size: 12px !important;
-  font-weight: 900 !important;
-  line-height: 1.15 !important;
+  border: none !important;
+  border-radius: 4px !important;
   box-shadow: none !important;
+
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
   white-space: nowrap !important;
 }
 
-/* スマホでも左右余白を削りすぎない */
+/* モバイルでも形を崩さず、余白を残す */
 @media (max-width: 850px) {
   .calendarCell .holidayWorkTags span {
-    padding: 5px 9px !important;
-    font-size: 11px !important;
+    padding: 4px 7px !important;
   }
 }
 
 @media (max-width: 560px) {
   .calendarCell .holidayWorkTags {
     gap: 3px !important;
-    margin-top: 0 !important;
   }
 
   .calendarCell .holidayWorkTags span {
-    padding: 4px 8px !important;
-    font-size: 10px !important;
-    line-height: 1.15 !important;
+    padding: 4px 6px !important;
+    border-radius: 4px !important;
   }
 }
