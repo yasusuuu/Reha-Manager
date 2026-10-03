@@ -65,9 +65,10 @@ const METHODS = {
 };
 
 const HOLIDAY_WORK_METHODS = {
-  full: "終日勤務",
-  morning: "午前勤務",
-  afternoon: "午後勤務",
+  full: "終日",
+  morning: "午前",
+  afternoon: "午後",
+  time: "時間指定",
 };
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -428,7 +429,15 @@ function recordDisplay(record) {
   if (record.type === "holiday") {
     if (record.method === "morning") return "休日出勤（午前）";
     if (record.method === "afternoon") return "休日出勤（午後）";
+    if (record.method === "time") return `休日出勤（${record.start}〜${record.end}）`;
     return "休日出勤（終日）";
+  }
+
+  if (record.type === "other") {
+    if (record.method === "morning") return "その他予定（午前）";
+    if (record.method === "afternoon") return "その他予定（午後）";
+    if (record.method === "time") return `その他予定（${record.start}〜${record.end}）`;
+    return "その他予定（終日）";
   }
 
   return LEAVE_TYPES[record.type] || LEGACY_LEAVE_TYPE_LABELS[record.type] || "";
@@ -1190,6 +1199,7 @@ useEffect(() => {
             active: data.active !== false,
             visible: data.visible !== false,
             canCancerRehab: Boolean(data.canCancerRehab),
+            canCommunityCare: Boolean(data.canCommunityCare),
             displayNameMode: data.displayNameMode === "first" ? "first" : "last",
             order: Number(data.order || 999),
             staffNumber: data.staffNumber || "",
@@ -1318,6 +1328,8 @@ const [compensatorySettings, setCompensatorySettings] = useState(() => ({
     end: "17:15",
     deductBreak: false,
     compensatorySourceDate: "",
+    holidayCompensation: "compensatory",
+    otherCompensation: "plan",
     note: "",
   });
 
@@ -1583,8 +1595,50 @@ const loginUser = loginStaff
       .reduce((sum, record) => sum + compensatoryRecordMinutes(record), 0);
   }
 
+  function compensatorySourceMinutes(staffId, sourceDate) {
+    if (!staffId || !sourceDate) return 0;
+
+    // 通常の土曜出勤は従来どおり7時間45分を原資とする。
+    const saturdayMinutes = (() => {
+      const d = new Date(`${sourceDate}T00:00:00`);
+      if (Number.isNaN(d.getTime()) || d.getDay() !== 6) return 0;
+      const schedule = saturdayScheduleForDate(sourceDate);
+      return (schedule?.staffIds || []).includes(staffId) ? COMPENSATORY_DAY_MINUTES : 0;
+    })();
+
+    // 休日出勤・その他予定で「代休消化」を選んだ記録は、
+    // 登録した取得方法／時間をそのまま代休原資とする。
+    const eventMinutes = records
+      .filter((record) =>
+        record.staffId === staffId
+        && record.date === sourceDate
+        && (
+          (
+            record.type === "holiday"
+            // 旧休日出勤データは従来互換のため代休対象。
+            && record.holidayCompensation !== "overtime"
+          )
+          || (
+            record.type === "other"
+            && record.otherCompensation === "compensatory"
+          )
+        )
+      )
+      .reduce((maxMinutes, record) => {
+        const minutes = Math.max(0, Math.round(getHours(record) * 60));
+        return Math.max(maxMinutes, minutes);
+      }, 0);
+
+    // 現行の代休管理は「出勤日」をキーにしているため、
+    // 同一日に複数原資があっても二重加算せず、その日の最大原資を採用する。
+    return Math.max(saturdayMinutes, eventMinutes);
+  }
+
   function compensatoryRemainingMinutes(staffId, sourceDate) {
-    return Math.max(0, COMPENSATORY_DAY_MINUTES - compensatoryUsedMinutes(staffId, sourceDate));
+    return Math.max(
+      0,
+      compensatorySourceMinutes(staffId, sourceDate) - compensatoryUsedMinutes(staffId, sourceDate)
+    );
   }
 
   function compensatoryConsumedRecord(staffId, sourceDate) {
@@ -1607,8 +1661,18 @@ const loginUser = loginStaff
 
     return records.some((record) =>
       record.staffId === staffId
-      && record.type === "holiday"
       && record.date === date
+      && (
+        (
+          record.type === "holiday"
+          // 既存データ（holidayCompensation未保存）は従来どおり代休対象として扱う。
+          && record.holidayCompensation !== "overtime"
+        )
+        || (
+          record.type === "other"
+          && record.otherCompensation === "compensatory"
+        )
+      )
     );
   }
 
@@ -1646,12 +1710,12 @@ const loginUser = loginStaff
     const staffId = isAdmin ? form.staffId : (loginUser?.id || form.staffId);
     const consumed = compensatoryConsumedRecord(staffId, date);
     if (consumed) {
-      alert(`この勤務日の代休は消化済みです。\n合計7時間45分を取得済みです。`);
+      alert(`この勤務日の代休は消化済みです。\n合計${formatMinutesJa(compensatorySourceMinutes(staffId, date))}を取得済みです。`);
       return;
     }
 
     if (!isCompensatorySourceDateForStaff(date, staffId)) {
-      alert("この日は代休対象の出勤日として確認できません。土曜出勤または休日出勤の日を選択してください。");
+      alert("この日は代休対象の出勤日として確認できません。土曜出勤・休日出勤・代休対象のその他予定の日を選択してください。");
       return;
     }
 
@@ -1772,11 +1836,27 @@ const loginUser = loginStaff
   }, [form.type, form.staffId, form.date, records, saturdayGroups, saturdayOverrides, saturdayRotation, compensatorySettings.startDate, loginUser?.id, isAdmin]);
 
   function countByJob(date) {
-    const list = leaveRecordsForDate(date);
+    const list = scopedRecordsForDate(date).filter((record) =>
+      isLeaveLike(record)
+      || (record.type === "other" && record.otherCompensation === "compensatory")
+    );
+
+    // 同一人物が同じ日に複数の休暇を登録していても「1人」として数える。
+    // 例：午前代休＋午後有休 → PT 1
+    // 「その他予定」で「代休消化」を選択した記録も、PT/OTの休暇人数に含める。
+    // 「予定のみ」「時間外消化」は人数に含めない。
+    const uniqueByStaff = Array.from(
+      new Map(
+        list
+          .filter((record) => record?.staffId && record?.staff)
+          .map((record) => [record.staffId, record])
+      ).values()
+    );
+
     return {
-      PT: list.filter((r) => r.staff.job === "PT").length,
-      OT: list.filter((r) => r.staff.job === "OT").length,
-      total: list.length,
+      PT: uniqueByStaff.filter((r) => r.staff.job === "PT").length,
+      OT: uniqueByStaff.filter((r) => r.staff.job === "OT").length,
+      total: uniqueByStaff.length,
     };
   }
 
@@ -1818,7 +1898,7 @@ const loginUser = loginStaff
       return "同日に既に休暇があるため、終日の休暇は登録できません。";
     }
 
-    if (["paid", "child", "compensatory"].includes(nextRecord.type) && nextRecord.method === "time") {
+    if (["paid", "child", "compensatory", "holiday", "other"].includes(nextRecord.type) && nextRecord.method === "time") {
       const workStart = toMinutes("08:30");
       const workEnd = toMinutes("17:15");
       const startMinutes = toMinutes(nextRecord.start);
@@ -1830,9 +1910,13 @@ const loginUser = loginStaff
         endMinutes < workStart ||
         endMinutes > workEnd
       ) {
-        return nextRecord.type === "compensatory"
-          ? "時間単位の代休は8:30〜17:15の範囲で入力してください。"
-          : "時間休は8:30〜17:15の範囲で入力してください。";
+        if (nextRecord.type === "compensatory") {
+          return "時間単位の代休は8:30〜17:15の範囲で入力してください。";
+        }
+        if (["holiday", "other"].includes(nextRecord.type)) {
+          return "時間指定は8:30〜17:15の範囲で入力してください。";
+        }
+        return "時間休は8:30〜17:15の範囲で入力してください。";
       }
 
       if (endMinutes <= startMinutes) {
@@ -1862,7 +1946,7 @@ const loginUser = loginStaff
         nextRecord.compensatorySourceDate
       );
       if (remaining <= 0) {
-        return "この勤務日の代休は消化済みです。合計7時間45分を取得済みです。";
+        return `この勤務日の代休は消化済みです。合計${formatMinutesJa(compensatorySourceMinutes(nextRecord.staffId, nextRecord.compensatorySourceDate))}を取得済みです。`;
       }
 
       const requestedMinutes = nextRecord.method === "time"
@@ -1922,12 +2006,24 @@ if (!nextRecord.staffId) {
   return;
 }
 
-    if (!["paid", "child", "holiday", "compensatory"].includes(nextRecord.type)) {
+    if (!["paid", "child", "holiday", "other", "compensatory"].includes(nextRecord.type)) {
       nextRecord.method = "full";
     }
 
-    if (nextRecord.type === "holiday" && nextRecord.method === "time") {
-      nextRecord.method = "full";
+    if (nextRecord.type === "holiday") {
+      if (!["compensatory", "overtime"].includes(nextRecord.holidayCompensation)) {
+        nextRecord.holidayCompensation = "compensatory";
+      }
+    } else {
+      delete nextRecord.holidayCompensation;
+    }
+
+    if (nextRecord.type === "other") {
+      if (!["plan", "compensatory", "overtime"].includes(nextRecord.otherCompensation)) {
+        nextRecord.otherCompensation = "plan";
+      }
+    } else {
+      delete nextRecord.otherCompensation;
     }
 
     if (nextRecord.type !== "compensatory") {
@@ -2043,9 +2139,30 @@ try {
 
   function previewText() {
     if (form.type === "holiday") {
-      if (form.method === "morning") return "休日出勤（午前）として登録";
-      if (form.method === "afternoon") return "休日出勤（午後）として登録";
-      return "休日出勤（終日）として登録";
+      const compensationLabel = form.holidayCompensation === "overtime" ? "時間外消化" : "代休消化";
+      const methodLabel = form.method === "morning"
+        ? "午前"
+        : form.method === "afternoon"
+          ? "午後"
+          : form.method === "time"
+            ? `${form.start}〜${form.end}`
+            : "終日";
+      return `休日出勤（${methodLabel}）・${compensationLabel}として登録`;
+    }
+    if (form.type === "other") {
+      const compensationLabel = form.otherCompensation === "compensatory"
+        ? "代休消化"
+        : form.otherCompensation === "overtime"
+          ? "時間外消化"
+          : "予定のみ";
+      const methodLabel = form.method === "morning"
+        ? "午前"
+        : form.method === "afternoon"
+          ? "午後"
+          : form.method === "time"
+            ? `${form.start}〜${form.end}`
+            : "終日";
+      return `その他予定（${methodLabel}）・${compensationLabel}として登録`;
     }
     if (!["paid", "child"].includes(form.type)) return `${LEAVE_TYPES[form.type] || "予定"}として登録`;
     if (form.method === "full") return "計算結果：終日取得 1日";
@@ -2057,6 +2174,24 @@ try {
   function selectedRecords() {
     if (!selectedDate) return [];
     return scopedRecordsForDate(selectedDate);
+  }
+
+  function selectedRecordGroups() {
+    const grouped = new Map();
+
+    selectedRecords().forEach((record) => {
+      const key = record.staffId || record.staff?.id || record.id;
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          staffId: key,
+          staff: record.staff,
+          records: [],
+        });
+      }
+      grouped.get(key).records.push(record);
+    });
+
+    return Array.from(grouped.values());
   }
 
   function selectedAnnouncements() {
@@ -2883,9 +3018,9 @@ async function deleteSaturdaySchedule(date) {
 }
 
   const visibleStaff = isAdmin ? activeStaff : activeStaff.filter((s) => s.id === loginId);
-  const showTimeInputs = ["paid", "child", "compensatory"].includes(form.type) && form.method === "time";
-  const showMethod = ["paid", "child", "holiday", "compensatory"].includes(form.type);
-  const methodOptions = form.type === "holiday"
+  const showTimeInputs = ["paid", "child", "compensatory", "holiday", "other"].includes(form.type) && form.method === "time";
+  const showMethod = ["paid", "child", "holiday", "other", "compensatory"].includes(form.type);
+  const methodOptions = ["holiday", "other"].includes(form.type)
     ? Object.entries(HOLIDAY_WORK_METHODS)
     : form.type === "compensatory"
       ? [["full", "1日（7時間45分）"], ["time", "時間単位（15分単位）"]]
@@ -3372,11 +3507,6 @@ if (staffLoaded && staff.length === 0) {
                 <span className="modalSubLabel">{dateModalMode === "form" ? selectedDate.replaceAll("-", "/") : (displayScope === "mine" ? "自分の予定" : "全体表示")}</span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                {dateModalMode === "form" && (
-                  <button type="button" className="secondaryButton" onClick={() => setDateModalMode("schedule")}>
-                    ← 戻る
-                  </button>
-                )}
                 <button className="closeButton" type="button" onClick={closeDateModal}>
                   ×
                 </button>
@@ -3601,51 +3731,82 @@ if (staffLoaded && staff.length === 0) {
                       gap: "6px",
                     }}
                   >
-                    {selectedRecords().map((r) => (
+                    {selectedRecordGroups().map((group) => (
                       <div
-                        key={r.id}
-                        className={`detailItem ${r.type}`}
+                        key={group.staffId}
+                        className={`detailItem ${group.records[0]?.type || ""}`}
                         style={{
-                          display: "grid",
-                          gridTemplateColumns: "minmax(0, 1fr) auto",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "7px 9px",
+                          display: "block",
+                          padding: "8px 9px",
                           minWidth: 0,
+                          textAlign: "left",
                         }}
                       >
-                        <div style={{ minWidth: 0, textAlign: "left" }}>
-                          <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "3px 7px" }}>
-                            <strong style={{ fontSize: "13.5px", lineHeight: 1.25 }}>
-                              {personName(r.staff)}
-                            </strong>
-                            <span style={{ fontSize: "12px", color: "#475569" }}>
-                              {recordDisplay(r)}
-                            </span>
-                          </div>
-                          {r.note && (
-                            <small
+                        <strong
+                          style={{
+                            display: "block",
+                            marginBottom: "5px",
+                            fontSize: "13.5px",
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {personName(group.staff)}
+                        </strong>
+
+                        <div style={{ display: "grid", gap: "4px" }}>
+                          {group.records.map((r) => (
+                            <div
+                              key={r.id}
                               style={{
-                                display: "block",
-                                marginTop: "2px",
-                                fontSize: "11px",
-                                lineHeight: 1.35,
-                                color: "#64748b",
-                                whiteSpace: "pre-wrap",
+                                display: "grid",
+                                gridTemplateColumns: "minmax(0, 1fr) auto",
+                                alignItems: "center",
+                                gap: "7px",
+                                minWidth: 0,
                               }}
                             >
-                              {r.note}
-                            </small>
-                          )}
+                              <div style={{ minWidth: 0 }}>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    fontSize: "12px",
+                                    lineHeight: 1.3,
+                                    color: "#475569",
+                                  }}
+                                >
+                                  {recordDisplay(r)}
+                                </span>
+                                {r.note && (
+                                  <small
+                                    style={{
+                                      display: "block",
+                                      marginTop: "1px",
+                                      fontSize: "10.5px",
+                                      lineHeight: 1.3,
+                                      color: "#64748b",
+                                      whiteSpace: "pre-wrap",
+                                    }}
+                                  >
+                                    {r.note}
+                                  </small>
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                className="deleteButton"
+                                onClick={() => removeRecord(r.id, r)}
+                                style={{
+                                  padding: "4px 7px",
+                                  fontSize: "11px",
+                                  alignSelf: "center",
+                                }}
+                              >
+                                削除
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                        <button
-                          type="button"
-                          className="deleteButton"
-                          onClick={() => removeRecord(r.id, r)}
-                          style={{ padding: "4px 7px", fontSize: "11px" }}
-                        >
-                          削除
-                        </button>
                       </div>
                     ))}
                   </section>
@@ -3677,9 +3838,9 @@ if (staffLoaded && staff.length === 0) {
             </div>
 
             {dateModalMode === "form" && (
-              <div style={{ overflowY: "auto", paddingRight: "2px" }}>
-                <div className="formGrid">
-          <label>
+              <div className="leaveFormScroll" style={{ overflowY: "auto", paddingRight: "2px" }}>
+                <div className="formGrid leaveRegisterGrid">
+          <label className="leaveFieldStaff">
             <span>職員</span>
             <select
               className="leaveSelectControl"
@@ -3696,12 +3857,12 @@ if (staffLoaded && staff.length === 0) {
             </select>
           </label>
 
-          <label>
+          <label className="leaveFieldDate">
             <span>日付</span>
             <JapaneseDateInput value={form.date} onChange={(date) => setForm({ ...form, date })} />
           </label>
 
-          <label>
+          <label className="leaveFieldType">
             <span>種別</span>
             <select
               className="leaveSelectControl"
@@ -3715,9 +3876,10 @@ if (staffLoaded && staff.length === 0) {
                   ...form,
                   type: nextType,
                   compensatorySourceDate: nextType === "compensatory" ? form.compensatorySourceDate : "",
-                  method: ["paid", "child"].includes(nextType)
-                    ? form.method
-                    : nextType === "holiday" && ["full", "morning", "afternoon"].includes(form.method)
+                  holidayCompensation: nextType === "holiday" ? (form.holidayCompensation || "compensatory") : form.holidayCompensation,
+                  otherCompensation: nextType === "other" ? (form.otherCompensation || "plan") : form.otherCompensation,
+                  method: ["paid", "child", "holiday", "other"].includes(nextType)
+                    && ["full", "morning", "afternoon", "time"].includes(form.method)
                       ? form.method
                       : "full",
                 });
@@ -3734,7 +3896,7 @@ if (staffLoaded && staff.length === 0) {
           </label>
 
           {showMethod && (
-            <label>
+            <label className="leaveFieldMethod">
               <span>取得方法</span>
               <select
                 className="leaveSelectControl"
@@ -3756,11 +3918,55 @@ if (staffLoaded && staff.length === 0) {
             </label>
           )}
 
+          {form.type === "holiday" && (
+            <label className="wide leaveFieldCompensation">
+              <span>処理方法</span>
+              <select
+                className="leaveSelectControl"
+                style={LEAVE_SELECT_VISIBLE_STYLE}
+                value={form.holidayCompensation || "compensatory"}
+                onChange={(e) => setForm({ ...form, holidayCompensation: e.target.value })}
+              >
+                <option value="compensatory">代休消化</option>
+                <option value="overtime">時間外消化</option>
+              </select>
+              <small className="leaveCompensationHint">
+                {form.holidayCompensation === "overtime"
+                  ? "時間外として登録します"
+                  : "代休の対象となる出勤日に追加します"}
+              </small>
+            </label>
+          )}
+
+          {form.type === "other" && (
+            <label className="wide leaveFieldCompensation">
+              <span>処理方法</span>
+              <select
+                className="leaveSelectControl"
+                style={LEAVE_SELECT_VISIBLE_STYLE}
+                value={form.otherCompensation || "plan"}
+                onChange={(e) => setForm({ ...form, otherCompensation: e.target.value })}
+              >
+                <option value="plan">予定のみ</option>
+                <option value="compensatory">代休消化</option>
+                <option value="overtime">時間外消化</option>
+              </select>
+              <small className="leaveCompensationHint">
+                {form.otherCompensation === "compensatory"
+                  ? "代休の対象となる出勤日に追加します"
+                  : form.otherCompensation === "overtime"
+                    ? "時間外として登録します"
+                    : "予定として登録します"}
+              </small>
+            </label>
+          )}
+
           {showTimeInputs && (
             <>
-              <label className="wide">
+              <label className="wide leaveTimeField leaveTimeStart">
                 <span>開始</span>
                 <div
+                  className="leaveTimeParts"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
@@ -3796,9 +4002,10 @@ if (staffLoaded && staff.length === 0) {
                 </div>
               </label>
 
-              <label className="wide">
+              <label className="wide leaveTimeField leaveTimeEnd">
                 <span>終了</span>
                 <div
+                  className="leaveTimeParts"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
@@ -3872,7 +4079,7 @@ if (staffLoaded && staff.length === 0) {
                       </div>
                     );
                   })()}
-                  <small>未消化または一部消化の対象日がある場合は、最も古い日を自動選択します。未来の土曜出勤・休日出勤も選択できます。</small>
+                  <small>未消化または一部消化の対象日がある場合は、最も古い日を自動選択します。未来の土曜出勤・休日出勤・代休対象のその他予定も選択できます。</small>
                 </div>
                 {candidates.length > 0 && (
                   <div className="compensatoryCandidateRow" aria-label="未消化の代休対象日">
@@ -4915,6 +5122,8 @@ function pmNormalizeStaff(staff, index = 0) {
     profession: staff.profession || "PT",
     type: staff.type || "main",
     canCancerRehab: Boolean(staff.canCancerRehab),
+    canCommunityCare: Boolean(staff.canCommunityCare),
+    communityCareCount: Math.max(0, Number(staff.communityCareCount || 0)),
     active: staff.active !== false,
     visible: staff.visible !== false,
     uid: staff.uid || "",
@@ -5210,6 +5419,7 @@ const [patientRemoteUpdatedByName, setPatientRemoteUpdatedByName] = useState("")
         staffNumber: person.staffNumber || "",
         role: person.role || existing?.role || "staff",
         canCancerRehab: person.canCancerRehab ?? existing?.canCancerRehab ?? false,
+        canCommunityCare: person.canCommunityCare ?? existing?.canCommunityCare ?? false,
         displayNameMode: person.displayNameMode === "first" ? "first" : (existing?.displayNameMode === "first" ? "first" : "last"),
         order: Number(person.order || existing?.order || index + 1),
       });
@@ -5256,6 +5466,7 @@ const [patientRemoteUpdatedByName, setPatientRemoteUpdatedByName] = useState("")
     firstName: "",
     profession: "PT",
     canCancerRehab: false,
+    canCommunityCare: false,
   });
   const [settingsView, setSettingsView] = useState("register");
   const [showStaffForm, setShowStaffForm] = useState(false);
@@ -5867,6 +6078,25 @@ function markChanged(staffId, department) {
     updateDialysisDetail(staffId, key, Math.max(0, Number(detail[key] || 0) + diff));
   }
 
+  function updateCommunityCareCount(staffId, value) {
+    const nextValue = Math.max(0, Number(value || 0));
+    setStaff((prev) =>
+      prev.map((person) =>
+        person.id === staffId ? { ...person, communityCareCount: nextValue } : person
+      )
+    );
+    markChanged(staffId, "communityCare");
+  }
+
+  function quickAdjustCommunityCare(staffId, diff) {
+    const target = staff.find((person) => person.id === staffId);
+    if (!target || !target.canCommunityCare) return;
+    updateCommunityCareCount(
+      staffId,
+      Math.max(0, Number(target.communityCareCount || 0) + diff)
+    );
+  }
+
   function addHistory(entry) {
     setHistory((prev) => [
       {
@@ -6219,6 +6449,7 @@ function markChanged(staffId, department) {
       uid: "",
       order: maxOrder + 1,
       canCancerRehab: Boolean(staffForm.canCancerRehab),
+      canCommunityCare: Boolean(staffForm.canCommunityCare),
       displayNameMode: "last",
       createdAt: serverTimestamp(),
     };
@@ -6228,7 +6459,7 @@ function markChanged(staffId, department) {
     const previousStaff = staff;
 
     setStaff((prev) => [...prev, optimisticStaff]);
-    setStaffForm({ lastName: "", firstName: "", profession, canCancerRehab: false });
+    setStaffForm({ lastName: "", firstName: "", profession, canCancerRehab: false, canCommunityCare: false });
     setShowStaffForm(false);
 
     if (patientTutorialModeRef.current) return;
@@ -6310,6 +6541,30 @@ function markChanged(staffId, department) {
       console.error("staff cancer permission update failed", error);
       setStaff(previousStaff);
       alert("がんリハ設定の保存に失敗しました。Firestoreの権限または通信状況を確認してください。");
+    }
+  }
+
+  async function updateCommunityCarePermission(id, canCommunityCare) {
+    if (!canCommunityCare && activeCell === `${id}:communityCare`) {
+      setActiveCell(null);
+    }
+
+    const previousStaff = staff;
+    setStaff((prev) =>
+      prev.map((person) =>
+        person.id === id
+          ? pmNormalizeStaff({ ...person, canCommunityCare })
+          : person
+      )
+    );
+
+    if (patientTutorialModeRef.current) return;
+    try {
+      await updateDoc(doc(db, "staff", id), { canCommunityCare });
+    } catch (error) {
+      console.error("staff community care permission update failed", error);
+      setStaff(previousStaff);
+      alert("地域包括担当設定の保存に失敗しました。Firestoreの権限または通信状況を確認してください。");
     }
   }
 
@@ -7843,6 +8098,13 @@ function markChanged(staffId, department) {
                         </button>
                       </div>
                     </label>
+                    <label className="checkSetting">
+                      <span>地域包括担当</span>
+                      <div className="cancerPermissionToggle">
+                        <button type="button" className={staffForm.canCommunityCare ? "active" : ""} onClick={() => setStaffForm({ ...staffForm, canCommunityCare: true })}>可</button>
+                        <button type="button" className={!staffForm.canCommunityCare ? "active" : ""} onClick={() => setStaffForm({ ...staffForm, canCommunityCare: false })}>否</button>
+                      </div>
+                    </label>
                   </div>
 
                   <button className="primaryButton" type="submit">追加</button>
@@ -7894,6 +8156,15 @@ function markChanged(staffId, department) {
                       {person.canCancerRehab ? "がん可" : "がん不可"}
                     </button>
 
+                    <button
+                      className={`staffCommunityCareBadge badgeAction ${person.canCommunityCare ? "allowed" : "denied"}`}
+                      type="button"
+                      onClick={() => updateCommunityCarePermission(person.id, !person.canCommunityCare)}
+                      aria-label={`${pmPersonName(person)}の地域包括担当可否を切り替え`}
+                    >
+                      {person.canCommunityCare ? "地包可" : "地包不可"}
+                    </button>
+
                     <button className="deleteButton compactDeleteButton oneLineDeleteButton" type="button" onClick={() => deleteStaff(person.id)}>削除</button>
                   </div>
                 ))}
@@ -7925,6 +8196,13 @@ function markChanged(staffId, department) {
                           onClick={() => updateCancerPermission(person.id, !person.canCancerRehab)}
                         >
                           {person.canCancerRehab ? "がん可" : "がん不可"}
+                        </button>
+                        <button
+                          className={`staffCommunityCareBadge badgeAction ${person.canCommunityCare ? "allowed" : "denied"}`}
+                          type="button"
+                          onClick={() => updateCommunityCarePermission(person.id, !person.canCommunityCare)}
+                        >
+                          {person.canCommunityCare ? "地包可" : "地包不可"}
                         </button>
                       </div>
                     </div>
@@ -8523,6 +8801,7 @@ function PMAssignmentTable({
                 </th>
               ))}
               <th className={`dialysisCol ${activeDeptKey === "dialysis" ? "activeDeptGuide" : ""}`}>透析</th>
+              <th className={`communityCareCol ${activeDeptKey === "communityCare" ? "activeDeptGuide" : ""}`}>地包</th>
               <th className="moveCol">
                 <span className="moveHeaderInline">
                   患者移動
@@ -8673,6 +8952,17 @@ function PMAssignmentTable({
 
                 <td
                   className="dialysisCol"
+                  style={{
+                    background: "#f8fafc",
+                    borderTop: "2px solid #f59e0b",
+                    borderBottom: "2px solid #f59e0b",
+                    opacity: 0.45,
+                  }}
+                >
+                  —
+                </td>
+                <td
+                  className="communityCareCol"
                   style={{
                     background: "#f8fafc",
                     borderTop: "2px solid #f59e0b",
@@ -8884,6 +9174,26 @@ function PMAssignmentTable({
                           ))
                         )}
                       </div>
+                    )}
+                  </td>
+                  <td
+                    className={`communityCareCol numberCell ${isChangedToday(person.id, "communityCare") ? "changed" : ""} ${activeStaffId === person.id ? "tRowGuide" : ""} ${activeDeptKey === "communityCare" ? "tColGuide" : ""} ${activeCell === `${person.id}:communityCare` ? "tActiveCell" : ""}`}
+                    onClick={() => {
+                      if (!person.canCommunityCare) return;
+                      const cellKey = `${person.id}:communityCare`;
+                      setActiveCell(activeCell === cellKey ? null : cellKey);
+                    }}
+                  >
+                    {!person.canCommunityCare ? (
+                      <span className="disabledCommunityCareMark">—</span>
+                    ) : activeCell === `${person.id}:communityCare` ? (
+                      <div className="inlineAdjust" onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className="inlineBtn minus" onClick={() => quickAdjustCommunityCare(person.id, -1)}>−</button>
+                        <span className="inlineValue">{Number(person.communityCareCount || 0)}</span>
+                        <button type="button" className="inlineBtn plus" onClick={() => quickAdjustCommunityCare(person.id, 1)}>＋</button>
+                      </div>
+                    ) : (
+                      <span>{Number(person.communityCareCount || 0)}</span>
                     )}
                   </td>
                   <td className={`moveCol ${activeStaffId === person.id ? "tRowGuide tRowAfterCell" : ""}`}>

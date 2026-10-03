@@ -9665,3 +9665,659 @@ select.leaveSelectControl:disabled {
     gap: 2px !important;
   }
 }
+
+
+/* =========================================================
+   休暇・特別勤務・個別予定登録：コンパクトUI
+   2026-09-29
+   ※ 最新 App(8).css を維持し、末尾上書きのみ
+========================================================= */
+
+.leaveRegisterGrid {
+  align-items: start;
+}
+
+.leaveCompensationHint {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* PC：処理方法と時間入力の並びを整理 */
+@media (min-width: 851px) {
+  .leaveRegisterGrid .leaveFieldCompensation {
+    grid-column: span 2;
+  }
+
+  .leaveRegisterGrid .leaveTimeField {
+    grid-column: span 1;
+  }
+}
+
+/* スマホ：縦スクロールを抑えたコンパクト配置 */
+@media (max-width: 600px) {
+  .dayModal .modalHeader {
+    align-items: flex-start;
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+
+  .dayModal .modalHeader h2 {
+    font-size: 16px;
+    line-height: 1.2;
+    white-space: nowrap;
+    letter-spacing: -0.03em;
+  }
+
+  .dayModal .modalSubLabel {
+    margin-top: 2px;
+    font-size: 11px;
+  }
+
+  .dayModal .closeButton {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+  }
+
+  .leaveFormScroll {
+    padding-top: 0;
+  }
+
+  .formGrid.leaveRegisterGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 7px;
+    margin-top: 8px;
+  }
+
+  .leaveRegisterGrid label {
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .leaveRegisterGrid label > span {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  /* 職員・日付・処理方法は全幅 */
+  .leaveRegisterGrid .leaveFieldStaff,
+  .leaveRegisterGrid .leaveFieldDate,
+  .leaveRegisterGrid .leaveFieldCompensation {
+    grid-column: 1 / -1;
+  }
+
+  /* 種別＋取得方法、開始＋終了は2列 */
+  .leaveRegisterGrid .leaveFieldType,
+  .leaveRegisterGrid .leaveFieldMethod,
+  .leaveRegisterGrid .leaveTimeField {
+    grid-column: span 1 !important;
+  }
+
+  .leaveRegisterGrid input,
+  .leaveRegisterGrid select,
+  .leaveRegisterGrid .leaveSelectControl {
+    min-height: 40px;
+    height: 40px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .leaveRegisterGrid .leaveTimeParts {
+    grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr) 12px !important;
+    gap: 3px !important;
+  }
+
+  .leaveRegisterGrid .leaveTimeParts > span {
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .leaveRegisterGrid .leaveCompensationHint {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .leaveRegisterGrid .wide:not(.leaveTimeField) {
+    grid-column: 1 / -1;
+  }
+
+  .leaveRegisterGrid .checkRow {
+    margin-top: 0;
+    gap: 5px !important;
+  }
+
+  .leaveRegisterGrid .checkRow span,
+  .leaveRegisterGrid .checkRow label {
+    font-size: 11px;
+  }
+}
+
+/* ===== 地域包括担当（地包）列 ===== */
+.patientModule .communityCareCol {
+  min-width: 54px;
+  width: 54px;
+  text-align: center;
+  border-right: 3px double #94a3b8 !important;
+}
+.patientModule .assignmentTable thead .communityCareCol {
+  white-space: nowrap;
+}
+.patientModule .assignmentTable td.communityCareCol.changed {
+  background: #fff7ed;
+}
+.patientModule .disabledCommunityCareMark {
+  opacity: 0.45;
+}
+.staffCommunityCareBadge.allowed {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+.staffCommunityCareBadge.denied {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* ===== 地包：がんバッジと同一デザイン／患者移動との境界を二重線 ===== */
+.patientModule .staffCommunityCareBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.patientModule .staffCommunityCareBadge.allowed {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.patientModule .staffCommunityCareBadge.denied {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.patientModule .oneLineStaffCard .staffCommunityCareBadge {
+  min-height: 20px !important;
+  padding: 2px 7px !important;
+  font-size: 10.5px !important;
+}
+
+.patientModule .orderItem .staffCommunityCareBadge {
+  min-height: 20px;
+  padding: 2px 7px;
+}
+
+/* 地包｜患者移動 の境界 */
+.patientModule .assignmentTable th.communityCareCol,
+.patientModule .assignmentTable td.communityCareCol {
+  border-right: 3px double #475569 !important;
+}
+
+.patientModule .assignmentTable th.moveCol,
+.patientModule .assignmentTable td.moveCol {
+  border-left: 3px double #475569 !important;
+}
+
+/* ===== 地包表示 最終調整 =====
+   ・既存の区切り線と同じ「右borderのみ」の二重線
+   ・地包バッジ追加後もスタッフカードを1行表示
+*/
+.patientModule .assignmentTable th.communityCareCol,
+.patientModule .assignmentTable td.communityCareCol {
+  border-right: 3px double #475569 !important;
+}
+
+/* 左右双方にdoubleを付けると線が重なるため、患者移動側の左線は通常どおり消す */
+.patientModule .assignmentTable th.moveCol,
+.patientModule .assignmentTable td.moveCol {
+  border-left: 0 !important;
+}
+
+/* 名前 + 連携 + 表示 + がん + 地包 + 削除 */
+.patientModule .oneLineStaffCard {
+  grid-template-columns: minmax(82px, 1fr) auto auto auto auto auto !important;
+}
+
+.patientModule .oneLineStaffCard .staffCommunityCareBadge {
+  min-height: 20px !important;
+  padding: 2px 7px !important;
+  font-size: 10.5px !important;
+}
+
+@media (max-width: 560px) {
+  .patientModule .oneLineStaffCard {
+    grid-template-columns: minmax(64px, 1fr) auto auto auto auto auto !important;
+    gap: 3px !important;
+    padding: 6px 5px !important;
+  }
+
+  .patientModule .oneLineStaffCard .staffCommunityCareBadge {
+    min-height: 18px !important;
+    padding: 1px 5px !important;
+    font-size: 9.5px !important;
+  }
+}
+
+/* ===== スタッフカード：担当可否を下段へ分離（2行コンパクト） ===== */
+.patientModule .oneLineStaffCard {
+  display: grid !important;
+  grid-template-columns: auto auto auto minmax(0, 1fr) auto !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 5px !important;
+  row-gap: 4px !important;
+  align-items: center !important;
+  justify-content: start !important;
+}
+
+/* 上段：氏名／職種、連携、表示。削除は常に右端 */
+.patientModule .oneLineStaffCard .oneLineStaffName {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+.patientModule .oneLineStaffCard .staffLinkBadge {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+}
+
+.patientModule .oneLineStaffCard .staffVisibleBadge {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+}
+
+.patientModule .oneLineStaffCard .oneLineDeleteButton {
+  grid-column: 5 !important;
+  grid-row: 1 !important;
+  justify-self: end !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+/* 下段：担当可否だけを左寄せ。横幅を埋めるために伸ばさない */
+.patientModule .oneLineStaffCard .staffCancerBadge {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  width: auto !important;
+}
+
+.patientModule .oneLineStaffCard .staffCommunityCareBadge {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  width: auto !important;
+}
+
+@media (max-width: 560px) {
+  .patientModule .oneLineStaffCard {
+    grid-template-columns: auto auto auto minmax(0, 1fr) auto !important;
+    column-gap: 4px !important;
+    row-gap: 3px !important;
+    padding: 5px 6px !important;
+  }
+
+  /* 2段化したため氏名を無理に極小化しない */
+  .patientModule .oneLineStaffCard .oneLineStaffName,
+  .patientModule .oneLineStaffCard .staffLinkBadge,
+  .patientModule .oneLineStaffCard .staffVisibleBadge,
+  .patientModule .oneLineStaffCard .staffCancerBadge,
+  .patientModule .oneLineStaffCard .staffCommunityCareBadge,
+  .patientModule .oneLineStaffCard .oneLineDeleteButton {
+    max-width: none !important;
+  }
+}
+
+/* ===== スタッフカード v5：左=氏名/職種(2段中央)、中央=状態2x2、右=削除(2段中央) ===== */
+.patientModule .oneLineStaffCard {
+  display: grid !important;
+  grid-template-columns: minmax(118px, auto) minmax(0, 1fr) auto !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 8px !important;
+  row-gap: 4px !important;
+  align-items: center !important;
+  min-height: 58px !important;
+  padding: 7px 8px !important;
+}
+
+/* 左ブロック：姓・名・職種を2行分の中央に配置 */
+.patientModule .oneLineStaffCard .oneLineStaffName {
+  grid-column: 1 !important;
+  grid-row: 1 / 3 !important;
+  align-self: center !important;
+  justify-self: start !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.patientModule .oneLineStaffCard .displayNameChoice {
+  max-width: 64px !important;
+}
+
+.patientModule .oneLineStaffCard .staffProfessionBadge {
+  flex: 0 0 auto !important;
+}
+
+/* 中央ブロック：上段=連携/表示、下段=がん/地包 */
+.patientModule .oneLineStaffCard .staffLinkBadge {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  margin-right: 68px !important;
+}
+
+.patientModule .oneLineStaffCard .staffVisibleBadge {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  margin-left: 62px !important;
+}
+
+.patientModule .oneLineStaffCard .staffCancerBadge {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  margin-right: 68px !important;
+  width: auto !important;
+}
+
+.patientModule .oneLineStaffCard .staffCommunityCareBadge {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  margin-left: 62px !important;
+  width: auto !important;
+}
+
+/* 右ブロック：削除を2行分の中央へ */
+.patientModule .oneLineStaffCard .oneLineDeleteButton {
+  grid-column: 3 !important;
+  grid-row: 1 / 3 !important;
+  align-self: center !important;
+  justify-self: end !important;
+  width: auto !important;
+  min-width: 38px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+}
+
+@media (max-width: 560px) {
+  .patientModule .oneLineStaffCard {
+    grid-template-columns: minmax(105px, auto) minmax(116px, 1fr) auto !important;
+    column-gap: 5px !important;
+    row-gap: 3px !important;
+    min-height: 54px !important;
+    padding: 6px 5px !important;
+  }
+
+  .patientModule .oneLineStaffCard .displayNameChoice {
+    max-width: 52px !important;
+    height: 22px !important;
+    padding: 1px 5px !important;
+    font-size: 10.5px !important;
+  }
+
+  .patientModule .oneLineStaffCard .staffProfessionBadge {
+    font-size: 9.5px !important;
+  }
+
+  .patientModule .oneLineStaffCard .staffLinkBadge,
+  .patientModule .oneLineStaffCard .staffVisibleBadge,
+  .patientModule .oneLineStaffCard .staffCancerBadge,
+  .patientModule .oneLineStaffCard .staffCommunityCareBadge {
+    min-height: 18px !important;
+    padding: 1px 5px !important;
+    font-size: 9.5px !important;
+    max-width: none !important;
+  }
+
+  .patientModule .oneLineStaffCard .staffLinkBadge,
+  .patientModule .oneLineStaffCard .staffCancerBadge {
+    margin-right: 58px !important;
+  }
+
+  .patientModule .oneLineStaffCard .staffVisibleBadge,
+  .patientModule .oneLineStaffCard .staffCommunityCareBadge {
+    margin-left: 54px !important;
+  }
+
+  .patientModule .oneLineStaffCard .oneLineDeleteButton {
+    min-width: 34px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 5px !important;
+    font-size: 9.5px !important;
+  }
+}
+
+/* ===== スタッフカード v6：氏名を強調し、中央4項目を左へ寄せる ===== */
+.patientModule .oneLineStaffCard {
+  grid-template-columns: minmax(112px, auto) auto auto minmax(0, 1fr) auto !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 4px !important;
+  row-gap: 3px !important;
+  align-items: center !important;
+}
+
+/* 左：氏名・職種。2段分の中央に置き、カードの主情報として少し強調 */
+.patientModule .oneLineStaffCard .oneLineStaffName {
+  grid-column: 1 !important;
+  grid-row: 1 / 3 !important;
+  align-self: center !important;
+  justify-self: start !important;
+  gap: 4px !important;
+  margin: 0 !important;
+}
+
+.patientModule .oneLineStaffCard .displayNameChoice {
+  max-width: 68px !important;
+  min-height: 24px !important;
+  padding: 2px 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+}
+
+.patientModule .oneLineStaffCard .staffProfessionBadge {
+  font-size: 10px !important;
+  margin: 0 !important;
+}
+
+/* 中央：2列×2段。marginによる疑似配置をやめ、氏名のすぐ右から開始 */
+.patientModule .oneLineStaffCard .staffLinkBadge {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  margin: 0 !important;
+}
+.patientModule .oneLineStaffCard .staffVisibleBadge {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  margin: 0 !important;
+}
+.patientModule .oneLineStaffCard .staffCancerBadge {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  margin: 0 !important;
+  width: auto !important;
+}
+.patientModule .oneLineStaffCard .staffCommunityCareBadge {
+  grid-column: 3 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  margin: 0 !important;
+  width: auto !important;
+}
+
+/* 右：削除。余白列を挟んで右端固定 */
+.patientModule .oneLineStaffCard .oneLineDeleteButton {
+  grid-column: 5 !important;
+  grid-row: 1 / 3 !important;
+  align-self: center !important;
+  justify-self: end !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 560px) {
+  .patientModule .oneLineStaffCard {
+    grid-template-columns: minmax(106px, auto) auto auto minmax(0, 1fr) auto !important;
+    column-gap: 3px !important;
+    row-gap: 2px !important;
+    min-height: 54px !important;
+    padding: 6px 5px !important;
+  }
+
+  .patientModule .oneLineStaffCard .displayNameChoice {
+    max-width: 62px !important;
+    min-height: 23px !important;
+    height: 23px !important;
+    padding: 1px 5px !important;
+    font-size: 11px !important;
+  }
+
+  .patientModule .oneLineStaffCard .staffLinkBadge,
+  .patientModule .oneLineStaffCard .staffVisibleBadge,
+  .patientModule .oneLineStaffCard .staffCancerBadge,
+  .patientModule .oneLineStaffCard .staffCommunityCareBadge {
+    margin: 0 !important;
+    min-height: 18px !important;
+    padding: 1px 5px !important;
+    font-size: 9.5px !important;
+  }
+}
+
+/* ===== スタッフカード v7：左・中央・右を固定し、氏名の長さで中央が動かない ===== */
+.patientModule .oneLineStaffCard {
+  grid-template-columns: 122px 1fr 42px !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 10px !important;
+  row-gap: 3px !important;
+  align-items: center !important;
+}
+
+/* 左ブロック：氏名＋職種。長い氏名でも中央ブロックを押さない */
+.patientModule .oneLineStaffCard .oneLineStaffName {
+  grid-column: 1 !important;
+  grid-row: 1 / 3 !important;
+  width: 122px !important;
+  min-width: 0 !important;
+  align-self: center !important;
+  justify-self: start !important;
+  overflow: hidden !important;
+  gap: 4px !important;
+  margin: 0 !important;
+}
+
+/* 中央4項目：カードごとに同じ開始位置。2列×2段 */
+.patientModule .oneLineStaffCard .staffLinkBadge {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  margin: 0 0 0 0 !important;
+}
+.patientModule .oneLineStaffCard .staffVisibleBadge {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  margin: 0 0 0 56px !important;
+}
+.patientModule .oneLineStaffCard .staffCancerBadge {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  margin: 0 !important;
+  width: auto !important;
+}
+.patientModule .oneLineStaffCard .staffCommunityCareBadge {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  margin: 0 0 0 56px !important;
+  width: auto !important;
+}
+
+/* 右ブロック：削除を固定 */
+.patientModule .oneLineStaffCard .oneLineDeleteButton {
+  grid-column: 3 !important;
+  grid-row: 1 / 3 !important;
+  align-self: center !important;
+  justify-self: end !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 560px) {
+  .patientModule .oneLineStaffCard {
+    grid-template-columns: 112px 1fr 38px !important;
+    column-gap: 8px !important;
+    row-gap: 2px !important;
+    min-height: 54px !important;
+    padding: 6px 5px !important;
+  }
+
+  .patientModule .oneLineStaffCard .oneLineStaffName {
+    width: 112px !important;
+  }
+
+  .patientModule .oneLineStaffCard .staffVisibleBadge,
+  .patientModule .oneLineStaffCard .staffCommunityCareBadge {
+    margin-left: 52px !important;
+  }
+}
+
+/* ===== スタッフカード v8：3文字姓を省略しないための氏名幅調整 ===== */
+/* 中央4項目と削除位置はv7の固定配置を維持し、左ブロックだけ必要最小限拡張 */
+.patientModule .oneLineStaffCard {
+  grid-template-columns: 132px 1fr 42px !important;
+}
+
+.patientModule .oneLineStaffCard .oneLineStaffName {
+  width: 132px !important;
+}
+
+/* 姓・名それぞれ最低3文字程度を表示できる幅を確保 */
+.patientModule .oneLineStaffCard .displayNameChoice {
+  min-width: 44px !important;
+  max-width: 64px !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 560px) {
+  .patientModule .oneLineStaffCard {
+    grid-template-columns: 126px 1fr 38px !important;
+    column-gap: 7px !important;
+  }
+
+  .patientModule .oneLineStaffCard .oneLineStaffName {
+    width: 126px !important;
+  }
+
+  .patientModule .oneLineStaffCard .displayNameChoice {
+    min-width: 42px !important;
+    max-width: 60px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+}
