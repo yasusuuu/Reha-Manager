@@ -1307,6 +1307,7 @@ const [compensatorySettings, setCompensatorySettings] = useState(() => ({
   const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [dateModalMode, setDateModalMode] = useState("schedule");
   const [recordSubmitting, setRecordSubmitting] = useState(false);
+  const [outpatientDraft, setOutpatientDraft] = useState(0);
   const [showSaturdayGroupSettings, setShowSaturdayGroupSettings] = useState(false);
   const [swapTargetStaffId, setSwapTargetStaffId] = useState(null);
   const [swapCandidateDate, setSwapCandidateDate] = useState(null);
@@ -1484,7 +1485,7 @@ const loginUser = loginStaff
 
   function recordsForDate(date) {
     return enrichedRecords
-      .filter((r) => r.date === date)
+      .filter((r) => r.date === date && r.type !== "outpatientPlan")
       .map((r) => ({ ...r, staff: staff.find((s) => s.id === r.staffId) }))
       .filter((r) => r.staff);
   }
@@ -1835,16 +1836,75 @@ const loginUser = loginStaff
     }
   }, [form.type, form.staffId, form.date, records, saturdayGroups, saturdayOverrides, saturdayRotation, compensatorySettings.startDate, loginUser?.id, isAdmin]);
 
+  function outpatientPlanRecordForDate(date, staffId = loginId) {
+    return enrichedRecords.find((record) =>
+      record.type === "outpatientPlan"
+      && record.date === date
+      && record.staffId === staffId
+    ) || null;
+  }
+
+  function outpatientPlanCountForDate(date, staffId = loginId) {
+    return Math.max(0, Number(outpatientPlanRecordForDate(date, staffId)?.count || 0));
+  }
+
+  function personalPlanCountForDate(date) {
+    if (displayScope !== "mine" || !loginId) return 0;
+    return enrichedRecords.filter((record) =>
+      record.date === date
+      && record.staffId === loginId
+      && record.type === "other"
+      && (record.otherCompensation || "plan") === "plan"
+    ).length;
+  }
+
+  async function persistOutpatientPlan(date, count) {
+    if (!date || !loginId || tutorialModeRef.current) return;
+    const nextCount = Math.max(0, Math.floor(Number(count) || 0));
+    const existing = outpatientPlanRecordForDate(date, loginId);
+    const previousCount = Math.max(0, Number(existing?.count || 0));
+    if (nextCount === previousCount) return;
+
+    try {
+      if (nextCount === 0) {
+        if (existing?.id) await deleteDoc(doc(db, "leaveRecords", existing.id));
+        return;
+      }
+
+      if (existing?.id) {
+        await updateDoc(doc(db, "leaveRecords", existing.id), {
+          count: nextCount,
+          updatedAt: Date.now(),
+        });
+      } else {
+        await addDoc(collection(db, "leaveRecords"), {
+          staffId: loginId,
+          date,
+          type: "outpatientPlan",
+          method: "count",
+          count: nextCount,
+          note: "",
+          createdAt: Date.now(),
+          createdBy: loginUser?.id || "",
+          createdByName: loginUser ? personName(loginUser) : "",
+        });
+      }
+    } catch (error) {
+      console.error("Outpatient calendar save failed", error);
+      alert("外来予定人数の保存に失敗しました。");
+    }
+  }
+
   function countByJob(date) {
     const list = scopedRecordsForDate(date).filter((record) =>
       isLeaveLike(record)
-      || (record.type === "other" && record.otherCompensation === "compensatory")
+      || (record.type === "other" && ["compensatory", "overtime"].includes(record.otherCompensation))
     );
 
     // 同一人物が同じ日に複数の休暇を登録していても「1人」として数える。
     // 例：午前代休＋午後有休 → PT 1
-    // 「その他予定」で「代休消化」を選択した記録も、PT/OTの休暇人数に含める。
-    // 「予定のみ」「時間外消化」は人数に含めない。
+    // 「その他予定」の「代休消化」「時間外消化」も、PT/OTの休暇人数に含める。
+    // 「予定のみ」は勤務人数に影響させず、自分タブで「自予」として別表示する。
     const uniqueByStaff = Array.from(
       new Map(
         list
@@ -1889,12 +1949,15 @@ const loginUser = loginStaff
     }
 
     const nextIsFull = isFullDayRecord(nextRecord);
+    const nextIsPlanOnly = nextRecord.type === "other" && (nextRecord.otherCompensation || "plan") === "plan";
 
-    if (sameDay.some((r) => isFullDayRecord(r))) {
+    // 「その他予定 > 予定のみ」は勤務・休暇とは独立した個人予定。
+    // 終日休暇や時間休が既に登録されている日にも追加できる。
+    if (!nextIsPlanOnly && sameDay.some((r) => isFullDayRecord(r))) {
       return "この日は既に終日の休暇が登録されています。";
     }
 
-    if (nextIsFull && sameDay.some((r) => isLeaveLike(r))) {
+    if (!nextIsPlanOnly && nextIsFull && sameDay.some((r) => isLeaveLike(r))) {
       return "同日に既に休暇があるため、終日の休暇は登録できません。";
     }
 
@@ -2205,6 +2268,7 @@ try {
 
   function openLeaveFormForDate(date) {
     setSelectedDate(date);
+    setOutpatientDraft(outpatientPlanCountForDate(date, loginId));
     setDateModalMode("schedule");
     setShowLeaveForm(false);
   }
@@ -2220,6 +2284,9 @@ try {
   }
 
   function closeDateModal() {
+    if (selectedDate && displayScope === "mine") {
+      void persistOutpatientPlan(selectedDate, outpatientDraft);
+    }
     setSelectedDate(null);
     setDateModalMode("schedule");
   }
@@ -3374,6 +3441,8 @@ if (staffLoaded && staff.length === 0) {
                 const date = dateKey(year, month, day);
                 const count = countByJob(date);
                 const holidayWork = holidayWorkCountByJob(date);
+                const personalPlanCount = personalPlanCountForDate(date);
+                const outpatientPlanCount = displayScope === "mine" ? outpatientPlanCountForDate(date, loginId) : 0;
                 const dayAnnouncements = announcementsForDate(date);
                 const weekday = new Date(`${date}T00:00:00`).getDay();
                 const holidayName = holidays[date];
@@ -3416,6 +3485,12 @@ if (staffLoaded && staff.length === 0) {
                       {count.PT > 0 && <span>PT {count.PT}</span>}
                       {count.OT > 0 && <span>OT {count.OT}</span>}
                     </div>
+                    {displayScope === "mine" && (personalPlanCount > 0 || outpatientPlanCount > 0) && (
+                      <div className="personalCalendarTags">
+                        {personalPlanCount > 0 && <span className="personalPlanTag">自予{personalPlanCount}</span>}
+                        {outpatientPlanCount > 0 && <span className="outpatientPlanTag">外{outpatientPlanCount}</span>}
+                      </div>
+                    )}
                     {holidayWork.total > 0 && (
                       <div className="holidayWorkTags">
                         {holidayWork.PT > 0 && <span>休出 PT {holidayWork.PT}</span>}
@@ -3507,6 +3582,27 @@ if (staffLoaded && staff.length === 0) {
                 <span className="modalSubLabel">{dateModalMode === "form" ? selectedDate.replaceAll("-", "/") : (displayScope === "mine" ? "自分の予定" : "全体表示")}</span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {dateModalMode === "schedule" && displayScope === "mine" && (
+                  <div className="outpatientCalendarAdjust" aria-label="外来予定人数">
+                    <span>外来</span>
+                    <button
+                      type="button"
+                      onClick={() => setOutpatientDraft((value) => Math.max(0, value - 1))}
+                      disabled={outpatientDraft <= 0}
+                      aria-label="外来予定人数を1人減らす"
+                    >
+                      −
+                    </button>
+                    <b>{outpatientDraft}</b>
+                    <button
+                      type="button"
+                      onClick={() => setOutpatientDraft((value) => value + 1)}
+                      aria-label="外来予定人数を1人増やす"
+                    >
+                      ＋
+                    </button>
+                  </div>
+                )}
                 <button className="closeButton" type="button" onClick={closeDateModal}>
                   ×
                 </button>

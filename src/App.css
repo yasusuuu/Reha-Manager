@@ -10321,3 +10321,147 @@ select.leaveSelectControl:disabled {
     padding-right: 4px !important;
   }
 }
+
+/* ===== 自分カレンダー：個人予定・外来予定 ===== */
+.personalCalendarTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.personalCalendarTags span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 6px;
+  font-size: 10.5px;
+  line-height: 1.1;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.personalPlanTag {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.outpatientPlanTag {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.outpatientCalendarAdjust {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.outpatientCalendarAdjust button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.outpatientCalendarAdjust button:disabled {
+  opacity: 0.4;
+}
+
+.outpatientCalendarAdjust b {
+  min-width: 18px;
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .outpatientCalendarAdjust {
+    gap: 3px;
+    font-size: 11px;
+  }
+
+  .outpatientCalendarAdjust button {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+  }
+}
+
+
+/* ===== v11 自分カレンダー：自予・外来をPT/OT人数カプセルと同寸法に統一 ===== */
+.calendarCell .personalCalendarTags {
+  display: flex !important;
+  align-items: flex-start !important;
+  align-content: flex-start !important;
+  flex-wrap: wrap !important;
+  gap: 3px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.calendarCell .personalCalendarTags > span {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 2px 5px !important;
+  border-radius: 4px !important;
+  font-size: inherit !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 560px) {
+  .calendarCell .personalCalendarTags {
+    gap: 2px !important;
+  }
+  .calendarCell .personalCalendarTags > span {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 2px 5px !important;
+    border-radius: 4px !important;
+    line-height: 1.05 !important;
+  }
+}
+
+
+/* ===== v12 自分カレンダー：自予・外来の文字サイズもPT/OT人数表示と完全統一 ===== */
+/* PT/OTと同じレスポンシブ文字サイズを使用する。形状・paddingはv11の共通値を維持。 */
+.calendarCell .personalCalendarTags > span {
+  font-size: 12px !important;
+}
+
+@media (max-width: 850px) {
+  .calendarCell .personalCalendarTags > span {
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .calendarCell .personalCalendarTags > span {
+    font-size: 10px !important;
+  }
+}
