@@ -7169,6 +7169,7 @@ function markChanged(staffId, department) {
       quickAdjust={quickAdjust}
       quickAdjustOutpatient={quickAdjustOutpatient}
       quickAdjustDialysis={quickAdjustDialysis}
+      quickAdjustCommunityCare={quickAdjustCommunityCare}
       quickAdjustStopped={quickAdjustStopped}
       countCheckMode={countCheckMode}
       countCheckStaff={loginPatientStaff}
@@ -8580,6 +8581,7 @@ function PMAssignmentTable({
   quickAdjust,
   quickAdjustOutpatient,
   quickAdjustDialysis,
+  quickAdjustCommunityCare,
   quickAdjustStopped,
   countCheckMode,
   countCheckStaff,
