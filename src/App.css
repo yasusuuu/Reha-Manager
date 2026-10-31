@@ -10465,3 +10465,330 @@ select.leaveSelectControl:disabled {
     font-size: 10px !important;
   }
 }
+
+/* 予定管理: タイトルとアカウント操作を分離した省スペースヘッダー */
+.compactPageTitle {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: #173c3a;
+  line-height: 1.35;
+  padding: 5px 0 8px;
+}
+.compactAccountBar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  box-shadow: 0 2px 8px rgba(15,23,42,.04);
+}
+.compactStaffSelect { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; color: #64748b; font-size: 11px; font-weight: 700; }
+.compactStaffSelect select { width: 100%; min-width: 0; height: 35px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #0f172a; font-size: 13px; }
+.compactAccountActions { display: flex; align-items: center; gap: 5px; }
+.compactAccountActions button { height: 35px; padding: 5px 9px; border-radius: 8px; font-size: 12px; white-space: nowrap; font-weight: 650; }
+.compactTutorialButton { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+.compactTutorialButton.active { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+.compactLogoutButton { background: #fff; color: #475569; border: 1px solid #cbd5e1; }
+@media (max-width: 420px) {
+  .compactAccountBar { padding: 8px; gap: 6px; }
+  .compactAccountActions { gap: 4px; }
+  .compactAccountActions button { padding: 5px 6px; font-size: 11px; }
+  .compactStaffSelect select { font-size: 12px; }
+}
+
+/* 予定管理: 右上メニューに低頻度操作を収納 */
+.minimalAppHeader { position: relative; display: flex; align-items: center; justify-content: center; min-height: 38px; margin: 0 0 8px; }
+.minimalAppHeader h1 { margin: 0; font-size: 18px; font-weight: 800; line-height: 1.3; color: #173c3a; }
+.accountMenuAnchor { position: absolute; right: 2px; top: 0; z-index: 40; }
+.accountMenuToggle { width: 38px; height: 36px; border: 1px solid #d5e0e8; border-radius: 9px; background: #fff; color: #234; font-size: 20px; cursor: pointer; }
+.accountMenuBackdrop { position: fixed; inset: 0; z-index: 40; border: 0; background: transparent; cursor: default; }
+.accountMenuPanel { position: absolute; z-index: 41; top: 42px; right: 0; width: min(270px, calc(100vw - 30px)); padding: 12px; display: flex; flex-direction: column; gap: 10px; background: white; border: 1px solid #dbe3ec; border-radius: 12px; box-shadow: 0 10px 30px rgba(15,23,42,.16); }
+.accountMenuPanel > button { padding: 10px; border: 1px solid #dbe3ec; border-radius: 8px; background: #f8fafc; color: #334155; text-align: left; cursor: pointer; }
+.accountMenuPanel .compactStaffSelect { flex: none; }
+
+/* メニュー内の管理者専用項目 */
+.accountMenuPanel { max-height: min(75vh, 650px); overflow-y: auto; }
+.accountAdminSection { border-top: 1px solid #e2e8f0; padding-top: 6px; }
+.accountAdminToggle { width: 100%; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+.accountAdminItems { display: grid; gap: 7px; padding: 7px 0 8px 10px; }
+.accountAdminItems > button { width: 100%; text-align: left; }
+.accountAdminItems .compensatorySettingsCard { display: grid; gap: 6px; min-width: 0; }
+
+/* Icon-based compact account menu */
+.accountMenuToggle { display: inline-flex; align-items: center; justify-content: center; }
+.accountMenuPanel { width: min(310px, calc(100vw - 24px)); gap: 5px; padding: 13px; }
+.accountMenuHeading { font-size: 15px; font-weight: 700; padding: 2px 5px 10px; border-bottom: 1px solid #e5eaf0; }
+.accountMenuPanel .accountMenuItem { width: 100%; display: flex; align-items: center; gap: 11px; text-align: left; border: 0; border-radius: 7px; background: transparent; padding: 11px 9px; color: #334155; font-size: 14px; cursor: pointer; }
+.accountMenuPanel .accountMenuItem:hover { background: #f1f5f9; }
+.accountMenuPanel .accountMenuItem svg { flex: 0 0 auto; color: #64748b; }
+.accountMenuChevron { margin-left: auto; }
+.accountMenuPanel .compactStaffSelect { display: flex; flex-direction: column; gap: 5px; padding: 9px 5px 12px; border-bottom: 1px solid #e5eaf0; }
+.accountMenuPanel .compactStaffSelect > span { font-size: 12px; color: #64748b; }
+.accountStaffControl { display: flex; align-items: center; gap: 8px; padding: 0 8px; border: 1px solid #dbe3ec; border-radius: 8px; background: #fff; }
+.accountStaffControl svg { color: #64748b; flex-shrink: 0; }
+.accountStaffControl select { width: 100%; min-width: 0; border: 0; background: transparent; padding: 10px 0; color: #334155; }
+.accountAdminSection { border-top: 1px solid #e5eaf0; border-bottom: 1px solid #e5eaf0; padding: 5px 0; }
+.accountAdminItems { padding-left: 14px; border-left: 2px solid #e5eaf0; margin-left: 17px; }
+.accountAdminItems .accountMenuItem { font-size: 13px; gap: 8px; padding: 9px 6px; }
+.accountSettingTitle { display: flex; align-items: flex-start; gap: 8px; }
+.accountSettingTitle svg { color: #64748b; flex-shrink: 0; }
+.accountSettingTitle small { display: block; font-size: 11px; }
+.accountAdminItems .compensatorySettingsCard { margin: 5px 0; padding: 8px 4px; }
+
+/* 職員編集: スマートフォンでも職員1名を横1列に表示 */
+.staffModal .staffEditList {
+  display: block;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+  margin: 14px 0;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+.staffModal .staffEditRow {
+  display: grid;
+  grid-template-columns: minmax(105px, 1fr) minmax(105px, 1fr) 72px 92px 62px;
+  gap: 8px;
+  min-width: 500px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.staffModal .staffEditRow input,
+.staffModal .staffEditRow select,
+.staffModal .staffEditRow button {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .staffModal .staffEditRow {
+    grid-template-columns: 110px 110px 72px 92px 62px;
+    min-width: 478px;
+  }
+}
+
+
+/* 職員編集：スタッフごとに独立したカード。姓・名は各3文字程度 */
+.staffModal .staffEditList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-x: visible;
+  overflow-y: auto;
+  max-width: 100%;
+  padding: 2px 1px 10px;
+}
+ .staffModal .staffEditRow {
+  display: grid;
+  grid-template-columns: minmax(0, 3.8fr) minmax(0, 3.8fr) minmax(0, 2.8fr) minmax(0, 4fr) auto;
+  gap: 5px;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 10px 8px;
+  border: 1px solid #dbe5f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(30, 60, 100, .05);
+}
+.staffModal .staffEditRow input,
+.staffModal .staffEditRow select {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 6px 4px;
+  font-size: 12px;
+  text-align: center;
+}
+.staffModal .staffEditRow button {
+  width: auto;
+  min-width: 38px;
+  height: 38px;
+  padding: 5px 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .staffModal .staffEditRow {
+    grid-template-columns: minmax(0, 3.8fr) minmax(0, 3.8fr) minmax(0, 2.8fr) minmax(0, 4fr) auto;
+    min-width: 0;
+  }
+}
+@media (max-width: 380px) {
+  .staffModal .staffEditRow { gap: 3px; padding: 8px 5px; }
+  .staffModal .staffEditRow input,
+  .staffModal .staffEditRow select { font-size: 11px; padding: 5px 2px; }
+  .staffModal .staffEditRow button { min-width: 32px; padding: 5px 3px; font-size: 10px; }
+}
+
+/* 「使い方」内のその他予定ガイド */
+.otherPlanHelp {
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid #d7e3ee;
+  border-radius: 12px;
+  background: #f7fbff;
+}
+.otherPlanHelp h3 { margin: 0 0 8px; font-size: 15px; }
+.otherPlanHelp p { margin: 0 0 12px; font-size: 13px; line-height: 1.65; }
+.otherPlanHelpTableWrap { overflow-x: auto; }
+.otherPlanHelpTable { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; }
+.otherPlanHelpTable th, .otherPlanHelpTable td { padding: 8px 5px; border-bottom: 1px solid #d7e3ee; }
+.otherPlanHelpTable thead th { font-weight: 700; background: #eaf3fb; }
+.otherPlanHelpTable tbody th { text-align: left; white-space: nowrap; }
+
+/* その他予定：小画面でも横スクロールなしで表示する */
+.otherPlanHelp, .otherPlanInlineHelp { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.otherPlanHelp { padding: 12px; }
+.otherPlanHelpSteps { text-align: left; }
+.otherPlanHelpSteps p { margin: 6px 0 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.otherPlanHelpHeading { display: block; margin: 0 0 8px; text-align: left; }
+.otherPlanHelpTableWrap { overflow: visible; max-width: 100%; }
+.otherPlanHelpTable { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+.otherPlanHelpTable th, .otherPlanHelpTable td { box-sizing: border-box; padding: 9px 3px; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+.otherPlanHelpTable th:first-child { width: 44%; }
+.otherPlanHelpTable th:nth-child(2), .otherPlanHelpTable th:nth-child(3) { width: 28%; }
+.otherPlanHelpTable tbody th { text-align: left; padding-left: 7px; }
+.otherPlanHelpTable tbody tr:nth-child(odd) { background: #f0f5fb; }
+.otherPlanLegend, .otherPlanInlineHelp small { display: block; margin-top: 8px; color: #536477; font-size: 11px; }
+.otherPlanInlineHelp { margin-top: 12px; padding: 12px 10px; border-radius: 10px; background: #f7fbff; border: 1px solid #d7e3ee; text-align: left; }
+.otherPlanInlineHelp > strong { display: block; font-size: 12px; margin-bottom: 6px; }
+.otherPlanInlineHelp p { margin: 0 0 14px; font-size: 12px; line-height: 1.8; }
+.otherPlanInlineHelp .otherPlanHelpTable { margin-top: 5px; }
+
+/* その他予定の説明表：共通 table { min-width: 980px } を上書き */
+.otherPlanInlineHelp table.otherPlanHelpTable,
+.otherPlanHelp table.otherPlanHelpTable {
+  display: table;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  table-layout: fixed;
+  margin: 6px 0 0;
+}
+.otherPlanInlineHelp table.otherPlanHelpTable th,
+.otherPlanInlineHelp table.otherPlanHelpTable td,
+.otherPlanHelp table.otherPlanHelpTable th,
+.otherPlanHelp table.otherPlanHelpTable td {
+  padding: 7px 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.otherPlanInlineHelp table.otherPlanHelpTable th:first-child,
+.otherPlanHelp table.otherPlanHelpTable th:first-child { width: 42%; }
+.otherPlanInlineHelp table.otherPlanHelpTable th:nth-child(2),
+.otherPlanInlineHelp table.otherPlanHelpTable th:nth-child(3),
+.otherPlanHelp table.otherPlanHelpTable th:nth-child(2),
+.otherPlanHelp table.otherPlanHelpTable th:nth-child(3) { width: 29%; }
+
+
+/* 「代休消化」を選択したときだけ現れる注意書き */
+.otherPlanInlineHelp .otherPlanCompensatoryNote {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 14px 0 2px;
+  padding: 12px 14px;
+  border: 1px solid #e5ac32;
+  border-left: 5px solid #d58a00;
+  border-radius: 9px;
+  background: #fff3cd;
+  color: #633e00;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+  box-shadow: 0 2px 6px rgba(130, 82, 0, .09);
+}
+.otherPlanInlineHelp .otherPlanCompensatoryNote strong {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: #7c4600;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* その他予定「登録方法」カード：余白と行高を圧縮 */
+.otherPlanInlineHelp {
+  margin-top: 8px;
+  padding: 9px 10px;
+}
+.otherPlanInlineHelp > strong {
+  margin-bottom: 3px;
+}
+.otherPlanInlineHelp p {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+.otherPlanInlineHelp .otherPlanHelpHeading {
+  margin-bottom: 4px;
+}
+.otherPlanInlineHelp table.otherPlanHelpTable {
+  margin-top: 3px;
+}
+.otherPlanInlineHelp table.otherPlanHelpTable th,
+.otherPlanInlineHelp table.otherPlanHelpTable td {
+  padding: 5px 2px;
+  line-height: 1.25;
+}
+.otherPlanInlineHelp .otherPlanLegend,
+.otherPlanInlineHelp small {
+  margin-top: 5px;
+}
+.otherPlanInlineHelp .otherPlanCompensatoryNote {
+  margin: 9px 0 0;
+  padding: 8px 10px;
+  line-height: 1.5;
+}
+.otherPlanInlineHelp .otherPlanCompensatoryNote strong {
+  margin-bottom: 2px;
+}
+
+/* 予定登録ダイアログ：スマートフォン向けコンパクト表示 */
+@media (max-width: 600px) {
+  .dayModal { max-height: 96dvh !important; }
+  .dayModal .modalHeader { padding-top: 5px; padding-bottom: 3px; min-height: 0; }
+  .dayModal .modalHeader h2 { font-size: 15px; line-height: 1.25; margin: 0; }
+  .dayModal .closeButton { width: 32px; min-width: 32px; height: 32px; }
+  .dayModal .leaveFormScroll { padding-top: 0; }
+  .dayModal .formGrid.leaveRegisterGrid { gap: 5px 7px; margin-top: 3px; }
+  .dayModal .leaveRegisterGrid label { gap: 2px; }
+  .dayModal .leaveRegisterGrid label > span { font-size: 10px; line-height: 1.15; }
+  .dayModal .leaveRegisterGrid input,
+  .dayModal .leaveRegisterGrid select,
+  .dayModal .leaveRegisterGrid .leaveSelectControl { height: 35px; min-height: 35px; padding-top: 3px; padding-bottom: 3px; }
+  .dayModal .otherPlanInlineHelp { margin-top: 4px; padding: 7px 9px; }
+  .dayModal .otherPlanInlineHelp > strong { margin-bottom: 3px; font-size: 11px; }
+  .dayModal .otherPlanInlineHelp table.otherPlanHelpTable { margin-top: 2px; font-size: 11px; }
+  .dayModal .otherPlanInlineHelp table.otherPlanHelpTable th,
+  .dayModal .otherPlanInlineHelp table.otherPlanHelpTable td { padding: 3px 2px; line-height: 1.15; }
+  .dayModal .otherPlanInlineHelp small { margin-top: 3px; font-size: 10px; }
+  .dayModal .otherPlanInlineHelp .otherPlanCompensatoryNote { margin-top: 5px; padding: 6px 8px; font-size: 11px; line-height: 1.4; }
+  .dayModal .otherPlanInlineHelp .otherPlanCompensatoryNote strong { display: inline; margin: 0; font-size: 11px; }
+}
+
+/* 予定の直接編集ボタン */
+.editRecordButton { border: 1px solid #bfdbfe; border-radius: 9px; background: #eff6ff; color: #1d4ed8; cursor: pointer; font-weight: 600; }
+.editRecordButton:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+/* 予定一覧の編集・削除アイコン */
+.editRecordButton, .recordIconDelete {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+.editRecordButton svg, .recordIconDelete svg { display: block; }
