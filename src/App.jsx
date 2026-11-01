@@ -1260,6 +1260,7 @@ const [compensatorySettings, setCompensatorySettings] = useState(() => ({
     note: "",
   });
 
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState(null);
   const [announcementForm, setAnnouncementForm] = useState({
     title: "",
     message: "",
@@ -2279,6 +2280,18 @@ try {
     if (form.staffId === id) setForm((prev) => ({ ...prev, staffId: fallbackId }));
   }
 
+  function editAnnouncement(item) {
+    if (!isAdmin) return;
+    setEditingAnnouncementId(item.id);
+    setAnnouncementForm({
+      title: item.title || "", message: item.message || "", priority: item.priority || "normal",
+      scheduleType: item.scheduleType || "single", date: item.date || selectedDate || todayKey(),
+      time: item.time || "", weekday: String(item.weekday ?? new Date().getDay()),
+      nth: String(item.nth || "1"), endDate: item.endDate || "",
+    });
+    setShowAnnouncementEdit(true);
+  }
+
   async function saveAnnouncement(e) {
     e.preventDefault();
     if (!isAdmin) return;
@@ -2295,18 +2308,19 @@ try {
     }
 
     if (tutorialModeRef.current) {
-      setAnnouncements((prev) => [...prev, {
+      setAnnouncements((prev) => editingAnnouncementId ? prev.map((a) => a.id === editingAnnouncementId ? { ...a, ...announcementForm, title } : a) : [...prev, {
         id: makeId("tutorial-announcement"), title, message: announcementForm.message.trim(),
         priority: announcementForm.priority, scheduleType: announcementForm.scheduleType,
         date: announcementForm.date, time: announcementForm.time, weekday: announcementForm.weekday,
         nth: announcementForm.nth, endDate: announcementForm.endDate, createdAt: Date.now(),
         createdBy: loginUser?.id || "", createdByName: loginUser ? personName(loginUser) : "",
       }]);
+      setEditingAnnouncementId(null);
       setShowAnnouncementEdit(false);
       return;
     }
 
-    await addDoc(collection(db, "announcements"), {
+    const announcementPayload = {
   title,
   message: announcementForm.message.trim(),
   priority: announcementForm.priority,
@@ -2319,7 +2333,14 @@ try {
   createdAt: Date.now(),
   createdBy: loginUser?.id || "",
   createdByName: loginUser ? personName(loginUser) : "",
-});
+};
+    if (editingAnnouncementId) {
+      const { createdAt, createdBy, createdByName, ...updates } = announcementPayload;
+      await updateDoc(doc(db, "announcements", editingAnnouncementId), updates);
+    } else {
+      await addDoc(collection(db, "announcements"), announcementPayload);
+    }
+    setEditingAnnouncementId(null);
 
     setAnnouncementForm({
       title: "",
@@ -3267,7 +3288,7 @@ if (staffLoaded && staff.length === 0) {
       <AnnouncementBoard
         announcements={todayAnnouncements}
         isAdmin={isAdmin}
-        onOpenEdit={() => setShowAnnouncementEdit(true)}
+        onOpenEdit={() => { setEditingAnnouncementId(null); setShowAnnouncementEdit(true); }}
         onDelete={deleteAnnouncement}
       />
 
@@ -3513,11 +3534,11 @@ if (staffLoaded && staff.length === 0) {
                     className={`detailItem announcementDetail ${item.priority === "important" ? "important" : ""}`}
                     key={`${item.id}-${item.occurrenceDate || selectedDate}`}
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: isAdmin ? "minmax(0, 1fr) auto" : "minmax(0, 1fr)",
-                      alignItems: "start",
-                      gap: "8px",
-                      padding: "8px 10px",
+                      display: "block",
+                      position: "relative",
+                      border: "none",
+                      padding: "8px 9px",
+                      paddingRight: isAdmin ? "90px" : "9px",
                     }}
                   >
                     <div style={{ minWidth: 0, textAlign: "left" }}>
@@ -3547,14 +3568,10 @@ if (staffLoaded && staff.length === 0) {
                       )}
                     </div>
                     {isAdmin && (
-                      <button
-                        type="button"
-                        className="deleteButton"
-                        onClick={() => deleteAnnouncement(item.id)}
-                        style={{ padding: "4px 7px", fontSize: "11px" }}
-                      >
-                        削除
-                      </button>
+                      <div style={{ display: "flex", gap: "2px", alignItems: "flex-start", justifyContent: "flex-end", position: "absolute", top: "50%", transform: "translateY(-50%)", right: "8px", height: "36px", zIndex: 1 }}>
+                        <button type="button" className="editRecordButton" style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, padding: 0, border: "1px solid transparent", background: "transparent", boxShadow: "none", color: "#64748b", borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center" }} onClick={() => editAnnouncement(item)} aria-label="予定を編集" title="編集"><Pencil size={17} aria-hidden="true" /></button>
+                        <button type="button" className="deleteButton recordIconDelete" style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, padding: 0, border: "1px solid transparent", background: "transparent", boxShadow: "none", color: "#c86a72", borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center" }} onClick={() => deleteAnnouncement(item.id)} aria-label="予定を削除" title="削除"><Trash2 size={17} aria-hidden="true" /></button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -3719,6 +3736,7 @@ if (staffLoaded && staff.length === 0) {
                         className={`detailItem ${group.records[0]?.type || ""}`}
                         style={{
                           display: "block",
+                          position: "relative",
                           padding: "8px 9px",
                           minWidth: 0,
                           textAlign: "left",
@@ -3728,6 +3746,7 @@ if (staffLoaded && staff.length === 0) {
                           style={{
                             display: "block",
                             marginBottom: "5px",
+                            paddingRight: "80px",
                             fontSize: "13.5px",
                             lineHeight: 1.25,
                           }}
@@ -3736,15 +3755,16 @@ if (staffLoaded && staff.length === 0) {
                         </strong>
 
                         <div style={{ display: "grid", gap: "4px" }}>
-                          {group.records.map((r) => (
+                          {group.records.map((r, recordIndex) => (
                             <div
                               key={r.id}
                               style={{
                                 display: "grid",
-                                gridTemplateColumns: "minmax(0, 1fr) auto auto",
-                                alignItems: "center",
+                                gridTemplateColumns: recordIndex === 0 ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
+                                alignItems: "start",
                                 gap: "7px",
                                 minWidth: 0,
+                                paddingRight: recordIndex === 0 ? "80px" : 0,
                               }}
                             >
                               <div style={{ minWidth: 0 }}>
@@ -3774,18 +3794,12 @@ if (staffLoaded && staff.length === 0) {
                                 )}
                               </div>
 
-                              {(isAdmin || r.staffId === loginUser?.id) && (
-                                <button type="button" className="editRecordButton" onClick={() => editRecord(r)} aria-label="予定を編集" title="編集"><Pencil size={17} aria-hidden="true" /></button>
-                              )}
-                              <button
-                                type="button"
-                                className="deleteButton recordIconDelete"
-                                onClick={() => removeRecord(r.id, r)}
-                                aria-label="予定を削除"
-                                title="削除"
-                              >
-                                <Trash2 size={17} aria-hidden="true" />
-                              </button>
+                              <div style={{ display: "flex", gap: "2px", alignItems: "flex-start", justifyContent: "flex-end", flexShrink: 0, ...(recordIndex === 0 ? { position: "absolute", top: "50%", transform: "translateY(-50%)", right: "8px", height: "36px", zIndex: 1 } : {}) }}>
+                                {(isAdmin || r.staffId === loginUser?.id) && (
+                                  <button type="button" className="editRecordButton" style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, padding: 0, border: "1px solid transparent", background: "transparent", boxShadow: "none", color: "#64748b", borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center" }} onClick={() => editRecord(r)} aria-label="予定を編集" title="編集"><Pencil size={17} aria-hidden="true" /></button>
+                                )}
+                                <button type="button" className="deleteButton recordIconDelete" style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, padding: 0, border: "1px solid transparent", background: "transparent", boxShadow: "none", color: "#c86a72", borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center" }} onClick={() => removeRecord(r.id, r)} aria-label="予定を削除" title="削除"><Trash2 size={17} aria-hidden="true" /></button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -4148,7 +4162,7 @@ if (staffLoaded && staff.length === 0) {
         <div className="modalBackdrop" onClick={() => setShowAnnouncementEdit(false)}>
           <form className="announcementModal" onClick={(e) => e.stopPropagation()} onSubmit={saveAnnouncement}>
             <div className="modalHeader">
-              <h2>掲示板登録</h2>
+              <h2>{editingAnnouncementId ? "予定を編集" : "掲示板登録"}</h2>
               <button className="closeButton" type="button" onClick={() => setShowAnnouncementEdit(false)}>
                 ×
               </button>
